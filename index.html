@@ -35,7 +35,7 @@
   </header>
 
   <main id="main" class="container">
-    <section id="view-calcs" class="view" aria-live="polite">
+    <section id="view-calcs" class="view">
       <div class="view-head">
         <div>
           <h1 id="calc-title">Clínica médica</h1>
@@ -69,17 +69,22 @@
 
   <!-- Calculadora -->
   <dialog id="calc-dialog" class="calc-dialog" aria-labelledby="dlg-title">
-    <div class="dlg-head">
-      <div>
-        <span id="dlg-cat" class="pill"></span>
-        <h2 id="dlg-title"></h2>
-        <p id="dlg-short" class="muted"></p>
+    <div class="dlg-body">
+      <div class="dlg-head">
+        <div>
+          <span id="dlg-cat" class="pill"></span>
+          <h2 id="dlg-title"></h2>
+          <p id="dlg-short" class="muted"></p>
+        </div>
+        <button class="icon-btn" data-close type="button" aria-label="Fechar">✕</button>
       </div>
-      <button class="icon-btn" data-close type="button" aria-label="Fechar">✕</button>
+      <form id="calc-form" class="calc-form" novalidate></form>
+      <p id="dlg-ref" class="ref"></p>
     </div>
-    <form id="calc-form" class="calc-form" novalidate></form>
-    <div id="calc-result" class="result" hidden></div>
-    <p id="dlg-ref" class="ref"></p>
+    <div id="calc-status" class="dlg-foot is-empty" role="status" aria-live="polite">
+      <p id="calc-pending" class="pending" hidden></p>
+      <div id="calc-result" class="result" hidden></div>
+    </div>
   </dialog>
 
   <!-- Assistente IA -->

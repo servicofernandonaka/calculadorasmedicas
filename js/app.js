@@ -13,7 +13,7 @@
     gineco: { title: 'Ginecologia e obstetrícia', sub: 'Pré-natal, parto, saúde da mulher e osteoporose pós-menopausa.' },
   };
 
-  const state = { tab: 'clinica', category: null, query: '', edu: EDU[0].id, calc: null };
+  const state = { tab: 'clinica', category: null, query: '', edu: EDU[0].id, calc: null, touched: false };
 
   const norm = (s) => (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -95,45 +95,57 @@
     const unit = f.unit ? ` <span class="unit">(${esc(f.unit)})</span>` : '';
     let input;
     if (f.type === 'select') {
-      input = `<select id="${id}" name="${f.id}">${f.options.map((o) => `<option value="${o.v}">${esc(o.t)}</option>`).join('')}</select>`;
+      input = `<select id="${id}" name="${f.id}"><option value="">Selecione…</option>` +
+        f.options.map((o) => `<option value="${o.v}">${esc(o.t)}</option>`).join('') + '</select>';
     } else if (f.type === 'date') {
       input = `<input type="date" id="${id}" name="${f.id}">`;
     } else {
       input = `<input type="text" inputmode="decimal" id="${id}" name="${f.id}" autocomplete="off"
         placeholder="${f.min != null ? `${f.min}–${f.max}` : ''}">`;
     }
-    return `<label class="field" for="${id}"><span>${esc(f.label)}${unit}</span>${input}<span class="hint"></span></label>`;
+    return `<label class="field" for="${id}"><span>${esc(f.label)}${unit}</span>${input}<span class="hint" id="${id}-hint"></span></label>`;
   }
 
-  function readValues(calc, show) {
-    const form = $('#calc-form');
-    const v = {};
-    let ok = true;
-    for (const f of calc.fields) {
-      const el = form.elements[f.id];
-      if (f.type === 'check') { v[f.id] = el.checked; continue; }
-      if (f.type === 'select') { v[f.id] = el.value; continue; }
-      const wrap = el.closest('.field');
-      const hint = $('.hint', wrap);
-      let msg = '';
-      const raw = el.value.trim();
-      if (f.type === 'date') {
-        if (!raw && !f.optional) msg = 'Informe a data';
-        v[f.id] = raw || null;
-      } else if (!raw) {
-        if (!f.optional) msg = 'Campo obrigatório';
-        v[f.id] = null;
-      } else {
-        const n = Number(raw.replace(',', '.'));
-        if (!Number.isFinite(n)) msg = 'Número inválido';
-        else if ((f.min != null && n < f.min) || (f.max != null && n > f.max)) msg = `Valor válido: ${f.min} a ${f.max}`;
-        v[f.id] = n;
-      }
-      if (msg) ok = false;
-      if (show) { hint.textContent = msg; wrap.classList.toggle('invalid', !!msg); }
-      else if (!msg) { hint.textContent = ''; wrap.classList.remove('invalid'); }
+  // Valida um campo e devolve { value, error } — error: '' | 'missing' | mensagem de faixa/formato
+  function checkField(f, el) {
+    if (f.type === 'check') return { value: el.checked, error: '' };
+    const raw = el.value.trim();
+    if (!raw) return { value: null, error: f.optional ? '' : 'missing' };
+    if (f.type === 'select' || f.type === 'date') return { value: raw, error: '' };
+    const n = Number(raw.replace(',', '.'));
+    if (!Number.isFinite(n)) return { value: null, error: 'Número inválido' };
+    if ((f.min != null && n < f.min) || (f.max != null && n > f.max)) {
+      return { value: n, error: `Valor válido: ${f.min} a ${f.max}${f.unit ? ' ' + f.unit : ''}` };
     }
-    return ok ? v : null;
+    return { value: n, error: '' };
+  }
+
+  function setFieldError(el, msg) {
+    const wrap = el.closest('.field');
+    if (!wrap) return;
+    $('.hint', wrap).textContent = msg;
+    wrap.classList.toggle('invalid', !!msg);
+    if (msg) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid');
+    el.setAttribute('aria-describedby', el.id + '-hint');
+  }
+
+  // Mensagem visível para um campo: obrigatório só aparece se o usuário já mexeu nele (ou forçou)
+  function visibleError(f, el, err, force) {
+    if (!err) return '';
+    if (err === 'missing') return force || el.dataset.dirty ? (f.type === 'select' ? 'Selecione uma opção' : 'Campo obrigatório') : '';
+    return err;
+  }
+
+  function readValues(calc) {
+    const form = $('#calc-form');
+    const v = {}, missing = [], invalid = [];
+    for (const f of calc.fields) {
+      const { value, error } = checkField(f, form.elements[f.id]);
+      v[f.id] = value;
+      if (error === 'missing') missing.push(f.label);
+      else if (error) invalid.push(f.label);
+    }
+    return { v, missing, invalid };
   }
 
   function summary(calc, v, r) {
@@ -146,26 +158,60 @@
       lines.push(`- ${f.label}: ${val}${f.unit && f.type === 'number' ? ' ' + f.unit : ''}`);
     }
     lines.push(`Resultado: ${r.main} — ${r.sub}`);
+    if (r.warn) lines.push(`Atenção: ${r.warn}`);
     return lines.join('\n');
   }
 
-  function compute(show) {
+  function hideResult() {
+    const box = $('#calc-result');
+    box.hidden = true;
+    box.innerHTML = '';
+    delete box.dataset.summary;
+  }
+
+  function setPending(msg) {
+    const p = $('#calc-pending');
+    p.textContent = msg || '';
+    p.hidden = !msg;
+  }
+
+  function syncFoot() {
+    const empty = $('#calc-result').hidden && $('#calc-pending').hidden;
+    $('#calc-status').classList.toggle('is-empty', empty);
+  }
+
+  // Atualiza o rodapé: nada antes da 1ª interação; nunca deixa resultado antigo quando os dados ficam incompletos/inválidos
+  function update() {
     const calc = state.calc;
     if (!calc) return;
-    const v = readValues(calc, show);
-    const box = $('#calc-result');
-    if (!v) { if (show) box.hidden = true; return; }
+    if (!state.touched) { hideResult(); setPending(''); syncFoot(); return; }
+    const { v, missing, invalid } = readValues(calc);
+    if (missing.length || invalid.length) {
+      hideResult();
+      const parts = [];
+      if (invalid.length) parts.push('Corrija: ' + invalid.join(', '));
+      if (missing.length) parts.push('Falta preencher: ' + missing.join(', '));
+      setPending(parts.join(' • '));
+      syncFoot();
+      return;
+    }
     let r;
-    try { r = calc.compute(v); } catch (e) { console.error(e); return; }
-    if (!r || r.main == null) return;
+    try { r = calc.compute(v); } catch (e) { console.error(e); r = null; }
+    if (!r || r.main == null) { hideResult(); setPending('Não foi possível calcular com estes dados.'); syncFoot(); return; }
+    setPending('');
+    const box = $('#calc-result');
     const text = summary(calc, v, r);
-    // Evita recriar os botões (o "change" disparado no blur engoliria o clique)
-    if (!box.hidden && box.dataset.summary === text) return;
+    // Evita recriar os botões quando nada mudou (o "change" do blur engoliria o clique)
+    if (!box.hidden && box.dataset.summary === text) { syncFoot(); return; }
+    const detailsOpen = !!$('#calc-result details[open]');
     box.className = 'result ' + (r.level || 'info');
     box.innerHTML = `
-      <div class="main">${esc(r.main)}</div>
-      <div class="sub">${esc(r.sub)}</div>
-      ${r.details ? `<p class="det">${esc(r.details)}</p>` : ''}
+      <div class="res-head">
+        <div class="main">${esc(r.main)}</div>
+        <div class="sub">${esc(r.sub)}</div>
+      </div>
+      ${r.warn ? `<div class="warn"><strong>⚠️ Atenção — muda a conduta</strong><span>${esc(r.warn)}</span></div>` : ''}
+      ${r.details ? `<details${detailsOpen ? ' open' : ''}><summary>Interpretação</summary><p class="det">${esc(r.details)}</p></details>` : ''}
       <div class="actions">
         <button class="btn btn-ghost" type="button" data-copy>📋 Copiar</button>
         <button class="btn" type="button" data-ask>✨ Discutir com a IA</button>
@@ -174,12 +220,19 @@
       </div>`;
     box.hidden = false;
     box.dataset.summary = text;
+    syncFoot();
+  }
+
+  function fieldOf(el) {
+    if (!el.isConnected || !state.calc) return null;
+    return state.calc.fields.find((f) => f.id === el.name);
   }
 
   function openCalc(id) {
     const calc = byId(id);
     if (!calc) return;
-    state.calc = calc;
+    state.calc = null; // eventos do formulário anterior (blur/change ao removê-lo) são ignorados
+    state.touched = false;
     $('#dlg-cat').textContent = calc.category;
     $('#dlg-title').textContent = calc.name;
     $('#dlg-short').textContent = calc.short;
@@ -189,13 +242,13 @@
     $('#calc-form').innerHTML =
       others.map((f) => fieldHtml(calc, f)).join('') +
       checks.map((f) => fieldHtml(calc, f)).join('') +
-      `<div class="form-actions"><button class="btn" type="submit">Calcular</button>
-       <button class="btn btn-ghost" type="reset">Limpar</button></div>`;
-    $('#calc-result').hidden = true;
+      '<div class="form-actions"><button class="btn btn-ghost" type="reset">Limpar</button></div>';
+    state.calc = calc;
+    update();
     const dlg = $('#calc-dialog');
     if (!dlg.open) dlg.showModal();
+    $('.dlg-body', dlg).scrollTop = 0;
     if (location.hash !== '#calc/' + id) history.replaceState(null, '', '#calc/' + id);
-    compute(false);
     const first = $('#calc-form input, #calc-form select');
     if (first) first.focus();
   }
@@ -294,12 +347,37 @@
     });
 
     const form = $('#calc-form');
-    form.addEventListener('submit', (e) => { e.preventDefault(); compute(true); });
-    form.addEventListener('input', () => compute(false));
-    form.addEventListener('change', () => compute(false));
+    // Enter num campo: mostra todos os erros pendentes
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      state.touched = true;
+      for (const f of state.calc.fields) {
+        const el = form.elements[f.id];
+        setFieldError(el, visibleError(f, el, checkField(f, el).error, true));
+      }
+      update();
+    });
+    const onEdit = (e) => {
+      const f = fieldOf(e.target);
+      if (!f) return;
+      state.touched = true;
+      e.target.dataset.dirty = '1';
+      // Durante a digitação só limpa erros; erros novos aparecem no blur
+      if (!checkField(f, e.target).error) setFieldError(e.target, '');
+      if (f.type === 'select') setFieldError(e.target, visibleError(f, e.target, checkField(f, e.target).error));
+      update();
+    };
+    form.addEventListener('input', onEdit);
+    form.addEventListener('change', onEdit);
+    form.addEventListener('focusout', (e) => {
+      const f = fieldOf(e.target);
+      if (!f || f.type === 'check') return;
+      setFieldError(e.target, visibleError(f, e.target, checkField(f, e.target).error));
+    });
     form.addEventListener('reset', () => setTimeout(() => {
-      $$('.field', form).forEach((w) => { w.classList.remove('invalid'); $('.hint', w).textContent = ''; });
-      compute(false);
+      state.touched = false;
+      for (const el of form.elements) { delete el.dataset.dirty; if (el.name) setFieldError(el, ''); }
+      update();
     }));
 
     const dlg = $('#calc-dialog');
@@ -307,6 +385,7 @@
       if (e.target === dlg || e.target.closest('[data-close]')) closeCalc();
     });
     dlg.addEventListener('close', () => {
+      if (dlg.open) return; // o diálogo já foi reaberto com outra calculadora
       state.calc = null;
       if (location.hash.startsWith('#calc/')) history.replaceState(null, '', '#' + state.tab);
     });

@@ -89,10 +89,11 @@
         details:
           'Corte SBC: baixo < 5%; intermediário 5–' + (v.sex === 'f' ? '10' : '20') +
           '%; alto > ' + (v.sex === 'f' ? '10' : '20') + '%. ' +
-          'Atenção: pacientes com doença aterosclerótica estabelecida, aterosclerose subclínica significativa, ' +
-          'DRC, LDL ≥ 190 mg/dL ou diabetes com estratificadores de risco já são de alto/muito alto risco ' +
-          'independentemente do escore. História familiar precoce, síndrome metabólica e marcadores ' +
-          '(PCR-us, escore de cálcio) podem reclassificar o risco intermediário.',
+          'História familiar precoce, síndrome metabólica e marcadores (PCR-us, escore de cálcio) podem ' +
+          'reclassificar o risco intermediário.',
+        warn: 'O escore não se aplica a quem já é de alto ou muito alto risco: doença aterosclerótica estabelecida, ' +
+          'aterosclerose subclínica significativa, DRC, LDL ≥ 190 mg/dL ou diabetes com estratificadores de risco. ' +
+          'Nesses casos, trate como alto/muito alto risco independentemente do resultado.',
       };
     },
     ref: "D'Agostino RB et al. Circulation 2008; Diretriz Brasileira de Dislipidemias e Prevenção da Aterosclerose (SBC).",
@@ -149,6 +150,8 @@
         main: pct(r), sub, level,
         details: 'Equação derivada de coortes norte-americanas; pode superestimar o risco em algumas populações. ' +
           'No Brasil, a SBC recomenda o Escore de Risco Global (Framingham).',
+        warn: 'Não use em quem já tem doença aterosclerótica, LDL ≥ 190 mg/dL ou diabetes (40–75 anos): ' +
+          'nesses grupos a estatina está indicada independentemente do risco calculado.',
       };
     },
     ref: 'Goff DC et al. 2013 ACC/AHA Guideline on the Assessment of Cardiovascular Risk.',
@@ -188,8 +191,9 @@
         level: labels[c][1],
         details:
           'O diagnóstico exige medidas repetidas com técnica adequada e, idealmente, confirmação fora do consultório ' +
-          '(MRPA ou MAPA). Quando sistólica e diastólica caem em categorias diferentes, vale a maior. ' +
-          'PA ≥ 180/110 com sintomas ou lesão de órgão-alvo requer avaliação imediata.',
+          '(MRPA ou MAPA). Quando sistólica e diastólica caem em categorias diferentes, vale a maior.',
+        warn: c === 5 ? 'PA ≥ 180/110: pesquise sintomas e lesão aguda de órgão-alvo (dor torácica, déficit neurológico, ' +
+          'dispneia, alteração visual). Se presentes, é emergência hipertensiva e requer avaliação imediata.' : undefined,
         edu: 'has-oque',
       };
     },
@@ -224,6 +228,8 @@
       else { level = 'high'; sub = 'Anticoagulação oral recomendada (se sem contraindicação)'; }
       return {
         main: s + ' ponto(s)', sub, level,
+        warn: 'Não se aplica a FA com estenose mitral moderada/grave ou prótese valvar mecânica: ' +
+          'nesses casos a anticoagulação (varfarina) está indicada independentemente do escore.',
         details: 'O sexo feminino isoladamente é modificador de risco, não indicação. Avalie também o risco de ' +
           'sangramento (HAS-BLED) — escore alto pede correção de fatores modificáveis, não contraindica por si só.',
       };
@@ -419,8 +425,9 @@
       else { st = 'G5 — falência renal'; level = 'high'; }
       return {
         main: fmt(g, 0) + ' mL/min/1,73m²', sub: 'KDIGO ' + st, level,
-        details: 'DRC requer alteração persistente por > 3 meses; estadie também a albuminúria (A1–A3). ' +
-          'Não use em lesão renal aguda (creatinina instável).',
+        details: 'DRC requer alteração persistente por > 3 meses; estadie também a albuminúria (A1–A3).',
+        warn: 'Não use em lesão renal aguda (creatinina instável): a TFG estimada superestima a função renal ' +
+          'e pode levar a doses inadequadas de medicamentos.',
       };
     },
     ref: 'Inker LA et al. N Engl J Med 2021; KDIGO 2024.',
@@ -584,7 +591,8 @@
         main: s + ' ponto(s)',
         sub: s >= 2 ? 'Positivo — maior risco de desfecho desfavorável' : 'Negativo',
         level: s >= 2 ? 'high' : 'low',
-        details: 'qSOFA não é critério diagnóstico de sepse e tem baixa sensibilidade; não atrase o tratamento de um paciente grave por um qSOFA negativo.',
+        details: 'qSOFA não é critério diagnóstico de sepse e tem baixa sensibilidade.',
+        warn: s < 2 ? 'qSOFA negativo não exclui sepse: se houver suspeita clínica, não atrase antibiótico, culturas e lactato.' : undefined,
       };
     },
     ref: 'Seymour CW et al. JAMA 2016 (Sepsis-3).',
