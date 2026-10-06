@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MedCalc — Calculadoras Médicas</title>
+  <meta name="description" content="Calculadoras médicas para estratificação de risco em clínica, cirurgia, ginecologia e obstetrícia, material educativo sobre hipertensão e assistente com IA.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f766e'/><path d='M42 20h16v22h22v16H58v22H42V58H20V42h22z' fill='white'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Pular para o conteúdo</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#clinica" aria-label="MedCalc — início">
+        <span class="brand-mark" aria-hidden="true">+</span>
+        <span class="brand-text">MedCalc<small>Calculadoras e educação em saúde</small></span>
+      </a>
+      <div class="search">
+        <input id="search" type="search" placeholder="Buscar calculadora (ex.: fratura, TEV, gestação)…" aria-label="Buscar calculadora" autocomplete="off">
+      </div>
+      <button id="theme-toggle" class="icon-btn" type="button" aria-label="Alternar tema claro/escuro" title="Alternar tema">🌓</button>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Especialidades">
+      <button role="tab" class="tab" data-tab="clinica" aria-selected="true">🩺 Clínica</button>
+      <button role="tab" class="tab" data-tab="cirurgia" aria-selected="false">🔪 Cirúrgica</button>
+      <button role="tab" class="tab" data-tab="gineco" aria-selected="false">🤰 Gineco &amp; Obstetrícia</button>
+      <button role="tab" class="tab" data-tab="educacao" aria-selected="false">📘 Paciente: Hipertensão</button>
+      <button class="tab tab-ai" data-open-ai type="button">✨ Assistente IA</button>
+    </nav>
+  </header>
+
+  <main id="main" class="container">
+    <section id="view-calcs" class="view" aria-live="polite">
+      <div class="view-head">
+        <div>
+          <h1 id="calc-title">Clínica médica</h1>
+          <p id="calc-subtitle" class="muted"></p>
+        </div>
+        <div id="chips" class="chips" role="group" aria-label="Filtrar por categoria"></div>
+      </div>
+      <div id="grid" class="grid"></div>
+      <p id="empty" class="empty" hidden>Nenhuma calculadora encontrada. Tente outro termo ou pergunte ao <button class="link" data-open-ai type="button">Assistente IA</button>.</p>
+    </section>
+
+    <section id="view-edu" class="view" hidden>
+      <div class="view-head">
+        <div>
+          <h1>Hipertensão arterial — guia para o paciente</h1>
+          <p class="muted">Informações em linguagem simples para ler, imprimir ou enviar ao paciente.</p>
+        </div>
+        <button id="print-edu" class="btn btn-ghost" type="button">🖨️ Imprimir / salvar PDF</button>
+      </div>
+      <div class="edu-layout">
+        <nav id="edu-nav" class="edu-nav" aria-label="Tópicos"></nav>
+        <article id="edu-content" class="edu-content card"></article>
+      </div>
+    </section>
+
+    <p class="disclaimer">
+      ⚠️ Ferramenta de apoio à decisão para profissionais de saúde e de educação para pacientes. Não substitui a avaliação
+      clínica individual. Confira sempre as fontes e as diretrizes vigentes.
+    </p>
+  </main>
+
+  <!-- Calculadora -->
+  <dialog id="calc-dialog" class="calc-dialog" aria-labelledby="dlg-title">
+    <div class="dlg-head">
+      <div>
+        <span id="dlg-cat" class="pill"></span>
+        <h2 id="dlg-title"></h2>
+        <p id="dlg-short" class="muted"></p>
+      </div>
+      <button class="icon-btn" data-close type="button" aria-label="Fechar">✕</button>
+    </div>
+    <form id="calc-form" class="calc-form" novalidate></form>
+    <div id="calc-result" class="result" hidden></div>
+    <p id="dlg-ref" class="ref"></p>
+  </dialog>
+
+  <!-- Assistente IA -->
+  <button id="ai-fab" class="ai-fab" data-open-ai type="button" aria-label="Abrir assistente IA">✨<span>Assistente IA</span></button>
+  <aside id="ai-panel" class="ai-panel" aria-label="Assistente IA" aria-hidden="true">
+    <div class="ai-head">
+      <div>
+        <strong>✨ Assistente IA</strong>
+        <span id="ai-mode" class="ai-mode"></span>
+      </div>
+      <div class="ai-head-actions">
+        <button id="ai-settings-btn" class="icon-btn" type="button" aria-label="Configurações da IA" title="Configurações">⚙️</button>
+        <button id="ai-clear" class="icon-btn" type="button" aria-label="Limpar conversa" title="Limpar conversa">🗑️</button>
+        <button id="ai-close" class="icon-btn" type="button" aria-label="Fechar assistente">✕</button>
+      </div>
+    </div>
+    <div id="ai-settings" class="ai-settings" hidden>
+      <p class="small">O guia funciona sem configuração (modo offline, por palavras-chave). Para respostas com IA generativa
+        (Claude, da Anthropic), informe sua chave de API. A chave fica salva <strong>apenas neste navegador</strong> e é
+        enviada diretamente à API da Anthropic.</p>
+      <label class="field">
+        <span>Chave da API Anthropic</span>
+        <input id="ai-key" type="password" placeholder="sk-ant-…" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Modelo</span>
+        <select id="ai-model">
+          <option value="claude-opus-5-5">Claude Opus 5.5 (recomendado)</option>
+          <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (mais rápido)</option>
+          <option value="claude-haiku-4-5">Claude Haiku 4.5 (mais econômico)</option>
+        </select>
+      </label>
+      <div class="row">
+        <button id="ai-save" class="btn" type="button">Salvar</button>
+        <button id="ai-forget" class="btn btn-ghost" type="button">Remover chave</button>
+      </div>
+      <p class="small muted">Não use dados que identifiquem pacientes (nome, CPF, prontuário).</p>
+    </div>
+    <div id="ai-log" class="ai-log" aria-live="polite"></div>
+    <div id="ai-suggest" class="ai-suggest"></div>
+    <form id="ai-form" class="ai-form">
+      <textarea id="ai-input" rows="2" placeholder="Ex.: Quais escores usar no pré-operatório de uma colecistectomia?" aria-label="Mensagem para o assistente"></textarea>
+      <button class="btn" type="submit" aria-label="Enviar">➤</button>
+    </form>
+  </aside>
+
+  <script src="js/calculators.js"></script>
+  <script src="js/education.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/ai.js"></script>
+</body>
+</html>
