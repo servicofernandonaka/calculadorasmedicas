@@ -59,7 +59,7 @@ Regras:
   oriente ligar 192 (SAMU) ou procurar o pronto-socorro imediatamente.
 - Se o usuário enviar dados que identifiquem pacientes (nome, CPF, prontuário), lembre-o de não fazer isso.
 
-Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), educacao (Paciente: Hipertensão).
+Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), geriatria (Geriatria), educacao (Paciente: Hipertensão).
 
 Catálogo de calculadoras (ID | nome | categoria | abas | descrição):
 ${catalog}
@@ -71,8 +71,13 @@ ${eduCatalog}`;
   const STOP = new Set(('de da do das dos para com sem uma umas uns por que qual quais como sobre meu minha seu sua ' +
     'paciente pacientes risco calcular calculadora escore usar posso devo tem ter esta este isso essa esse nos nas ' +
     'mais muito ajuda ajude quero preciso saber fazer avaliar anos ano idade mulher homem senhora senhor ' +
-    'adulto adulta idoso idosa').split(' '));
+    'adulto adulta').split(' '));
   const SYN = {
+    idoso: 'geriatria idoso', idosa: 'geriatria idoso', idosos: 'geriatria idoso', velhice: 'geriatria idoso',
+    demencia: 'cognicao memoria', memoria: 'cognicao demencia', esquecimento: 'memoria cognicao',
+    confuso: 'delirium', confusao: 'delirium', depressao: 'humor gds', triste: 'depressao humor',
+    queda: 'quedas', caiu: 'queda', desnutricao: 'nutricao mna', escara: 'lesao por pressao braden',
+    fragil: 'fragilidade', dependente: 'funcionalidade dependencia',
     gravida: 'gestacao gravidez pre-natal', gestante: 'gestacao gravidez pre-natal', gestacao: 'gravidez pre-natal',
     gravidez: 'gestacao pre-natal', grávida: 'gestacao', prenatal: 'pre-natal',
     cirurgia: 'pre-operatorio cirurgico', operar: 'pre-operatorio', operatorio: 'pre-operatorio',
@@ -89,7 +94,10 @@ ${eduCatalog}`;
   function tokens(text) {
     const base = norm(text).replace(/[^a-z0-9\-\s]/g, ' ').split(/\s+/).filter((t) => t.length >= 3 && !STOP.has(t));
     const out = new Set(base);
-    base.forEach((t) => (SYN[t] || '').split(' ').filter((s) => s.length >= 3).forEach((s) => out.add(s)));
+    base.forEach((t) => {
+      if (t.length > 4 && t.endsWith('s')) out.add(t.slice(0, -1)); // plural simples: quedas → queda
+      (SYN[t] || '').split(' ').filter((s) => s.length >= 3).forEach((s) => out.add(s));
+    });
     return [...out];
   }
 
@@ -104,6 +112,8 @@ ${eduCatalog}`;
         else if (kw.includes(t)) s += 2;
         else if (other.includes(t)) s += 1;
       }
+      // Contexto de especialidade (ex.: "idoso" → geriatria) favorece as calculadoras daquela aba
+      if (c.tabs.some((tab) => toks.includes(tab))) s += 3;
       return { c, s };
     }).filter((x) => x.s > 0).sort((a, b) => b.s - a.s);
     if (!ranked.length) return [];
@@ -309,6 +319,7 @@ ${eduCatalog}`;
     'Pré-operatório de cirurgia abdominal',
     'Gestante no 1º trimestre',
     'Mulher de 65 anos: risco de fratura',
+    'Idoso frágil: avaliação geriátrica',
     'Orientar paciente hipertenso',
   ];
 

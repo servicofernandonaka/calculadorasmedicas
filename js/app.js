@@ -11,6 +11,7 @@
     clinica: { title: 'Clínica médica', sub: 'Risco cardiovascular, metabólico, renal, ósseo, tromboembolismo, infecção e hepatologia.' },
     cirurgia: { title: 'Especialidades cirúrgicas', sub: 'Avaliação pré-operatória, tromboprofilaxia, abdome agudo e trauma.' },
     gineco: { title: 'Ginecologia e obstetrícia', sub: 'Pré-natal, parto, saúde da mulher e osteoporose pós-menopausa.' },
+    geriatria: { title: 'Geriatria', sub: 'Avaliação geriátrica ampla: fragilidade, funcionalidade, cognição, humor, delirium, quedas, nutrição e pele.' },
   };
 
   const state = { tab: 'clinica', category: null, query: '', edu: EDU[0].id, calc: null, touched: false };
@@ -66,7 +67,8 @@
       $('#chips').innerHTML = '';
     } else {
       const t = TABS[state.tab];
-      list = CALCS.filter((c) => c.tabs.includes(state.tab));
+      // Primeiro as calculadoras próprias da especialidade, depois as compartilhadas com outras abas
+      list = CALCS.filter((c) => c.tabs[0] === state.tab).concat(CALCS.filter((c) => c.tabs[0] !== state.tab && c.tabs.includes(state.tab)));
       $('#calc-title').textContent = t.title;
       $('#calc-subtitle').textContent = t.sub;
       const cats = [...new Set(list.map((c) => c.category))];

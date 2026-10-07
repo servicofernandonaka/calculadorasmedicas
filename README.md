@@ -9,6 +9,9 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
   - **Cirúrgica**: Índice de Lee (RCRI), ASA, Caprini, STOP-BANG, Apfel, Alvarado, Glasgow, Parkland, índice de choque (+ TFG, Wells, Child/MELD).
   - **Ginecologia e obstetrícia**: IG/DPP pela DUM e pela USG, ganho de peso gestacional, risco de pré-eclâmpsia (AAS),
     diabetes gestacional, Bishop, Apgar, peso fetal (Hadlock), período fértil (+ osteoporose, Caprini, Wells).
+  - **Geriatria**: IVCF-20, Escala Clínica de Fragilidade (CFS), FRAIL, SARC-F, velocidade de marcha, Timed Up and Go,
+    Morse, Braden, Katz (ABVD), Lawton-Brody (AIVD), MEEM, Mini-Cog, GDS-15, 4AT (delirium) e MNA-SF
+    (+ PA, CHA₂DS₂-VASc, HAS-BLED, TFG, Cockcroft-Gault, osteoporose/FRAX, Pádua, STOP-BANG, IMC).
 - **Material para o paciente — Hipertensão**: o que é, importância do tratamento, alimentação, atividade física,
   como medir a pressão em casa, hábitos e sinais de alerta. Pode ser impresso ou salvo em PDF.
 - **Assistente IA** (botão ✨), que guia o usuário até as ferramentas certas:
@@ -28,7 +31,7 @@ python3 -m http.server 8000
 
 Para publicar no **GitHub Pages**: Settings → Pages → *Deploy from a branch* → selecione a branch e a pasta `/ (root)`.
 
-Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#educacao/has-nutricao`, `#calc/framingham`.
+Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#educacao/has-nutricao`, `#calc/framingham`.
 
 ## Estrutura
 

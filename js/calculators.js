@@ -161,7 +161,7 @@
     id: 'pa_class',
     name: 'Classificação da Pressão Arterial',
     short: 'Classifica a PA de consultório em adultos.',
-    tabs: ['clinica'],
+    tabs: ['clinica', 'geriatria'],
     category: 'Cardiovascular',
     keywords: 'pressão arterial hipertensão classificação estágio pa has',
     fields: [
@@ -204,7 +204,7 @@
     id: 'cha2ds2vasc',
     name: 'CHA₂DS₂-VASc',
     short: 'Risco de AVC na fibrilação atrial não valvar.',
-    tabs: ['clinica'],
+    tabs: ['clinica', 'geriatria'],
     category: 'Cardiovascular',
     keywords: 'fibrilação atrial fa avc anticoagulação cha2ds2vasc chads',
     fields: [
@@ -241,7 +241,7 @@
     id: 'hasbled',
     name: 'HAS-BLED',
     short: 'Risco de sangramento maior em anticoagulados.',
-    tabs: ['clinica'],
+    tabs: ['clinica', 'geriatria'],
     category: 'Cardiovascular',
     keywords: 'sangramento anticoagulação hasbled varfarina fibrilação',
     fields: [
@@ -306,7 +306,7 @@
     id: 'imc',
     name: 'IMC e circunferência abdominal',
     short: 'Índice de massa corporal e risco metabólico.',
-    tabs: ['clinica', 'gineco'],
+    tabs: ['clinica', 'gineco', 'geriatria'],
     category: 'Metabólico',
     keywords: 'imc obesidade peso altura sobrepeso cintura circunferência abdominal',
     fields: [
@@ -402,7 +402,7 @@
     id: 'ckdepi',
     name: 'TFG — CKD-EPI 2021',
     short: 'Taxa de filtração glomerular estimada (sem coeficiente racial).',
-    tabs: ['clinica', 'cirurgia'],
+    tabs: ['clinica', 'cirurgia', 'geriatria'],
     category: 'Renal',
     keywords: 'tfg ckd epi creatinina rim função renal drc clearance',
     fields: [
@@ -437,7 +437,7 @@
     id: 'cockcroft',
     name: 'Clearance de creatinina (Cockcroft-Gault)',
     short: 'Útil para ajuste de dose de medicamentos.',
-    tabs: ['clinica', 'cirurgia'],
+    tabs: ['clinica', 'cirurgia', 'geriatria'],
     category: 'Renal',
     keywords: 'cockcroft gault clearance creatinina ajuste dose medicamento',
     fields: [
@@ -461,7 +461,7 @@
     id: 'ost',
     name: 'OST — Osteoporosis Self-Assessment Tool',
     short: 'Triagem rápida de risco de osteoporose (peso e idade).',
-    tabs: ['clinica', 'gineco'],
+    tabs: ['clinica', 'gineco', 'geriatria'],
     category: 'Osso e fraturas',
     keywords: 'osteoporose fratura densitometria ost menopausa osso',
     fields: [
@@ -513,7 +513,7 @@
     id: 'frax_fatores',
     name: 'Fatores de risco de fratura (FRAX)',
     short: 'Checklist dos fatores clínicos do FRAX + acesso à ferramenta oficial.',
-    tabs: ['clinica', 'gineco'],
+    tabs: ['clinica', 'gineco', 'geriatria'],
     category: 'Osso e fraturas',
     keywords: 'frax fratura osteoporose quadril risco fratura corticoide',
     fields: [
@@ -664,7 +664,7 @@
     id: 'padua',
     name: 'Escore de Pádua',
     short: 'Risco de TEV em pacientes clínicos internados.',
-    tabs: ['clinica'],
+    tabs: ['clinica', 'geriatria'],
     category: 'Tromboembolismo',
     keywords: 'padua profilaxia tev internação clínico heparina',
     fields: [
@@ -876,7 +876,7 @@
     id: 'stopbang',
     name: 'STOP-BANG',
     short: 'Rastreio de apneia obstrutiva do sono no pré-operatório.',
-    tabs: ['cirurgia', 'clinica'],
+    tabs: ['cirurgia', 'clinica', 'geriatria'],
     category: 'Avaliação pré-operatória',
     keywords: 'apneia sono stop bang ronco via aérea anestesia',
     fields: [
@@ -1299,6 +1299,477 @@
       };
     },
     ref: 'Wilcox AJ et al. N Engl J Med 1995.',
+  });
+
+  /* ============================== GERIATRIA ============================== */
+
+  // Pergunta Sim/Não pontuada (o valor de cada opção é a sua pontuação)
+  const ynq = (id, label, yesPts, noPts) => ({
+    id, label, type: 'select', scored: true,
+    options: [{ v: String(yesPts), t: 'Sim' }, { v: String(noPts), t: 'Não' }],
+  });
+
+  C.push({
+    id: 'ivcf20',
+    name: 'IVCF-20',
+    short: 'Índice de Vulnerabilidade Clínico-Funcional: rastreio de fragilidade na atenção primária.',
+    tabs: ['geriatria'],
+    category: 'Avaliação geriátrica ampla',
+    keywords: 'ivcf ivcf-20 vulnerabilidade fragilidade idoso geriatria rastreio atenção primária',
+    fields: [
+      { id: 'age', label: 'Idade', type: 'select', scored: true, options: [
+        { v: '0', t: '60–74 anos' }, { v: '1', t: '75–84 anos' }, { v: '3', t: '≥ 85 anos' }] },
+      { id: 'self', label: 'Autopercepção de saúde, comparada a outras pessoas da mesma idade', type: 'select', scored: true, options: [
+        { v: '0', t: 'Excelente, muito boa ou boa' }, { v: '1', t: 'Regular ou ruim' }] },
+      { id: 'aivd1', label: 'Deixou de fazer compras por causa da saúde ou condição física', type: 'check', points: 4 },
+      { id: 'aivd2', label: 'Deixou de controlar o dinheiro, gastos ou contas', type: 'check', points: 4 },
+      { id: 'aivd3', label: 'Deixou de fazer pequenos trabalhos domésticos', type: 'check', points: 4 },
+      { id: 'abvd', label: 'Deixou de tomar banho sozinho', type: 'check', points: 6 },
+      { id: 'cog1', label: 'Familiar ou amigo relata esquecimento', type: 'check', points: 1 },
+      { id: 'cog2', label: 'Esquecimento piorou nos últimos meses', type: 'check', points: 1 },
+      { id: 'cog3', label: 'Esquecimento impede alguma atividade do cotidiano', type: 'check', points: 2 },
+      { id: 'hum1', label: 'Desânimo, tristeza ou desesperança no último mês', type: 'check', points: 2 },
+      { id: 'hum2', label: 'Perda de interesse ou prazer em atividades no último mês', type: 'check', points: 2 },
+      { id: 'mob1', label: 'Incapaz de elevar os braços acima do nível do ombro', type: 'check', points: 1 },
+      { id: 'mob2', label: 'Incapaz de manusear ou segurar pequenos objetos', type: 'check', points: 1 },
+      { id: 'cap', label: 'Perda de peso não intencional, IMC < 22, panturrilha < 31 cm ou marcha de 4 m > 5 s', type: 'check', points: 2 },
+      { id: 'mar1', label: 'Dificuldade para caminhar que impede alguma atividade', type: 'check', points: 2 },
+      { id: 'mar2', label: 'Duas ou mais quedas no último ano', type: 'check', points: 2 },
+      { id: 'cont', label: 'Perde urina ou fezes sem querer', type: 'check', points: 2 },
+      { id: 'vis', label: 'Problema de visão que impede alguma atividade', type: 'check', points: 2 },
+      { id: 'aud', label: 'Problema de audição que impede alguma atividade', type: 'check', points: 2 },
+      { id: 'com', label: '≥ 5 doenças crônicas, ≥ 5 medicamentos/dia ou internação nos últimos 6 meses', type: 'check', points: 4 },
+    ],
+    compute(v) {
+      // As três AIVD somam no máximo 4 pontos
+      const aivd = v.aivd1 || v.aivd2 || v.aivd3 ? 4 : 0;
+      const s = sumPoints(this, v) - (v.aivd1 ? 4 : 0) - (v.aivd2 ? 4 : 0) - (v.aivd3 ? 4 : 0) + aivd;
+      let sub, level;
+      if (s <= 6) { sub = 'Idoso robusto — baixa vulnerabilidade'; level = 'low'; }
+      else if (s <= 14) { sub = 'Risco de fragilização — vulnerabilidade moderada'; level = 'mod'; }
+      else { sub = 'Idoso frágil — alta vulnerabilidade'; level = 'high'; }
+      return {
+        main: s + ' / 40', sub, level,
+        details: 'As três perguntas de AIVD somam no máximo 4 pontos. Escore ≥ 7 indica avaliação geriátrica ampla; ' +
+          '≥ 15 sugere acompanhamento por equipe especializada em geriatria.',
+      };
+    },
+    ref: 'Moraes EN et al. Rev Saúde Pública 2016 — IVCF-20.',
+  });
+
+  C.push({
+    id: 'cfs',
+    name: 'Escala Clínica de Fragilidade (CFS)',
+    short: 'Classificação de Rockwood, de 1 (muito em forma) a 9 (doente terminal).',
+    tabs: ['geriatria', 'clinica'],
+    category: 'Fragilidade e sarcopenia',
+    keywords: 'cfs rockwood fragilidade clinical frailty scale idoso geriatria',
+    fields: [
+      { id: 'cfs', label: 'Situação nas 2 semanas antes da doença atual', type: 'select', options: [
+        { v: '1', t: '1 — Muito em forma: robusto, ativo, se exercita regularmente' },
+        { v: '2', t: '2 — Em forma: sem doença ativa, mas menos em forma que o nível 1' },
+        { v: '3', t: '3 — Bem: problemas de saúde bem controlados, não se exercita além de caminhar' },
+        { v: '4', t: '4 — Vivendo com doença muito leve: sintomas limitam atividades, “mais lento”' },
+        { v: '5', t: '5 — Fragilidade leve: precisa de ajuda em AIVD (finanças, transporte, casa)' },
+        { v: '6', t: '6 — Fragilidade moderada: ajuda em todas as AIVD e no banho' },
+        { v: '7', t: '7 — Fragilidade grave: totalmente dependente para cuidados pessoais' },
+        { v: '8', t: '8 — Fragilidade muito grave: dependente, aproximando-se do fim da vida' },
+        { v: '9', t: '9 — Doente terminal: expectativa de vida < 6 meses' },
+      ] },
+    ],
+    compute(v) {
+      const n = +v.cfs;
+      const [sub, level] = n <= 3 ? ['Não frágil', 'low'] : n === 4 ? ['Vulnerável (pré-fragilidade)', 'mod'] : ['Frágil', 'high'];
+      return {
+        main: 'CFS ' + n, sub, level,
+        details: 'Classifique pelo estado basal (cerca de 2 semanas antes do quadro agudo). A CFS foi validada para ≥ 65 anos; ' +
+          'não use isoladamente em jovens ou em deficiência estável.',
+        warn: n >= 7 ? 'CFS ≥ 7: discuta prognóstico, metas de cuidado e diretivas antecipadas antes de intervenções invasivas.' : undefined,
+      };
+    },
+    ref: 'Rockwood K et al. CMAJ 2005; Clinical Frailty Scale v2.0 (2020).',
+  });
+
+  C.push({
+    id: 'frail',
+    name: 'Escala FRAIL',
+    short: 'Rastreio rápido de fragilidade em 5 perguntas.',
+    tabs: ['geriatria'],
+    category: 'Fragilidade e sarcopenia',
+    keywords: 'frail fragilidade fadiga idoso geriatria',
+    fields: [
+      { id: 'f', label: 'Fadiga: sente-se cansado a maior parte ou todo o tempo', type: 'check', points: 1 },
+      { id: 'r', label: 'Resistência: tem dificuldade para subir um lance de escadas', type: 'check', points: 1 },
+      { id: 'a', label: 'Deambulação: tem dificuldade para andar um quarteirão (~100 m)', type: 'check', points: 1 },
+      { id: 'i', label: 'Doenças: tem 5 ou mais doenças crônicas', type: 'check', points: 1 },
+      { id: 'l', label: 'Perda de peso > 5% no último ano', type: 'check', points: 1 },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      const [sub, level] = s === 0 ? ['Robusto', 'low'] : s <= 2 ? ['Pré-frágil', 'mod'] : ['Frágil', 'high'];
+      return { main: s + ' / 5', sub, level, details: 'Pré-frágil ou frágil: avaliação geriátrica ampla, revisão de medicamentos, exercício resistido e avaliação nutricional.' };
+    },
+    ref: 'Morley JE et al. J Nutr Health Aging 2012.',
+  });
+
+  C.push({
+    id: 'sarcf',
+    name: 'SARC-F',
+    short: 'Rastreio de sarcopenia.',
+    tabs: ['geriatria'],
+    category: 'Fragilidade e sarcopenia',
+    keywords: 'sarcopenia sarc-f força muscular idoso geriatria',
+    fields: [
+      { id: 's', label: 'Dificuldade para levantar e carregar 4,5 kg', type: 'select', scored: true, options: [
+        { v: '0', t: 'Nenhuma' }, { v: '1', t: 'Alguma' }, { v: '2', t: 'Muita ou não consegue' }] },
+      { id: 'a', label: 'Dificuldade para atravessar um cômodo andando', type: 'select', scored: true, options: [
+        { v: '0', t: 'Nenhuma' }, { v: '1', t: 'Alguma' }, { v: '2', t: 'Muita, usa apoio ou não consegue' }] },
+      { id: 'r', label: 'Dificuldade para levantar de uma cama ou cadeira', type: 'select', scored: true, options: [
+        { v: '0', t: 'Nenhuma' }, { v: '1', t: 'Alguma' }, { v: '2', t: 'Muita ou não consegue sem ajuda' }] },
+      { id: 'c', label: 'Dificuldade para subir 10 degraus', type: 'select', scored: true, options: [
+        { v: '0', t: 'Nenhuma' }, { v: '1', t: 'Alguma' }, { v: '2', t: 'Muita ou não consegue' }] },
+      { id: 'f', label: 'Quedas no último ano', type: 'select', scored: true, options: [
+        { v: '0', t: 'Nenhuma' }, { v: '1', t: '1 a 3 quedas' }, { v: '2', t: '4 ou mais quedas' }] },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      const pos = s >= 4;
+      return {
+        main: s + ' / 10', sub: pos ? 'Sugestivo de sarcopenia' : 'Rastreio negativo',
+        level: pos ? 'high' : 'low',
+        details: pos ? 'Confirme com força de preensão (< 27 kg H / < 16 kg M) ou teste de sentar-levantar 5× (> 15 s) e, se possível, massa muscular (EWGSOP2).' :
+          'Rastreio negativo; repita anualmente ou se houver queda de desempenho.',
+      };
+    },
+    ref: 'Malmstrom TK, Morley JE. JAMDA 2013; Cruz-Jentoft AJ et al. Age Ageing 2019 (EWGSOP2).',
+  });
+
+  C.push({
+    id: 'marcha',
+    name: 'Velocidade de marcha (4 m)',
+    short: 'Desempenho físico: risco de quedas, sarcopenia grave e mortalidade.',
+    tabs: ['geriatria'],
+    category: 'Fragilidade e sarcopenia',
+    keywords: 'velocidade de marcha caminhada desempenho físico sarcopenia queda idoso',
+    fields: [
+      { id: 'd', label: 'Distância percorrida', type: 'number', unit: 'm', min: 2, max: 20, step: 0.1 },
+      { id: 't', label: 'Tempo', type: 'number', unit: 's', min: 0.5, max: 120, step: 0.1 },
+    ],
+    compute(v) {
+      const s = v.d / v.t;
+      let sub, level;
+      if (s < 0.8) { sub = 'Lenta (< 0,8 m/s) — baixo desempenho físico'; level = 'high'; }
+      else if (s < 1.0) { sub = 'Intermediária (0,8–1,0 m/s)'; level = 'mod'; }
+      else { sub = 'Normal (≥ 1,0 m/s)'; level = 'low'; }
+      return {
+        main: fmt(s, 2) + ' m/s', sub, level,
+        details: 'Use marcha habitual, com 1–2 m de aceleração antes do trecho cronometrado. Velocidade < 0,8 m/s indica sarcopenia grave ' +
+          '(se massa e força baixas) e maior risco de quedas, hospitalização e morte.',
+      };
+    },
+    ref: 'Cruz-Jentoft AJ et al. Age Ageing 2019 (EWGSOP2); Studenski S et al. JAMA 2011.',
+  });
+
+  C.push({
+    id: 'tug',
+    name: 'Timed Up and Go (TUG)',
+    short: 'Mobilidade e risco de quedas.',
+    tabs: ['geriatria'],
+    category: 'Quedas e mobilidade',
+    keywords: 'tug timed up and go queda mobilidade equilíbrio idoso',
+    fields: [
+      { id: 't', label: 'Tempo para levantar, andar 3 m, voltar e sentar', type: 'number', unit: 's', min: 3, max: 300, step: 0.1 },
+    ],
+    compute(v) {
+      let sub, level;
+      if (v.t < 12) { sub = 'Mobilidade preservada'; level = 'low'; }
+      else if (v.t <= 20) { sub = 'Risco aumentado de quedas (≥ 12 s)'; level = 'mod'; }
+      else { sub = 'Mobilidade muito reduzida (> 20 s) — alto risco de quedas'; level = 'high'; }
+      return {
+        main: fmt(v.t) + ' s', sub, level,
+        details: 'Use o calçado e o dispositivo de marcha habituais. TUG ≥ 12 s pede avaliação multifatorial de quedas ' +
+          '(medicamentos, visão, hipotensão postural, pés e calçados, ambiente doméstico).',
+      };
+    },
+    ref: 'Podsiadlo D, Richardson S. J Am Geriatr Soc 1991; CDC STEADI.',
+  });
+
+  C.push({
+    id: 'morse',
+    name: 'Escala de Morse',
+    short: 'Risco de queda em pacientes internados.',
+    tabs: ['geriatria', 'clinica', 'cirurgia'],
+    category: 'Quedas e mobilidade',
+    keywords: 'morse queda internação enfermagem segurança do paciente idoso',
+    fields: [
+      { id: 'h', label: 'Histórico de queda (internação atual ou últimos 3 meses)', type: 'select', scored: true, options: [
+        { v: '0', t: 'Não' }, { v: '25', t: 'Sim' }] },
+      { id: 'd', label: 'Mais de um diagnóstico', type: 'select', scored: true, options: [
+        { v: '0', t: 'Não' }, { v: '15', t: 'Sim' }] },
+      { id: 'a', label: 'Auxílio na deambulação', type: 'select', scored: true, options: [
+        { v: '0', t: 'Nenhum, acamado ou auxiliado pela enfermagem' }, { v: '15', t: 'Muletas, bengala ou andador' }, { v: '30', t: 'Apoia-se nos móveis' }] },
+      { id: 'iv', label: 'Terapia endovenosa / dispositivo venoso salinizado', type: 'select', scored: true, options: [
+        { v: '0', t: 'Não' }, { v: '20', t: 'Sim' }] },
+      { id: 'g', label: 'Marcha', type: 'select', scored: true, options: [
+        { v: '0', t: 'Normal, acamado ou cadeira de rodas' }, { v: '10', t: 'Fraca' }, { v: '20', t: 'Comprometida / cambaleante' }] },
+      { id: 'm', label: 'Estado mental', type: 'select', scored: true, options: [
+        { v: '0', t: 'Orientado sobre a própria capacidade' }, { v: '15', t: 'Superestima a capacidade / esquece limitações' }] },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      const [sub, level] = s < 25 ? ['Baixo risco de queda', 'low'] : s < 45 ? ['Risco moderado de queda', 'mod'] : ['Alto risco de queda', 'high'];
+      return { main: s + ' pontos', sub, level, details: 'Risco moderado/alto: sinalização, cama baixa com grades conforme protocolo, calçado adequado, acompanhante e revisão de sedativos.' };
+    },
+    ref: 'Morse JM et al. Can J Aging 1989; Urbanetto JS et al. Rev Gaúcha Enferm 2013 (versão brasileira).',
+  });
+
+  C.push({
+    id: 'braden',
+    name: 'Escala de Braden',
+    short: 'Risco de lesão por pressão.',
+    tabs: ['geriatria', 'clinica', 'cirurgia'],
+    category: 'Cuidados e funcionalidade',
+    keywords: 'braden lesão por pressão úlcera escara enfermagem acamado idoso',
+    fields: [
+      { id: 'se', label: 'Percepção sensorial', type: 'select', scored: true, options: [
+        { v: '1', t: '1 — Totalmente limitada' }, { v: '2', t: '2 — Muito limitada' }, { v: '3', t: '3 — Levemente limitada' }, { v: '4', t: '4 — Nenhuma limitação' }] },
+      { id: 'mo', label: 'Umidade', type: 'select', scored: true, options: [
+        { v: '1', t: '1 — Constantemente úmida' }, { v: '2', t: '2 — Muito úmida' }, { v: '3', t: '3 — Ocasionalmente úmida' }, { v: '4', t: '4 — Raramente úmida' }] },
+      { id: 'ac', label: 'Atividade', type: 'select', scored: true, options: [
+        { v: '1', t: '1 — Acamado' }, { v: '2', t: '2 — Confinado à cadeira' }, { v: '3', t: '3 — Anda ocasionalmente' }, { v: '4', t: '4 — Anda frequentemente' }] },
+      { id: 'mb', label: 'Mobilidade', type: 'select', scored: true, options: [
+        { v: '1', t: '1 — Totalmente imóvel' }, { v: '2', t: '2 — Bastante limitada' }, { v: '3', t: '3 — Levemente limitada' }, { v: '4', t: '4 — Sem limitação' }] },
+      { id: 'nu', label: 'Nutrição', type: 'select', scored: true, options: [
+        { v: '1', t: '1 — Muito pobre' }, { v: '2', t: '2 — Provavelmente inadequada' }, { v: '3', t: '3 — Adequada' }, { v: '4', t: '4 — Excelente' }] },
+      { id: 'fr', label: 'Fricção e cisalhamento', type: 'select', scored: true, options: [
+        { v: '1', t: '1 — Problema' }, { v: '2', t: '2 — Problema potencial' }, { v: '3', t: '3 — Nenhum problema aparente' }] },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      let sub, level;
+      if (s <= 9) { sub = 'Risco muito alto'; level = 'high'; }
+      else if (s <= 12) { sub = 'Risco alto'; level = 'high'; }
+      else if (s <= 14) { sub = 'Risco moderado'; level = 'mod'; }
+      else if (s <= 18) { sub = 'Risco leve'; level = 'mod'; }
+      else { sub = 'Sem risco'; level = 'low'; }
+      return {
+        main: s + ' / 23', sub, level,
+        details: 'Escore ≤ 18 indica medidas preventivas: mudança de decúbito programada, superfície de redistribuição de pressão, ' +
+          'cuidado com a pele e umidade, e otimização nutricional.',
+      };
+    },
+    ref: 'Bergstrom N et al. Nurs Res 1987; Paranhos WY, Santos VL. Rev Esc Enferm USP 1999 (versão brasileira).',
+  });
+
+  C.push({
+    id: 'katz',
+    name: 'Índice de Katz (ABVD)',
+    short: 'Independência nas atividades básicas de vida diária.',
+    tabs: ['geriatria'],
+    category: 'Cuidados e funcionalidade',
+    keywords: 'katz abvd atividades básicas vida diária funcionalidade dependência idoso',
+    fields: [
+      { id: 'b', label: 'Banho: independente (ajuda só para uma parte do corpo)', type: 'check', points: 1 },
+      { id: 'v', label: 'Vestir-se: pega as roupas e se veste sem ajuda (exceto amarrar sapatos)', type: 'check', points: 1 },
+      { id: 'h', label: 'Higiene pessoal: vai ao banheiro, se limpa e se arruma sem ajuda', type: 'check', points: 1 },
+      { id: 't', label: 'Transferência: deita/levanta da cama e da cadeira sem ajuda', type: 'check', points: 1 },
+      { id: 'c', label: 'Continência: controle completo de urina e fezes', type: 'check', points: 1 },
+      { id: 'a', label: 'Alimentação: leva a comida do prato à boca sem ajuda', type: 'check', points: 1 },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      const [sub, level] = s === 6 ? ['Independente nas ABVD', 'low'] : s >= 3 ? ['Dependência parcial', 'mod'] : ['Dependência importante', 'high'];
+      return {
+        main: s + ' / 6 independentes', sub, level,
+        details: 'Marque apenas as atividades realizadas sem ajuda de outra pessoa. A perda costuma seguir a ordem banho → vestir → higiene → transferência → continência → alimentação.',
+      };
+    },
+    ref: 'Katz S et al. JAMA 1963; Lino VTS et al. Cad Saúde Pública 2008 (adaptação brasileira).',
+  });
+
+  C.push({
+    id: 'lawton',
+    name: 'Escala de Lawton-Brody (AIVD)',
+    short: 'Independência nas atividades instrumentais de vida diária.',
+    tabs: ['geriatria'],
+    category: 'Cuidados e funcionalidade',
+    keywords: 'lawton aivd atividades instrumentais vida diária funcionalidade idoso',
+    fields: ['Usar o telefone', 'Ir a lugares distantes (transporte)', 'Fazer compras', 'Preparar refeições',
+      'Arrumar a casa', 'Tomar os remédios na dose e horário certos', 'Cuidar das finanças'].map((t, i) => ({
+      id: 'l' + i, label: t, type: 'select', scored: true, options: [
+        { v: '3', t: 'Sem ajuda' }, { v: '2', t: 'Com ajuda parcial' }, { v: '1', t: 'Não consegue' }] })),
+    compute(v) {
+      const s = sumPoints(this, v);
+      const [sub, level] = s === 21 ? ['Independente nas AIVD', 'low'] : s > 7 ? ['Dependência parcial', 'mod'] : ['Dependência total', 'high'];
+      return {
+        main: s + ' / 21', sub, level,
+        details: 'As AIVD são as primeiras a se perder no declínio cognitivo e na fragilidade. Considere fatores culturais e de gênero ' +
+          '(atividades que a pessoa nunca fez) ao interpretar.',
+      };
+    },
+    ref: 'Lawton MP, Brody EM. Gerontologist 1969; Santos RL, Virtuoso JS. RBPS 2008 (versão brasileira).',
+  });
+
+  C.push({
+    id: 'meem',
+    name: 'Miniexame do Estado Mental (MEEM)',
+    short: 'Rastreio cognitivo com nota de corte por escolaridade.',
+    tabs: ['geriatria'],
+    category: 'Cognição, humor e delirium',
+    keywords: 'meem mini mental mmse cognição demência memória escolaridade idoso',
+    fields: [
+      { id: 's', label: 'Pontuação total do MEEM', type: 'number', unit: 'pontos', min: 0, max: 30 },
+      { id: 'e', label: 'Escolaridade', type: 'select', options: [
+        { v: '19', t: 'Analfabeto' }, { v: '23', t: '1 a 3 anos' }, { v: '24', t: '4 a 7 anos' }, { v: '28', t: '8 anos ou mais' }] },
+    ],
+    compute(v) {
+      const cut = +v.e;
+      const below = v.s < cut;
+      return {
+        main: v.s + ' / 30',
+        sub: below ? 'Abaixo do ponto de corte para a escolaridade' : 'Dentro do esperado para a escolaridade',
+        level: below ? 'high' : 'low',
+        details: `Ponto de corte para esta escolaridade: ${cut} pontos (Ministério da Saúde). ` +
+          'O MEEM é rastreio, não diagnóstico: resultado alterado pede avaliação cognitiva ampla e exclusão de causas reversíveis ' +
+          '(delirium, depressão, déficit sensorial, B12, TSH, medicamentos).',
+      };
+    },
+    ref: 'Folstein MF et al. 1975; Brucki SMD et al. Arq Neuropsiquiatr 2003; Ministério da Saúde — Caderno de Atenção Básica nº 19 (2006).',
+  });
+
+  C.push({
+    id: 'minicog',
+    name: 'Mini-Cog',
+    short: 'Rastreio cognitivo rápido: 3 palavras + desenho do relógio.',
+    tabs: ['geriatria'],
+    category: 'Cognição, humor e delirium',
+    keywords: 'mini-cog minicog relógio memória cognição demência rastreio idoso',
+    fields: [
+      { id: 'w', label: 'Palavras lembradas sem pista', type: 'select', scored: true, options: [
+        { v: '0', t: '0 palavras' }, { v: '1', t: '1 palavra' }, { v: '2', t: '2 palavras' }, { v: '3', t: '3 palavras' }] },
+      { id: 'c', label: 'Desenho do relógio (números e ponteiros marcando 11h10)', type: 'select', scored: true, options: [
+        { v: '2', t: 'Normal' }, { v: '0', t: 'Alterado ou recusou' }] },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      const pos = s < 3;
+      return {
+        main: s + ' / 5', sub: pos ? 'Rastreio positivo para comprometimento cognitivo' : 'Rastreio negativo',
+        level: pos ? 'high' : 'low',
+        details: 'Escore < 3 sugere avaliação cognitiva mais detalhada. Pouco influenciado pela escolaridade, mas não substitui avaliação completa.',
+      };
+    },
+    ref: 'Borson S et al. Int J Geriatr Psychiatry 2000.',
+  });
+
+  C.push({
+    id: 'gds15',
+    name: 'Escala de Depressão Geriátrica (GDS-15)',
+    short: 'Rastreio de depressão em idosos — 15 perguntas sobre a última semana.',
+    tabs: ['geriatria'],
+    category: 'Cognição, humor e delirium',
+    keywords: 'gds depressão geriátrica yesavage humor tristeza idoso',
+    fields: [
+      ['Está satisfeito(a) com sua vida?', 0],
+      ['Interrompeu muitas de suas atividades?', 1],
+      ['Acha sua vida vazia?', 1],
+      ['Aborrece-se com frequência?', 1],
+      ['Sente-se de bem com a vida na maior parte do tempo?', 0],
+      ['Teme que algo ruim lhe aconteça?', 1],
+      ['Sente-se alegre a maior parte do tempo?', 0],
+      ['Sente-se desamparado(a) com frequência?', 1],
+      ['Prefere ficar em casa a sair e fazer coisas novas?', 1],
+      ['Acha que tem mais problemas de memória que a maioria?', 1],
+      ['Acha que é maravilhoso estar vivo(a) agora?', 0],
+      ['Vale a pena viver como vive agora?', 0],
+      ['Sente-se cheio(a) de energia?', 0],
+      ['Acha que sua situação não tem saída?', 1],
+      ['Acha que a maioria das pessoas está melhor que você?', 1],
+    ].map(([t, yesScores], i) => ynq('q' + (i + 1), `${i + 1}. ${t}`, yesScores, 1 - yesScores)),
+    compute(v) {
+      const s = sumPoints(this, v);
+      let sub, level;
+      if (s <= 4) { sub = 'Sem sintomas depressivos significativos'; level = 'low'; }
+      else if (s <= 10) { sub = 'Sugestivo de depressão leve a moderada'; level = 'mod'; }
+      else { sub = 'Sugestivo de depressão grave'; level = 'high'; }
+      return {
+        main: s + ' / 15', sub, level,
+        details: 'Ponto de corte ≥ 5 (Almeida & Almeida, 1999). Confirme o diagnóstico em entrevista clínica. ' +
+          'Menos confiável em demência moderada a grave.',
+        warn: s >= 5 ? 'Pergunte ativamente sobre ideação suicida. Se presente, avalie risco e encaminhe com urgência (CVV: 188).' : undefined,
+      };
+    },
+    ref: 'Yesavage JA et al. 1983; Almeida OP, Almeida SA. Arq Neuropsiquiatr 1999 (GDS-15 brasileira).',
+  });
+
+  C.push({
+    id: '4at',
+    name: '4AT — Rastreio de delirium',
+    short: 'Rastreio rápido de delirium e comprometimento cognitivo (< 2 min).',
+    tabs: ['geriatria', 'clinica', 'cirurgia'],
+    category: 'Cognição, humor e delirium',
+    keywords: '4at delirium confusão mental agudo internação pós-operatório idoso',
+    fields: [
+      { id: 'al', label: '1. Alerta', type: 'select', scored: true, options: [
+        { v: '0', t: 'Normal (inclui sonolência leve < 10 s após acordar)' }, { v: '4', t: 'Claramente alterado' }] },
+      { id: 'amt', label: '2. AMT4 (idade, data de nascimento, local, ano atual)', type: 'select', scored: true, options: [
+        { v: '0', t: 'Nenhum erro' }, { v: '1', t: '1 erro' }, { v: '2', t: '2 ou mais erros / não testável' }] },
+      { id: 'at', label: '3. Atenção: meses do ano em ordem inversa', type: 'select', scored: true, options: [
+        { v: '0', t: '7 meses ou mais corretos' }, { v: '1', t: 'Começa, mas < 7 meses / recusa' }, { v: '2', t: 'Não testável (sonolento, desatento)' }] },
+      { id: 'ac', label: '4. Mudança aguda ou curso flutuante (últimas 2 semanas, ainda presente nas últimas 24 h)', type: 'select', scored: true, options: [
+        { v: '0', t: 'Não' }, { v: '4', t: 'Sim' }] },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      let sub, level;
+      if (s >= 4) { sub = 'Possível delirium ± comprometimento cognitivo'; level = 'high'; }
+      else if (s >= 1) { sub = 'Possível comprometimento cognitivo'; level = 'mod'; }
+      else { sub = 'Delirium ou comprometimento cognitivo grave improváveis'; level = 'low'; }
+      return {
+        main: s + ' / 12', sub, level,
+        details: 'Escore 0 não exclui delirium se a mudança ocorreu antes ou se os sintomas flutuam: reavalie.',
+        warn: s >= 4 ? 'Delirium é emergência médica: investigue causa (infecção, medicamentos, distúrbio hidroeletrolítico, retenção urinária, dor, hipóxia) ' +
+          'e prefira medidas não farmacológicas; evite benzodiazepínicos.' : undefined,
+      };
+    },
+    ref: 'Bellelli G et al. Age Ageing 2014; www.the4at.com.',
+  });
+
+  C.push({
+    id: 'mnasf',
+    name: 'Miniavaliação Nutricional (MNA-SF)',
+    short: 'Triagem de desnutrição em idosos.',
+    tabs: ['geriatria'],
+    category: 'Cuidados e funcionalidade',
+    keywords: 'mna mna-sf nutrição desnutrição peso apetite panturrilha idoso',
+    fields: [
+      { id: 'a', label: 'A. Ingesta alimentar diminuiu nos últimos 3 meses?', type: 'select', scored: true, options: [
+        { v: '0', t: 'Diminuição grave' }, { v: '1', t: 'Diminuição moderada' }, { v: '2', t: 'Sem diminuição' }] },
+      { id: 'b', label: 'B. Perda de peso nos últimos 3 meses', type: 'select', scored: true, options: [
+        { v: '0', t: 'Mais de 3 kg' }, { v: '1', t: 'Não sabe informar' }, { v: '2', t: 'Entre 1 e 3 kg' }, { v: '3', t: 'Sem perda de peso' }] },
+      { id: 'c', label: 'C. Mobilidade', type: 'select', scored: true, options: [
+        { v: '0', t: 'Restrito ao leito ou cadeira' }, { v: '1', t: 'Sai do leito/cadeira, mas não de casa' }, { v: '2', t: 'Sai de casa' }] },
+      { id: 'd', label: 'D. Estresse psicológico ou doença aguda nos últimos 3 meses?', type: 'select', scored: true, options: [
+        { v: '0', t: 'Sim' }, { v: '2', t: 'Não' }] },
+      { id: 'e', label: 'E. Problemas neuropsicológicos', type: 'select', scored: true, options: [
+        { v: '0', t: 'Demência ou depressão grave' }, { v: '1', t: 'Demência leve' }, { v: '2', t: 'Sem problemas' }] },
+      { id: 'f', label: 'F. IMC (ou, se indisponível, circunferência da panturrilha)', type: 'select', scored: true, options: [
+        { v: '0', t: 'IMC < 19 kg/m²' }, { v: '1', t: 'IMC 19 a < 21' }, { v: '2', t: 'IMC 21 a < 23' }, { v: '3', t: 'IMC ≥ 23' },
+        { v: '0.0', t: 'Panturrilha < 31 cm' }, { v: '3.0', t: 'Panturrilha ≥ 31 cm' }] },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      let sub, level;
+      if (s >= 12) { sub = 'Estado nutricional normal'; level = 'low'; }
+      else if (s >= 8) { sub = 'Risco de desnutrição'; level = 'mod'; }
+      else { sub = 'Desnutrido'; level = 'high'; }
+      return {
+        main: s + ' / 14', sub, level,
+        details: 'Risco ou desnutrição: avaliação nutricional completa, investigação de causas (dentição, deglutição, depressão, ' +
+          'medicamentos, isolamento social) e suplementação quando indicada.',
+      };
+    },
+    ref: 'Rubenstein LZ et al. J Gerontol 2001; Kaiser MJ et al. J Nutr Health Aging 2009.',
   });
 
   window.CALCS = C;
