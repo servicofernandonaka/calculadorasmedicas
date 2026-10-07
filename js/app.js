@@ -265,6 +265,7 @@
       lines.push(`- ${f.label}: ${val}${f.unit && f.type === 'number' ? ' ' + f.unit : ''}`);
     }
     lines.push(`Resultado: ${r.main} — ${r.sub}`);
+    if (r.note) lines.push(`Importante: ${r.note}`);
     if (r.warn) lines.push(`Atenção: ${r.warn}`);
     return lines.join('\n');
   }
@@ -319,18 +320,23 @@
         <div class="sub">${esc(r.sub)}</div>
       </div>
       ${r.scale ? scaleHtml(r.scale) : ''}
+      ${r.note ? `<div class="note-box"><strong>Importante</strong><span>${esc(r.note)}</span></div>` : ''}
       ${r.warn ? `<div class="warn"><strong>${ICON('alert')}Atenção — muda a conduta</strong><span>${esc(r.warn)}</span></div>` : ''}
       ${r.details ? `<details${detailsOpen ? ' open' : ''}><summary>Interpretação</summary><p class="det">${esc(r.details)}</p></details>` : ''}
       <div class="actions">
+        ${r.link && r.link.primary ? linkBtn(r.link) : ''}
         <button class="btn btn-ghost" type="button" data-copy>${ICON('copy')}<span>Copiar</span></button>
-        <button class="btn" type="button" data-ask>${ICON('sparkles')}Discutir com a IA</button>
-        ${r.link ? `<a class="btn btn-ghost" href="${esc(r.link.href)}" target="_blank" rel="noopener">${esc(r.link.text)}${ICON('external')}<span class="sr-only"> (abre em nova aba)</span></a>` : ''}
+        <button class="btn${r.link && r.link.primary ? ' btn-ghost' : ''}" type="button" data-ask>${ICON('sparkles')}Discutir com a IA</button>
+        ${r.link && !r.link.primary ? linkBtn(r.link) : ''}
         ${r.edu ? `<button class="btn btn-ghost" type="button" data-edu="${esc(r.edu)}">${ICON('book')}Material para o paciente</button>` : ''}
       </div>`;
     box.hidden = false;
     box.dataset.summary = text;
     syncFoot();
   }
+
+  const linkBtn = (l) => `<a class="btn${l.primary ? '' : ' btn-ghost'}" href="${esc(l.href)}" target="_blank" rel="noopener">` +
+    `${esc(l.text)}${ICON('external')}<span class="sr-only"> (abre em nova aba)</span></a>`;
 
   // Régua de categorias: a posição atual tem marcador e rótulo em negrito (não depende só de cor)
   function scaleHtml(sc) {
@@ -390,6 +396,7 @@
       ${printHead()}
       <h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>
       ${e.html}
+      ${e.sources ? `<p class="sources">Fontes: ${esc(e.sources)}</p>` : ''}
       ${printFoot()}
       <div class="edu-footer">
         ${next ? `<button class="btn" type="button" data-edu="${next.id}">Próximo: ${esc(next.title)}${ICON('arrow')}</button>` : ''}
@@ -418,7 +425,8 @@
   function renderPrintAll() {
     const box = $('#edu-content');
     box.innerHTML = printHead() +
-      EDU.map((e) => `<section class="print-section"><h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>${e.html}</section>`).join('') +
+      EDU.map((e) => `<section class="print-section"><h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>${e.html}` +
+      `${e.sources ? `<p class="sources">Fontes: ${esc(e.sources)}</p>` : ''}</section>`).join('') +
       printFoot();
     box.classList.add('print-all');
   }

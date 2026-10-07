@@ -3,11 +3,12 @@
 Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
 
 - **Calculadoras por especialidade**, separadas em abas:
-  - **Clínica**: Escore de Risco Global (Framingham/SBC), ASCVD (Pooled Cohort), classificação da PA, CHA₂DS₂-VASc, HAS-BLED,
-    LDL (Friedewald), IMC/cintura, FINDRISC, HOMA-IR, TFG CKD-EPI 2021, Cockcroft-Gault, OST, ORAI, fatores de risco de fratura (FRAX),
+  - **Clínica**: PREVENT (escore recomendado pela SBC 2025), Framingham e ASCVD (versões anteriores, para comparação),
+    classificação da PA (Diretriz 2025), CHA₂DS₂-VA, HAS-BLED, LDL (Sampson e Friedewald), IMC/cintura, FINDRISC, HOMA-IR,
+    TFG CKD-EPI 2021, Cockcroft-Gault, OST, ORAI, checklist dos fatores do FRAX,
     CURB-65, qSOFA, Wells TEP/TVP, Pádua, Child-Pugh, MELD-Na.
-  - **Cirúrgica**: Índice de Lee (RCRI), ASA, Caprini, STOP-BANG, Apfel, Alvarado, Glasgow, Parkland, índice de choque (+ TFG, Wells, Child/MELD).
-  - **Ginecologia e obstetrícia**: IG/DPP pela DUM e pela USG, ganho de peso gestacional, risco de pré-eclâmpsia (AAS),
+  - **Cirúrgica**: Índice de Lee (RCRI), ASA, Caprini, STOP-BANG, Apfel, Alvarado, Glasgow, reposição em queimados (ATLS/Parkland), índice de choque (+ TFG, Wells, Child/MELD).
+  - **Ginecologia e obstetrícia**: IG/DPP pela DUM e pela USG, ganho de peso gestacional (curvas brasileiras, MS 2022), risco de pré-eclâmpsia (AAS),
     diabetes gestacional, Bishop, Apgar, peso fetal (Hadlock), período fértil (+ osteoporose, Caprini, Wells).
   - **Geriatria**: IVCF-20, Escala Clínica de Fragilidade (CFS), FRAIL, SARC-F, velocidade de marcha, Timed Up and Go,
     Morse, Braden, Katz (ABVD), Lawton-Brody (AIVD), MEEM, Mini-Cog, GDS-15, 4AT (delirium) e MNA-SF
@@ -46,6 +47,9 @@ js/ai.js            assistente (modo guia + integração com Claude)
 
 Para adicionar uma calculadora, inclua um objeto em `js/calculators.js` com `id`, `name`, `tabs`, `category`, `fields`
 e `compute(v)` — o formulário é gerado automaticamente.
+
+O PREVENT usa os coeficientes do modelo base de 10 anos de Khan et al. (Circulation 2024), extraídos do pacote R
+[`preventr`](https://github.com/martingmayer/preventr) (MIT), e reproduz os valores de referência dos testes desse pacote.
 
 ## Aviso
 

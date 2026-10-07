@@ -46,10 +46,82 @@
 
   /* ============================== CLÍNICA ============================== */
 
+
+  /* PREVENT (AHA 2023) — modelo base, 10 anos. Coeficientes: Khan SS et al. Circulation 2024;149:430-449,
+     extraídos do pacote R preventr (CRAN, MIT) — base_10yr. */
+  const PREVENT_KEYS = ["age", "nonhdl", "hdl", "sbp_lt110", "sbp_ge110", "dm", "smoking", "bmi_lt30", "bmi_ge30", "egfr_lt60", "egfr_ge60", "bptx", "statin", "bptx_sbp", "statin_nonhdl", "age_nonhdl", "age_hdl", "age_sbp", "age_dm", "age_smoking", "age_bmi", "age_egfr", "const"];
+  const PREVENT_B = {"female": {"cvd": [0.793933, 0.030524, -0.160686, -0.2394, 0.360078, 0.86676, 0.536074, 0.0, 0.0, 0.604592, 0.043377, 0.315167, -0.147765, -0.066361, 0.119788, -0.081972, 0.030677, -0.094635, -0.27057, -0.078715, 0.0, -0.163781, -3.307728], "ascvd": [0.719883, 0.117697, -0.151185, -0.083536, 0.359285, 0.834858, 0.483108, 0.0, 0.0, 0.486462, 0.039778, 0.226531, -0.059237, -0.039576, 0.084442, -0.056784, 0.032569, -0.103598, -0.241754, -0.079114, 0.0, -0.167149, -3.819975], "hf": [0.899823, 0.0, 0.0, -0.455977, 0.35765, 1.038346, 0.583916, -0.007229, 0.299771, 0.745164, 0.055709, 0.353444, 0.0, -0.098151, 0.0, 0.0, 0.0, -0.094666, -0.358104, -0.115945, -0.003878, -0.188429, -4.310409]}, "male": {"cvd": [0.768853, 0.073617, -0.095443, -0.434735, 0.336266, 0.769286, 0.438687, 0.0, 0.0, 0.537898, 0.016483, 0.288879, -0.133735, -0.047592, 0.150273, -0.051787, 0.019117, -0.104948, -0.225195, -0.089507, 0.0, -0.15437, -3.031168], "ascvd": [0.709985, 0.165866, -0.114429, -0.283721, 0.323998, 0.71896, 0.395697, 0.0, 0.0, 0.369007, 0.020362, 0.203652, -0.086558, -0.032292, 0.114563, -0.03, 0.023275, -0.092702, -0.201852, -0.097053, 0.0, -0.121708, -3.500655], "hf": [0.897264, 0.0, 0.0, -0.681147, 0.363446, 0.923776, 0.502374, -0.048584, 0.372693, 0.692692, 0.025183, 0.298092, 0.0, -0.049773, 0.0, 0.0, 0.0, -0.12892, -0.304092, -0.140169, 0.006813, -0.179778, -3.946391]}};
+  function preventRisk(v) {
+    const age = (v.age - 55) / 10;
+    const nonhdl = (v.tc - v.hdl) * 0.02586 - 3.5;
+    const hdl = (v.hdl * 0.02586 - 1.3) / 0.3;
+    const sbpLt = (Math.min(v.sbp, 110) - 110) / 20;
+    const sbpGe = (Math.max(v.sbp, 110) - 130) / 20;
+    const bmi = v.w / Math.pow(v.h / 100, 2);
+    const bmiLt = (Math.min(bmi, 30) - 25) / 5;
+    const bmiGe = (Math.max(bmi, 30) - 30) / 5;
+    const egfrLt = (Math.min(v.egfr, 60) - 60) / -15;
+    const egfrGe = (Math.max(v.egfr, 60) - 90) / -15;
+    const dm = +v.dm, sm = +v.smoker, bp = +v.treated, st = +v.statin;
+    const x = {
+      age, nonhdl, hdl, sbp_lt110: sbpLt, sbp_ge110: sbpGe, dm, smoking: sm, bmi_lt30: bmiLt, bmi_ge30: bmiGe,
+      egfr_lt60: egfrLt, egfr_ge60: egfrGe, bptx: bp, statin: st, bptx_sbp: bp * sbpGe, statin_nonhdl: st * nonhdl,
+      age_nonhdl: age * nonhdl, age_hdl: age * hdl, age_sbp: age * sbpGe, age_dm: age * dm, age_smoking: age * sm,
+      age_bmi: age * bmiGe, age_egfr: age * egfrLt, const: 1,
+    };
+    const b = PREVENT_B[v.sex === 'f' ? 'female' : 'male'];
+    const risk = (m) => { const lo = PREVENT_KEYS.reduce((acc, k, i) => acc + b[m][i] * x[k], 0); return Math.exp(lo) / (1 + Math.exp(lo)); };
+    return { cvd: risk('cvd'), ascvd: risk('ascvd'), hf: risk('hf'), bmi };
+  }
+
+  C.push({
+    id: 'prevent',
+    name: 'PREVENT — risco cardiovascular em 10 anos',
+    short: 'Escore recomendado pela SBC (Diretriz de Dislipidemias 2025) para prevenção primária, 30–79 anos.',
+    tabs: ['clinica', 'geriatria'],
+    category: 'Cardiovascular',
+    keywords: 'prevent risco cardiovascular aha sbc 2025 dislipidemia prevenção primária infarto avc insuficiência cardíaca estatina',
+    fields: [
+      { id: 'sex', label: 'Sexo', type: 'select', options: sexOpts },
+      { id: 'age', label: 'Idade', type: 'number', unit: 'anos', min: 30, max: 79 },
+      { id: 'tc', label: 'Colesterol total', type: 'number', unit: 'mg/dL', min: 130, max: 320 },
+      { id: 'hdl', label: 'HDL-colesterol', type: 'number', unit: 'mg/dL', min: 20, max: 100 },
+      { id: 'sbp', label: 'Pressão sistólica', type: 'number', unit: 'mmHg', min: 90, max: 180 },
+      { id: 'egfr', label: 'TFG estimada (CKD-EPI 2021)', type: 'number', unit: 'mL/min/1,73m²', min: 15, max: 140 },
+      { id: 'w', label: 'Peso', type: 'number', unit: 'kg', min: 30, max: 250, step: 0.1 },
+      { id: 'h', label: 'Altura', type: 'number', unit: 'cm', min: 120, max: 220 },
+      { id: 'treated', label: 'Em uso de anti-hipertensivo', type: 'select', options: yn },
+      { id: 'statin', label: 'Em uso de estatina', type: 'select', options: yn },
+      { id: 'dm', label: 'Diabetes', type: 'select', options: yn },
+      { id: 'smoker', label: 'Tabagista atual', type: 'select', options: yn },
+    ],
+    compute(v) {
+      const r = preventRisk(v);
+      const a = r.ascvd;
+      let level, sub;
+      if (a < 0.05) { level = 'low'; sub = 'Baixo risco'; }
+      else if (a < 0.2) { level = 'mod'; sub = 'Risco intermediário'; }
+      else { level = 'high'; sub = 'Alto risco'; }
+      const bmiNote = r.bmi < 18.5 || r.bmi >= 40 ? ` O IMC calculado (${fmt(r.bmi)} kg/m²) está fora da faixa usada no desenvolvimento do modelo (18,5–39,9).` : '';
+      return {
+        main: pct(a) + ' (DCVA)',
+        sub: sub + ' — doença cardiovascular aterosclerótica em 10 anos',
+        level,
+        details: `DCV total (inclui insuficiência cardíaca): ${pct(r.cvd)}. Insuficiência cardíaca: ${pct(r.hf)}. ` +
+          'Categorias pelo risco de DCVA (SBC 2025): baixo < 5%, intermediário 5% a < 20%, alto ≥ 20%; fatores agravantes ' +
+          '(história familiar precoce, Lp(a) elevada, escore de cálcio, entre outros) podem elevar a categoria. Modelo base, ' +
+          'sem HbA1c, albuminúria ou índice social. Equações derivadas de coortes dos EUA; o Brasil ainda não tem escore próprio.' + bmiNote,
+        warn: 'Não use em quem já tem doença aterosclerótica. Diabetes com estratificadores de risco, DRC, LDL ≥ 190 mg/dL ' +
+          'e aterosclerose subclínica significativa já definem alto ou muito alto risco, independentemente do resultado.',
+      };
+    },
+    ref: 'Khan SS et al. Circulation 2024;149:430-449 (PREVENT); Diretriz Brasileira de Dislipidemias e Prevenção da Aterosclerose — 2025 (SBC).',
+  });
+
   C.push({
     id: 'framingham',
-    name: 'Escore de Risco Global (Framingham)',
-    short: 'Risco de evento cardiovascular em 10 anos — recomendado pela SBC.',
+    name: 'Escore de Risco Global (Framingham) — versão anterior',
+    short: 'Risco cardiovascular em 10 anos (SBC 2017). Substituído pelo PREVENT na diretriz SBC 2025.',
     tabs: ['clinica'],
     category: 'Cardiovascular',
     keywords: 'risco cardiovascular framingham erg infarto avc coração colesterol prevenção primária sbc',
@@ -87,7 +159,7 @@
         sub: sub + ' (10 anos)',
         level,
         details:
-          'Corte SBC: baixo < 5%; intermediário 5–' + (v.sex === 'f' ? '10' : '20') +
+          'Para decisões atuais, use o PREVENT (diretriz SBC 2025). Cortes da diretriz anterior (2017): baixo < 5%; intermediário 5–' + (v.sex === 'f' ? '10' : '20') +
           '%; alto > ' + (v.sex === 'f' ? '10' : '20') + '%. ' +
           'História familiar precoce, síndrome metabólica e marcadores (PCR-us, escore de cálcio) podem ' +
           'reclassificar o risco intermediário.',
@@ -96,13 +168,13 @@
           'Nesses casos, trate como alto/muito alto risco independentemente do resultado.',
       };
     },
-    ref: "D'Agostino RB et al. Circulation 2008; Diretriz Brasileira de Dislipidemias e Prevenção da Aterosclerose (SBC).",
+    ref: "D'Agostino RB et al. Circulation 2008; Faludi AA et al. Atualização da Diretriz Brasileira de Dislipidemias e Prevenção da Aterosclerose — 2017. Arq Bras Cardiol 2017.",
   });
 
   C.push({
     id: 'ascvd',
     name: 'ASCVD 10 anos (Pooled Cohort Equations)',
-    short: 'Risco de doença cardiovascular aterosclerótica (ACC/AHA 2013).',
+    short: 'Risco de doença aterosclerótica (ACC/AHA 2013). Substituída pelo PREVENT (AHA 2023; SBC 2025).',
     tabs: ['clinica'],
     category: 'Cardiovascular',
     keywords: 'ascvd pooled cohort acc aha risco cardiovascular estatina',
@@ -149,7 +221,7 @@
       return {
         main: pct(r), sub, level,
         details: 'Equação derivada de coortes norte-americanas; pode superestimar o risco em algumas populações. ' +
-          'No Brasil, a SBC recomenda o Escore de Risco Global (Framingham).',
+          'A AHA substituiu as PCE pelo PREVENT (2023), e a SBC adotou o PREVENT na diretriz de dislipidemias de 2025.',
         warn: 'Não use em quem já tem doença aterosclerótica, LDL ≥ 190 mg/dL ou diabetes (40–75 anos): ' +
           'nesses grupos a estatina está indicada independentemente do risco calculado.',
       };
@@ -193,22 +265,23 @@
         scale: { step: c, labels: ['Normal', 'Pré-HAS', 'Est. 1', 'Est. 2', 'Est. 3'], names: [1, 2, 3, 4, 5].map((k) => labels[k][0]) },
         details:
           'O diagnóstico exige medidas repetidas com técnica adequada e, idealmente, confirmação fora do consultório ' +
-          '(MRPA ou MAPA). Quando sistólica e diastólica caem em categorias diferentes, vale a maior.',
+          '(MRPA ou MAPA). Quando sistólica e diastólica caem em categorias diferentes, vale a maior. Na pré-hipertensão, ' +
+          'a diretriz recomenda MRPA ou MAPA para investigar hipertensão mascarada. Meta de tratamento: < 130/80 mmHg para a maioria.',
         warn: c === 5 ? 'PA ≥ 180/110: pesquise sintomas e lesão aguda de órgão-alvo (dor torácica, déficit neurológico, ' +
           'dispneia, alteração visual). Se presentes, é emergência hipertensiva e requer avaliação imediata.' : undefined,
         edu: 'has-oque',
       };
     },
-    ref: 'Diretrizes Brasileiras de Hipertensão Arterial (SBC/SBH/SBN).',
+    ref: 'Brandão AA et al. Diretriz Brasileira de Hipertensão Arterial — 2025 (SBC/SBH/SBN). Arq Bras Cardiol 2025;122(9). doi:10.36660/abc.20250624.',
   });
 
   C.push({
     id: 'cha2ds2vasc',
-    name: 'CHA₂DS₂-VASc',
-    short: 'Risco de AVC na fibrilação atrial não valvar.',
+    name: 'CHA₂DS₂-VA',
+    short: 'Risco de AVC na fibrilação atrial — versão ESC 2024, sem o critério sexo (antigo CHA₂DS₂-VASc).',
     tabs: ['clinica', 'geriatria'],
     category: 'Cardiovascular',
-    keywords: 'fibrilação atrial fa avc anticoagulação cha2ds2vasc chads',
+    keywords: 'fibrilação atrial fa avc anticoagulação cha2ds2va cha2ds2vasc chads',
     fields: [
       { id: 'chf', label: 'Insuficiência cardíaca / disfunção de VE', type: 'check', points: 1 },
       { id: 'htn', label: 'Hipertensão', type: 'check', points: 1 },
@@ -219,24 +292,22 @@
       { id: 'dm', label: 'Diabetes', type: 'check', points: 1 },
       { id: 'stroke', label: 'AVC / AIT / tromboembolismo prévio', type: 'check', points: 2 },
       { id: 'vasc', label: 'Doença vascular (IAM prévio, DAP, placa aórtica)', type: 'check', points: 1 },
-      { id: 'female', label: 'Sexo feminino', type: 'check', points: 1 },
     ],
     compute(v) {
       const s = sumPoints(this, v);
-      const nonSex = s - (v.female ? 1 : 0);
       let level, sub;
-      if (nonSex === 0) { level = 'low'; sub = 'Baixo risco — anticoagulação geralmente não indicada'; }
-      else if (nonSex === 1) { level = 'mod'; sub = 'Considerar anticoagulação oral'; }
+      if (s === 0) { level = 'low'; sub = 'Baixo risco — anticoagulação geralmente não indicada'; }
+      else if (s === 1) { level = 'mod'; sub = 'Considerar anticoagulação oral (decisão compartilhada)'; }
       else { level = 'high'; sub = 'Anticoagulação oral recomendada (se sem contraindicação)'; }
       return {
         main: s + ' ponto(s)', sub, level,
         warn: 'Não se aplica a FA com estenose mitral moderada/grave ou prótese valvar mecânica: ' +
           'nesses casos a anticoagulação (varfarina) está indicada independentemente do escore.',
-        details: 'O sexo feminino isoladamente é modificador de risco, não indicação. Avalie também o risco de ' +
-          'sangramento (HAS-BLED) — escore alto pede correção de fatores modificáveis, não contraindica por si só.',
+        details: 'A ESC 2024 retirou o sexo do escore: os mesmos cortes valem para homens e mulheres (≥ 2 recomenda, 1 considera). ' +
+          'Avalie também fatores de risco de sangramento modificáveis; risco alto de sangramento não contraindica a anticoagulação por si só.',
       };
     },
-    ref: 'Lip GY et al. Chest 2010; ESC 2020/2024 AF Guidelines.',
+    ref: 'Van Gelder IC et al. 2024 ESC Guidelines for the management of atrial fibrillation. Eur Heart J 2024; Lip GY et al. Chest 2010 (CHA₂DS₂-VASc).',
   });
 
   C.push({
@@ -276,11 +347,11 @@
 
   C.push({
     id: 'ldl',
-    name: 'LDL-colesterol (Friedewald)',
-    short: 'Estima o LDL a partir do perfil lipídico.',
+    name: 'LDL-colesterol (Sampson e Friedewald)',
+    short: 'Estima o LDL a partir do perfil lipídico; Sampson é mais preciso com TG altos ou LDL baixo.',
     tabs: ['clinica'],
     category: 'Metabólico',
-    keywords: 'ldl colesterol friedewald dislipidemia lipidograma',
+    keywords: 'ldl colesterol sampson friedewald martin dislipidemia lipidograma',
     fields: [
       { id: 'tc', label: 'Colesterol total', type: 'number', unit: 'mg/dL', min: 50, max: 600 },
       { id: 'hdl', label: 'HDL-colesterol', type: 'number', unit: 'mg/dL', min: 5, max: 200 },
@@ -288,24 +359,26 @@
     ],
     compute(v) {
       const nonhdl = v.tc - v.hdl;
-      if (v.tg >= 400) {
+      if (v.tg > 800) {
         return {
           main: 'Não-HDL: ' + fmt(nonhdl, 0) + ' mg/dL',
-          sub: 'Friedewald inválido com TG ≥ 400 mg/dL',
+          sub: 'LDL calculado não se aplica com TG > 800 mg/dL',
           level: 'info',
-          details: 'Use LDL direto ou a equação de Martin/Sampson. O colesterol não-HDL permanece válido.',
+          details: 'Use LDL medido diretamente. O colesterol não-HDL continua válido para estratificação e metas.',
         };
       }
-      const ldl = v.tc - v.hdl - v.tg / 5;
+      const ldl = v.tc / 0.948 - v.hdl / 0.971 - (v.tg / 8.56 + (v.tg * nonhdl) / 2140 - (v.tg * v.tg) / 16100) - 9.44;
+      const fried = v.tg < 400 ? `Friedewald: ${fmt(v.tc - v.hdl - v.tg / 5, 0)} mg/dL. ` : 'Friedewald não se aplica (TG ≥ 400 mg/dL). ';
       return {
-        main: fmt(ldl, 0) + ' mg/dL',
+        main: fmt(ldl, 0) + ' mg/dL (Sampson)',
         sub: 'Não-HDL: ' + fmt(nonhdl, 0) + ' mg/dL',
         level: ldl >= 190 ? 'high' : ldl >= 130 ? 'mod' : 'low',
-        details: 'As metas de LDL dependem da categoria de risco cardiovascular. LDL ≥ 190 mg/dL sugere hipercolesterolemia ' +
-          'grave (investigar causa familiar). Friedewald perde acurácia com LDL baixo ou TG elevados.',
+        details: fried + 'A diretriz SBC 2025 considera Martin/Hopkins e Sampson mais precisos que Friedewald, sobretudo com LDL baixo ' +
+          'ou TG elevados; Sampson é válido até TG 800 mg/dL. As metas de LDL dependem da categoria de risco. ' +
+          'LDL ≥ 190 mg/dL sugere hipercolesterolemia grave (investigar causa familiar).',
       };
     },
-    ref: 'Friedewald WT et al. Clin Chem 1972.',
+    ref: 'Sampson M et al. JAMA Cardiol 2020;5(5):540-548; Friedewald WT et al. Clin Chem 1972; Diretriz Brasileira de Dislipidemias — 2025 (SBC).',
   });
 
   C.push({
@@ -407,7 +480,7 @@
         details: 'Pontos de corte variam por população e laboratório (2,5–2,7 é usado em adultos brasileiros). Não é critério diagnóstico de diabetes.',
       };
     },
-    ref: 'Matthews DR et al. Diabetologia 1985; Geloneze B et al. 2006.',
+    ref: 'Matthews DR et al. Diabetologia 1985; Geloneze B et al. Diabetes Res Clin Pract 2006; Geloneze B et al. Arq Bras Endocrinol Metab 2009 (BRAMS: HOMA-IR > 2,7).',
   });
 
   C.push({
@@ -475,27 +548,34 @@
   C.push({
     id: 'ost',
     name: 'OST — Osteoporosis Self-Assessment Tool',
-    short: 'Triagem rápida de risco de osteoporose (peso e idade).',
+    short: 'Triagem por peso e idade para decidir quem fazer densitometria.',
     tabs: ['clinica', 'gineco', 'geriatria'],
     category: 'Osso e fraturas',
-    keywords: 'osteoporose fratura densitometria ost menopausa osso',
+    keywords: 'osteoporose fratura densitometria ost osta menopausa osso',
     fields: [
       { id: 'age', label: 'Idade', type: 'number', unit: 'anos', min: 40, max: 110 },
       { id: 'w', label: 'Peso', type: 'number', unit: 'kg', min: 25, max: 250, step: 0.1 },
+      { id: 'pop', label: 'População de referência', type: 'select', options: [
+        { v: 'nonasian', t: 'Não asiática (Brasil, Américas, Europa)' }, { v: 'asian', t: 'Asiática' }] },
     ],
     compute(v) {
       const s = Math.trunc((v.w - v.age) * 0.2);
       let sub, level;
-      if (s < -4) { sub = 'Alto risco de osteoporose'; level = 'high'; }
-      else if (s <= -1) { sub = 'Risco moderado'; level = 'mod'; }
-      else { sub = 'Baixo risco'; level = 'low'; }
+      if (v.pop === 'asian') {
+        if (s < -4) { sub = 'Alto risco (OSTA < −4) — densitometria indicada'; level = 'high'; }
+        else if (s <= -1) { sub = 'Risco moderado (OSTA −1 a −4) — densitometria indicada'; level = 'mod'; }
+        else { sub = 'Baixo risco (OSTA > −1)'; level = 'low'; }
+      } else if (s < 2) { sub = 'Densitometria indicada (OST < 2)'; level = 'mod'; }
+      else { sub = 'Densitometria não indicada pelo OST (≥ 2)'; level = 'low'; }
       return {
         main: 'Escore ' + s, sub, level,
-        details: 'Validado principalmente em mulheres na pós-menopausa. Risco moderado/alto: considerar densitometria óssea. ' +
-          'Para probabilidade de fratura em 10 anos, use o FRAX Brasil.',
+        details: 'O OST é triagem para densitometria, não diagnóstico nem estimativa de risco de fratura. Os cortes −1/−4 (Koh, 2001) ' +
+          'foram feitos para mulheres asiáticas; em populações não asiáticas o corte validado é < 2 (Geusens, 2002; também testado ' +
+          'na Argentina). Não localizamos validação brasileira. A indicação de densitometria também depende da idade e de outros ' +
+          'fatores de risco; para probabilidade de fratura, use o FRAX Brasil.',
       };
     },
-    ref: 'Koh LK et al. Osteoporos Int 2001.',
+    ref: 'Koh LK et al. Osteoporos Int 2001 (OSTA); Geusens P et al. Mayo Clin Proc 2002 (OST em caucasianas).',
   });
 
   C.push({
@@ -526,11 +606,11 @@
 
   C.push({
     id: 'frax_fatores',
-    name: 'Fatores de risco de fratura (FRAX)',
-    short: 'Checklist dos fatores clínicos do FRAX + acesso à ferramenta oficial.',
+    name: 'Checklist dos fatores do FRAX',
+    short: 'Reúne os dados pedidos pelo FRAX. Não calcula o risco de fratura.',
     tabs: ['clinica', 'gineco', 'geriatria'],
     category: 'Osso e fraturas',
-    keywords: 'frax fratura osteoporose quadril risco fratura corticoide',
+    keywords: 'frax fratura osteoporose quadril risco fratura corticoide checklist',
     fields: [
       { id: 'age', label: 'Idade', type: 'number', unit: 'anos', min: 40, max: 90 },
       { id: 'w', label: 'Peso', type: 'number', unit: 'kg', min: 25, max: 250, step: 0.1 },
@@ -543,20 +623,22 @@
       { id: 'sec', label: 'Osteoporose secundária (DM1, hipertireoidismo, hipogonadismo, má absorção…)', type: 'check', points: 1 },
       { id: 'alc', label: 'Álcool ≥ 3 doses/dia', type: 'check', points: 1 },
     ],
+    checkLegend: 'Fatores clínicos usados pelo FRAX',
     compute(v) {
       const n = sumPoints(this, v);
       const bmi = v.w / Math.pow(v.h / 100, 2);
-      const lowBmi = bmi < 20;
-      const total = n + (lowBmi ? 1 : 0) + (v.age >= 65 ? 1 : 0);
-      const level = v.prev || total >= 3 ? 'high' : total >= 1 ? 'mod' : 'low';
       return {
-        main: total + ' fator(es)',
-        sub: v.prev ? 'Fratura por fragilidade prévia: alto risco' : level === 'high' ? 'Múltiplos fatores de risco' : level === 'mod' ? 'Há fatores de risco presentes' : 'Sem fatores clínicos maiores',
-        level,
-        details: `IMC ${fmt(bmi)} kg/m²${lowBmi ? ' (baixo — fator de risco)' : ''}. ` +
-          'O FRAX calcula a probabilidade de fratura maior e de quadril em 10 anos — o algoritmo é proprietário, por isso use a ferramenta oficial (Brasil) com estes dados. ' +
-          'No Brasil, os limiares de intervenção são ajustados por idade (NOGG/ABRASSO).',
-        link: { href: 'https://frax.shef.ac.uk/FRAX/tool.aspx?lang=pr', text: 'Abrir FRAX oficial' },
+        main: n + ' fator(es) marcado(s)',
+        sub: 'Lista de verificação — não é um escore',
+        level: 'info',
+        note: 'Esta lista não é um escore: ela apenas conta os fatores marcados, e esse número não foi validado para estimar fratura. ' +
+          'Para a probabilidade de fratura maior e de quadril em 10 anos, use o FRAX oficial (modelo Brasil) com estes mesmos dados ' +
+          'e, se houver, a densidade mineral do colo do fêmur.',
+        warn: v.prev ? 'Fratura prévia por fragilidade, sobretudo de quadril ou vértebra, já indica alto risco de nova fratura: ' +
+          'avalie tratamento independentemente do FRAX.' : undefined,
+        details: `Dados para o FRAX: idade ${v.age} anos, peso ${fmt(v.w)} kg, altura ${v.h} cm (IMC ${fmt(bmi)} kg/m²). ` +
+          'No Brasil, os limiares de intervenção do FRAX são ajustados por idade (Zerbini 2015; ABRASSO).',
+        link: { href: 'https://frax.shef.ac.uk/FRAX/tool.aspx?lang=pr', text: 'Calcular no FRAX oficial (Brasil)', primary: true },
       };
     },
     ref: 'Kanis JA et al. FRAX® (Universidade de Sheffield); Zerbini CAF et al. Arch Osteoporos 2015 (FRAX Brasil).',
@@ -610,7 +692,7 @@
         warn: s < 2 ? 'qSOFA negativo não exclui sepse: se houver suspeita clínica, não atrase antibiótico, culturas e lactato.' : undefined,
       };
     },
-    ref: 'Seymour CW et al. JAMA 2016 (Sepsis-3).',
+    ref: 'Seymour CW et al. JAMA 2016 (Sepsis-3); Evans L et al. Surviving Sepsis Campaign 2021 — desaconselha o qSOFA isolado como triagem.',
   });
 
   C.push({
@@ -729,9 +811,9 @@
     ],
     compute(v) {
       const s = sumPoints(this, v);
-      const [cls, level, surv] = s <= 6 ? ['A', 'low', '~100% / 85%'] : s <= 9 ? ['B', 'mod', '~80% / 60%'] : ['C', 'high', '~45% / 35%'];
+      const [cls, level, desc] = s <= 6 ? ['A', 'low', 'Doença bem compensada'] : s <= 9 ? ['B', 'mod', 'Comprometimento funcional significativo'] : ['C', 'high', 'Doença descompensada'];
       return {
-        main: 'Classe ' + cls + ' (' + s + ' pts)', sub: 'Sobrevida em 1 / 2 anos: ' + surv, level,
+        main: 'Classe ' + cls + ' (' + s + ' pts)', sub: desc, level,
         details: 'Para priorização de transplante e risco cirúrgico, complemente com o MELD.',
       };
     },
@@ -771,10 +853,12 @@
       else { mort = '~71%'; level = 'high'; }
       return {
         main: 'MELD-Na ' + res, sub: 'Mortalidade estimada em 90 dias: ' + mort, level,
-        details: 'MELD clássico: ' + Math.round(meld) + '. Valores < 1 são ajustados para 1; creatinina limitada a 4 mg/dL.',
+        details: 'MELD clássico: ' + Math.round(meld) + '. Valores < 1 são ajustados para 1; creatinina limitada a 4 mg/dL. ' +
+          'Mortalidade por faixa segundo Wiesner et al. (2003). Existe o MELD 3.0 (2021), que inclui sexo e albumina; para ' +
+          'alocação de transplante, siga a regra vigente do Sistema Nacional de Transplantes.',
       };
     },
-    ref: 'Kamath PS et al. Hepatology 2001; Kim WR et al. N Engl J Med 2008.',
+    ref: 'Kamath PS et al. Hepatology 2001; Wiesner R et al. Gastroenterology 2003; Kim WR et al. N Engl J Med 2008 (MELD-Na).',
   });
 
   /* ============================== CIRÚRGICA ============================== */
@@ -995,32 +1079,39 @@
 
   C.push({
     id: 'parkland',
-    name: 'Fórmula de Parkland (queimados)',
-    short: 'Reposição volêmica nas primeiras 24 h.',
+    name: 'Reposição volêmica em queimados (ATLS / Parkland)',
+    short: 'Volume de Ringer lactato nas primeiras 24 h conforme o tipo de queimadura.',
     tabs: ['cirurgia'],
     category: 'Trauma e emergência',
-    keywords: 'queimadura parkland reposição volêmica ringer superfície corporal',
+    keywords: 'queimadura parkland atls brooke reposição volêmica ringer superfície corporal',
     fields: [
       { id: 'w', label: 'Peso', type: 'number', unit: 'kg', min: 3, max: 300, step: 0.1 },
       { id: 'sc', label: 'Superfície corporal queimada (2º e 3º graus)', type: 'number', unit: '%', min: 1, max: 100 },
+      { id: 'type', label: 'Tipo de queimadura', type: 'select', options: [
+        { v: 'adult', t: 'Térmica — adulto (≥ 14 anos): 2 mL/kg/%' },
+        { v: 'child', t: 'Térmica — criança (< 14 anos): 3 mL/kg/%' },
+        { v: 'elec', t: 'Elétrica: 4 mL/kg/%' }] },
       { id: 'h', label: 'Horas desde a queimadura', type: 'number', unit: 'h', min: 0, max: 24, optional: true },
     ],
     compute(v) {
-      const total = 4 * v.w * v.sc;
+      const k = { adult: 2, child: 3, elec: 4 }[v.type];
+      const urine = { adult: '0,5 mL/kg/h (~30–50 mL/h)', child: '1 mL/kg/h', elec: '1–1,5 mL/kg/h até o clareamento da urina' }[v.type];
+      const total = k * v.w * v.sc;
       const first = total / 2;
       const elapsed = v.h || 0;
       const rem8 = Math.max(0, 8 - elapsed);
       const rate1 = rem8 > 0 ? first / rem8 : 0;
       return {
         main: fmt(total / 1000, 2) + ' L em 24 h',
-        sub: `${fmt(first, 0)} mL nas primeiras 8 h; ${fmt(first, 0)} mL nas 16 h seguintes`,
+        sub: `${k} mL/kg/% · ${fmt(first, 0)} mL nas primeiras 8 h e ${fmt(first, 0)} mL nas 16 h seguintes`,
         level: 'info',
         details: (rem8 > 0 ? `Considerando ${elapsed} h decorridas: ~${fmt(rate1, 0)} mL/h até completar 8 h. ` : '') +
-          'Ringer lactato. A fórmula é ponto de partida — titule pela diurese (0,5 mL/kg/h em adultos; 1 mL/kg/h em crianças < 30 kg) ' +
-          'e evite hiper-ressuscitação (alguns protocolos atuais iniciam com 2 mL/kg/%SCQ).',
+          `Ringer lactato. O volume é ponto de partida: titule pela diurese (meta ${urine}). ` +
+          'A fórmula de Parkland clássica usa 4 mL/kg/% para todos; a recomendação atual para queimadura térmica em adulto é iniciar com 2 mL/kg/% ' +
+          'para evitar hiper-ressuscitação. Crianças < 30 kg também precisam de soro de manutenção com glicose.',
       };
     },
-    ref: 'Baxter CR. 1968; ATLS 10ª ed.; ABA guidelines.',
+    ref: 'ATLS — Advanced Trauma Life Support, 10ª ed. (ACS, 2018); American Burn Association; Baxter CR 1968 (Parkland).',
   });
 
   C.push({
@@ -1045,7 +1136,7 @@
         details: 'Na hemorragia pós-parto, IC ≥ 0,9 sugere perda importante e ≥ 1,4 indica necessidade de transfusão e intervenção urgente (OPAS).',
       };
     },
-    ref: 'Allgöwer M, Burri C. 1967; OPAS — Recomendações para hemorragia pós-parto.',
+    ref: 'Allgöwer M, Burri C. 1967; OPAS — Recomendações assistenciais para prevenção, diagnóstico e tratamento da hemorragia obstétrica (2018).',
   });
 
   /* ======================= GINECOLOGIA E OBSTETRÍCIA ======================= */
@@ -1110,10 +1201,10 @@
   C.push({
     id: 'ganho_peso',
     name: 'Ganho de peso gestacional',
-    short: 'Meta de ganho de peso conforme o IMC pré-gestacional.',
+    short: 'Faixa recomendada pelo Ministério da Saúde (curvas brasileiras), conforme o IMC pré-gestacional.',
     tabs: ['gineco'],
     category: 'Pré-natal',
-    keywords: 'ganho de peso gestação gravidez imc pré-gestacional nutrição',
+    keywords: 'ganho de peso gestação gravidez imc pré-gestacional nutrição caderneta gestante',
     fields: [
       { id: 'w0', label: 'Peso pré-gestacional', type: 'number', unit: 'kg', min: 30, max: 250, step: 0.1 },
       { id: 'h', label: 'Altura', type: 'number', unit: 'cm', min: 120, max: 210 },
@@ -1122,19 +1213,21 @@
     compute(v) {
       const bmi = v.w0 / Math.pow(v.h / 100, 2);
       let range, cat;
-      if (bmi < 18.5) { range = [12.5, 18]; cat = 'Baixo peso'; }
-      else if (bmi < 25) { range = [11.5, 16]; cat = 'Eutrofia'; }
-      else if (bmi < 30) { range = [7, 11.5]; cat = 'Sobrepeso'; }
-      else { range = [5, 9]; cat = 'Obesidade'; }
+      if (bmi < 18.5) { range = [9.7, 12.2]; cat = 'Baixo peso'; }
+      else if (bmi < 25) { range = [8, 12]; cat = 'Eutrofia'; }
+      else if (bmi < 30) { range = [7, 9]; cat = 'Sobrepeso'; }
+      else { range = [5, 7.2]; cat = 'Obesidade'; }
       let det = '';
       if (v.w1) det = `Ganho até agora: ${fmt(v.w1 - v.w0)} kg. `;
-      det += 'Gestação única. No 2º e 3º trimestres, o ganho semanal esperado é de ~0,2–0,5 kg conforme a categoria.';
+      det += 'Faixas totais para gestação única adotadas pelo Ministério da Saúde em 2022 (Caderneta da Gestante), a partir de dados ' +
+        'brasileiros. Acompanhe semana a semana pelas curvas da Caderneta. As faixas do IOM 2009 (EUA) são mais altas e não são mais ' +
+        'a referência nacional.';
       return {
         main: `${fmt(range[0])} – ${fmt(range[1])} kg`, sub: `IMC pré-gestacional ${fmt(bmi)} kg/m² (${cat})`,
         level: 'info', details: det,
       };
     },
-    ref: 'Institute of Medicine (IOM) 2009 — Weight Gain During Pregnancy.',
+    ref: 'Kac G et al. Am J Clin Nutr 2021;113(5):1351-60; Ministério da Saúde — Caderneta da Gestante (2022).',
   });
 
   C.push({
@@ -1174,10 +1267,11 @@
         sub: ind ? 'AAS em baixa dose recomendado' : mod === 1 ? 'Avaliar caso a caso' : 'Sem indicação de AAS por fatores clínicos',
         level: ind ? 'high' : mod === 1 ? 'mod' : 'low',
         details: 'Indicação: ≥ 1 fator alto ou ≥ 2 moderados. AAS 100–150 mg/noite, iniciar idealmente entre 12 e 16 semanas (até 28) e manter até 36 semanas. ' +
-          'Suplementar cálcio (1–2 g/dia) se baixa ingesta. Rastreamento combinado (fatores maternos + Doppler de uterinas + PlGF) no 1º trimestre melhora a predição.',
+          'A suplementação de cálcio não é mais recomendada para prevenir pré-eclâmpsia (FEBRASGO/RBEHG, 2026). ' +
+          'Rastreamento combinado (fatores maternos + Doppler de uterinas + PlGF) no 1º trimestre melhora a predição.',
       };
     },
-    ref: 'USPSTF 2021; ACOG 2018/2021; FEBRASGO — Protocolo de pré-eclâmpsia.',
+    ref: 'USPSTF 2021; ACOG 2018 (reafirmado 2021); FEBRASGO — Protocolo de pré-eclâmpsia (2020); FEBRASGO/RBEHG — posicionamento sobre cálcio na gestação (2026).',
   });
 
   C.push({
@@ -1381,8 +1475,9 @@
       else { sub = 'Idoso frágil — alta vulnerabilidade'; level = 'high'; }
       return {
         main: s + ' / 40', sub, level,
-        details: 'As três perguntas de AIVD somam no máximo 4 pontos. Escore ≥ 7 indica avaliação geriátrica ampla; ' +
-          '≥ 15 sugere acompanhamento por equipe especializada em geriatria.',
+        details: 'Classificação (Moraes et al., 2016): 0–6 baixa vulnerabilidade, 7–14 vulnerabilidade moderada (risco de ' +
+          'fragilização), ≥ 15 alta vulnerabilidade (idoso frágil). As três perguntas de AIVD somam no máximo 4 pontos. ' +
+          'O IVCF-20 é rastreio: aprofunde com avaliação geriátrica ampla conforme o protocolo do serviço.',
       };
     },
     ref: 'Moraes EN et al. Rev Saúde Pública 2016 — IVCF-20.',
@@ -1688,7 +1783,7 @@
       return {
         main: s + ' / 5', sub: pos ? 'Rastreio positivo para comprometimento cognitivo' : 'Rastreio negativo',
         level: pos ? 'high' : 'low',
-        details: 'Escore < 3 sugere avaliação cognitiva mais detalhada. Pouco influenciado pela escolaridade, mas não substitui avaliação completa.',
+        details: 'Escore < 3 sugere avaliação cognitiva mais detalhada. É triagem e não substitui a avaliação completa.',
       };
     },
     ref: 'Borson S et al. Int J Geriatr Psychiatry 2000.',
@@ -1761,7 +1856,7 @@
         main: s + ' / 12', sub, level,
         details: 'Escore 0 não exclui delirium se a mudança ocorreu antes ou se os sintomas flutuam: reavalie.',
         warn: s >= 4 ? 'Delirium é emergência médica: investigue causa (infecção, medicamentos, distúrbio hidroeletrolítico, retenção urinária, dor, hipóxia) ' +
-          'e prefira medidas não farmacológicas; evite benzodiazepínicos.' : undefined,
+          'e prefira medidas não farmacológicas; evite benzodiazepínicos, exceto na abstinência de álcool ou de benzodiazepínicos.' : undefined,
       };
     },
     ref: 'Bellelli G et al. Age Ageing 2014; www.the4at.com.',

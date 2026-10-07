@@ -5,6 +5,7 @@
   window.EDU = [
     {
       id: 'has-oque',
+      sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025 (SBC/SBH/SBN).',
       icon: 'heart',
       title: 'O que é pressão alta',
       keywords: 'o que é hipertensão pressão alta sintomas causas',
@@ -37,13 +38,14 @@
     },
     {
       id: 'has-tratamento',
+      sources: 'Ettehad D et al. Lancet 2016 (meta-análise de 48 ensaios); Diretriz Brasileira de Hipertensão Arterial — 2025.',
       icon: 'pill',
       title: 'Importância do tratamento',
       keywords: 'tratamento remédio medicamento adesão parar remédio importância complicações',
       html: `
         <p class="lead">Controlar a pressão é uma das medidas que <strong>mais salvam vidas</strong> na medicina. Cada
-        redução de 10 mmHg na pressão sistólica diminui em cerca de <strong>20% o risco de infarto</strong> e em
-        <strong>mais de 25% o risco de AVC (derrame)</strong>.</p>
+        redução de 10 mmHg na pressão sistólica diminui em cerca de <strong>20% os eventos cardiovasculares graves</strong>
+        (infarto, AVC, insuficiência cardíaca) e em <strong>mais de 25% o risco de AVC (derrame)</strong>.</p>
         <h3>O que a pressão alta sem controle pode causar</h3>
         <div class="grid-cards">
           <div class="mini-card"><strong>Cérebro</strong><span>AVC (derrame) e demência</span></div>
@@ -67,6 +69,7 @@
     },
     {
       id: 'has-nutricao',
+      sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025 (sódio < 2 g/dia ≈ 5 g de sal); Organização Mundial da Saúde.',
       icon: 'leaf',
       title: 'Alimentação',
       keywords: 'alimentação nutrição dieta sal sódio dash comida potássio frutas',
@@ -95,7 +98,7 @@
         <ul>
           <li>Ultraprocessados, frituras e carnes gordurosas</li>
           <li>Açúcar e refrigerantes</li>
-          <li>Bebidas alcoólicas — se beber, no máximo 1 dose/dia (mulheres) ou 2 doses/dia (homens)</li>
+          <li>Bebidas alcoólicas — quanto menos, melhor; o ideal é evitar</li>
         </ul>
         <h3>Exemplo de prato</h3>
         <p>Metade do prato com verduras e legumes, ¼ com arroz integral ou outro cereal, ¼ com feijão e uma proteína
@@ -103,11 +106,12 @@
     },
     {
       id: 'has-atividade',
+      sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025; OMS — Diretrizes de atividade física (2020).',
       icon: 'activity',
       title: 'Atividade física',
       keywords: 'atividade física exercício caminhada academia musculação esporte',
       html: `
-        <p class="lead">Exercício regular reduz a pressão em média <strong>5 a 8 mmHg</strong>, melhora o coração, o humor,
+        <p class="lead">Exercício regular <strong>ajuda a baixar a pressão</strong>, melhora o coração, o humor,
         o sono e ajuda a controlar o peso e a glicose.</p>
         <h3>Quanto fazer</h3>
         <ul>
@@ -130,6 +134,7 @@
     },
     {
       id: 'has-medir',
+      sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025 (MRPA).',
       icon: 'gauge',
       title: 'Como medir a pressão em casa',
       keywords: 'medir pressão em casa aparelho mrpa técnica medida residencial',
@@ -147,7 +152,7 @@
           <li>Apoie o braço numa mesa, na altura do coração, com a palma da mão para cima.</li>
           <li>Coloque o manguito no braço nu, 2–3 cm acima da dobra do cotovelo. O tamanho do manguito deve ser adequado ao braço.</li>
           <li><strong>Não fale e não se mexa</strong> durante a medida.</li>
-          <li>Faça 2 medidas com 1 minuto de intervalo.</li>
+          <li>Faça 3 medidas, com 1 minuto de intervalo entre elas, e anote todas.</li>
         </ol>
         <h3>Quando medir</h3>
         <p>Quando o médico pedir um protocolo: <strong>3 medidas pela manhã</strong> (antes do café e dos remédios) e
@@ -156,6 +161,7 @@
     },
     {
       id: 'has-habitos',
+      sources: 'Neter JE et al. Hypertension 2003 (perda de peso e pressão); Diretriz Brasileira de Hipertensão Arterial — 2025.',
       icon: 'moon',
       title: 'Peso, sono, tabaco e estresse',
       keywords: 'peso emagrecer sono tabaco cigarro estresse ansiedade álcool hábitos',
@@ -178,6 +184,7 @@
     },
     {
       id: 'has-alerta',
+      sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025; Rede Brasil AVC (teste SAMU).',
       icon: 'alert',
       title: 'Sinais de alerta',
       keywords: 'emergência urgência crise hipertensiva sinais alerta avc infarto samu',
