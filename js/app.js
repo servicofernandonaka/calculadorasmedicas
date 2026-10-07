@@ -19,6 +19,8 @@
   const norm = (s) => (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const byId = (id) => CALCS.find((c) => c.id === id);
+  const ICON = window.ICON;
+  const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const eduById = (id) => EDU.find((e) => e.id === id);
 
   /* ---------- tema ---------- */
@@ -38,7 +40,9 @@
   /* ---------- abas ---------- */
   function setTab(tab) {
     state.tab = tab;
-    $$('.tab[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+    $$('.tab[data-tab]').forEach((b) => {
+      if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
     const isEdu = tab === 'educacao';
     $('#view-calcs').hidden = isEdu;
     $('#view-edu').hidden = !isEdu;
@@ -81,31 +85,57 @@
     $('#grid').innerHTML = list.map((c) => `
       <button class="card calc-card" type="button" data-calc="${c.id}">
         <span class="pill">${esc(c.category)}</span>
-        <h3>${esc(c.name)}</h3>
-        <p>${esc(c.short)}</p>
+        <span class="card-title">${esc(c.name)}</span>
+        <span class="card-desc">${esc(c.short)}</span>
       </button>`).join('');
     $('#empty').hidden = list.length > 0;
   }
 
   /* ---------- diálogo da calculadora ---------- */
-  function fieldHtml(calc, f) {
+  function fieldHtml(calc, f, hidePts) {
     const id = `f-${f.id}`;
     if (f.type === 'check') {
-      const pts = calc.hidePoints ? '' : `<span class="pts">${f.points > 0 ? '+' : ''}${String(f.points).replace('.', ',')}</span>`;
+      const pts = calc.hidePoints || hidePts ? '' : `<span class="pts">${f.points > 0 ? '+' : ''}${String(f.points).replace('.', ',')}</span>`;
       return `<label class="check"><input type="checkbox" id="${id}" name="${f.id}"><span>${esc(f.label)}</span>${pts}</label>`;
     }
     const unit = f.unit ? ` <span class="unit">(${esc(f.unit)})</span>` : '';
+    const aria = `aria-describedby="${id}-hint"${f.optional ? '' : ' aria-required="true"'}`;
     let input;
     if (f.type === 'select') {
-      input = `<select id="${id}" name="${f.id}"><option value="">Selecione…</option>` +
+      input = `<select id="${id}" name="${f.id}" ${aria}><option value="">Selecione…</option>` +
         f.options.map((o) => `<option value="${o.v}">${esc(o.t)}</option>`).join('') + '</select>';
     } else if (f.type === 'date') {
-      input = `<input type="date" id="${id}" name="${f.id}">`;
+      input = `<input type="date" id="${id}" name="${f.id}" ${aria}>`;
     } else {
-      input = `<input type="text" inputmode="decimal" id="${id}" name="${f.id}" autocomplete="off"
+      input = `<input type="text" inputmode="decimal" id="${id}" name="${f.id}" autocomplete="off" ${aria}
         placeholder="${f.min != null ? `${f.min}–${f.max}` : ''}">`;
     }
     return `<label class="field" for="${id}"><span>${esc(f.label)}${unit}</span>${input}<span class="hint" id="${id}-hint"></span></label>`;
+  }
+
+  const ptsLegend = (p) => {
+    const n = String(Math.abs(p)).replace('.', ',');
+    const word = Math.abs(p) < 2 ? 'ponto' : 'pontos';
+    return p < 0 ? `Subtrai ${n} ${word}` : `${n} ${word} cada`;
+  };
+
+  // Checkboxes em <fieldset>: grupos definidos na calculadora, senão por peso (listas longas com pesos diferentes)
+  function checksHtml(calc) {
+    const checks = calc.fields.filter((f) => f.type === 'check');
+    if (!checks.length) return '';
+    let groups;
+    if (calc.groups) {
+      groups = calc.groups.map((g) => ({ legend: g.legend, byPoints: g.hidePts, fields: g.ids.map((id) => checks.find((f) => f.id === id)).filter(Boolean) }));
+      const rest = checks.filter((f) => !calc.groups.some((g) => g.ids.includes(f.id)));
+      if (rest.length) groups.push({ legend: 'Outros itens', fields: rest });
+    } else {
+      const weights = [...new Set(checks.map((f) => f.points))];
+      groups = checks.length >= 5 && weights.length > 1 && !calc.hidePoints
+        ? weights.map((w) => ({ legend: ptsLegend(w), fields: checks.filter((f) => f.points === w), byPoints: true }))
+        : [{ legend: calc.checkLegend || 'Marque os itens presentes', fields: checks }];
+    }
+    return groups.map((g) => `<fieldset class="checks"><legend>${esc(g.legend)}</legend>` +
+      g.fields.map((f) => fieldHtml(calc, f, g.byPoints)).join('') + '</fieldset>').join('');
   }
 
   // Valida um campo e devolve { value, error } — error: '' | 'missing' | mensagem de faixa/formato
@@ -173,7 +203,7 @@
 
   function setPending(msg) {
     const p = $('#calc-pending');
-    p.textContent = msg || '';
+    p.innerHTML = msg ? ICON('clock') + `<span>${esc(msg)}</span>` : '';
     p.hidden = !msg;
   }
 
@@ -207,22 +237,36 @@
     if (!box.hidden && box.dataset.summary === text) { syncFoot(); return; }
     const detailsOpen = !!$('#calc-result details[open]');
     box.className = 'result ' + (r.level || 'info');
+    if (r.grade) box.dataset.grade = r.grade; else delete box.dataset.grade;
     box.innerHTML = `
       <div class="res-head">
         <div class="main">${esc(r.main)}</div>
         <div class="sub">${esc(r.sub)}</div>
       </div>
-      ${r.warn ? `<div class="warn"><strong>⚠️ Atenção — muda a conduta</strong><span>${esc(r.warn)}</span></div>` : ''}
+      ${r.scale ? scaleHtml(r.scale) : ''}
+      ${r.warn ? `<div class="warn"><strong>${ICON('alert')}Atenção — muda a conduta</strong><span>${esc(r.warn)}</span></div>` : ''}
       ${r.details ? `<details${detailsOpen ? ' open' : ''}><summary>Interpretação</summary><p class="det">${esc(r.details)}</p></details>` : ''}
       <div class="actions">
-        <button class="btn btn-ghost" type="button" data-copy>📋 Copiar</button>
-        <button class="btn" type="button" data-ask>✨ Discutir com a IA</button>
-        ${r.link ? `<a class="btn btn-ghost" href="${esc(r.link.href)}" target="_blank" rel="noopener">${esc(r.link.text)} ↗</a>` : ''}
-        ${r.edu ? `<button class="btn btn-ghost" type="button" data-edu="${esc(r.edu)}">📘 Material para o paciente</button>` : ''}
+        <button class="btn btn-ghost" type="button" data-copy>${ICON('copy')}<span>Copiar</span></button>
+        <button class="btn" type="button" data-ask>${ICON('sparkles')}Discutir com a IA</button>
+        ${r.link ? `<a class="btn btn-ghost" href="${esc(r.link.href)}" target="_blank" rel="noopener">${esc(r.link.text)}${ICON('external')}<span class="sr-only"> (abre em nova aba)</span></a>` : ''}
+        ${r.edu ? `<button class="btn btn-ghost" type="button" data-edu="${esc(r.edu)}">${ICON('book')}Material para o paciente</button>` : ''}
       </div>`;
     box.hidden = false;
     box.dataset.summary = text;
     syncFoot();
+  }
+
+  // Régua de categorias: a posição atual tem marcador e rótulo em negrito (não depende só de cor)
+  function scaleHtml(sc) {
+    const fill = sc.fill !== false;
+    const items = sc.labels.map((l, i) => {
+      const pos = i + 1, cur = pos === sc.step, on = fill ? pos <= sc.step : cur;
+      return `<li class="seg${on ? ' on' : ''}${cur ? ' cur' : ''}"${cur ? ' aria-current="step"' : ''}>` +
+        `<span class="bar"></span><span class="lbl">${esc(l)}</span></li>`;
+    }).join('');
+    const name = (sc.names || sc.labels)[sc.step - 1];
+    return `<div class="scale-wrap"><ol class="scale" data-n="${sc.labels.length}" aria-label="Escala: ${esc(name)}, ${sc.step} de ${sc.labels.length}">${items}</ol></div>`;
   }
 
   function fieldOf(el) {
@@ -239,11 +283,10 @@
     $('#dlg-title').textContent = calc.name;
     $('#dlg-short').textContent = calc.short;
     $('#dlg-ref').textContent = 'Referência: ' + calc.ref;
-    const checks = calc.fields.filter((f) => f.type === 'check');
     const others = calc.fields.filter((f) => f.type !== 'check');
     $('#calc-form').innerHTML =
       others.map((f) => fieldHtml(calc, f)).join('') +
-      checks.map((f) => fieldHtml(calc, f)).join('') +
+      checksHtml(calc) +
       '<div class="form-actions"><button class="btn btn-ghost" type="reset">Limpar</button></div>';
     state.calc = calc;
     update();
@@ -263,17 +306,17 @@
   /* ---------- material educativo ---------- */
   function renderEdu() {
     $('#edu-nav').innerHTML = EDU.map((e) =>
-      `<button type="button" data-edu="${e.id}" aria-current="${e.id === state.edu}"><span aria-hidden="true">${e.icon}</span>${esc(e.title)}</button>`).join('');
+      `<button type="button" data-edu="${e.id}" aria-current="${e.id === state.edu}">${ICON(e.icon)}${esc(e.title)}</button>`).join('');
     const e = eduById(state.edu) || EDU[0];
     const idx = EDU.indexOf(e);
     const next = EDU[idx + 1];
     $('#edu-content').innerHTML = `
-      <h2>${e.icon} ${esc(e.title)}</h2>
+      <h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>
       ${e.html}
       <div class="edu-footer">
-        ${next ? `<button class="btn" type="button" data-edu="${next.id}">Próximo: ${esc(next.title)} →</button>` : ''}
-        <button class="btn btn-ghost" type="button" data-print-one>🖨️ Imprimir este tópico</button>
-        <button class="btn btn-ghost" type="button" data-ask-edu>✨ Tirar dúvidas com a IA</button>
+        ${next ? `<button class="btn" type="button" data-edu="${next.id}">Próximo: ${esc(next.title)}${ICON('arrow')}</button>` : ''}
+        <button class="btn btn-ghost" type="button" data-print-one>${ICON('printer')}Imprimir este tópico</button>
+        <button class="btn btn-ghost" type="button" data-ask-edu>${ICON('sparkles')}Tirar dúvidas com a IA</button>
       </div>`;
     $('#edu-content').classList.remove('print-all');
   }
@@ -283,13 +326,13 @@
     closeCalc();
     if (state.tab !== 'educacao') setTab('educacao'); else renderEdu();
     history.replaceState(null, '', '#educacao/' + state.edu);
-    $('#edu-content').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#edu-content').scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
   }
 
   function printAllEdu() {
     const box = $('#edu-content');
     box.innerHTML = '<h1>Hipertensão arterial — guia para o paciente</h1>' +
-      EDU.map((e) => `<section><h2>${e.icon} ${esc(e.title)}</h2>${e.html}</section>`).join('');
+      EDU.map((e) => `<section><h2>${esc(e.title)}</h2>${e.html}</section>`).join('');
     box.classList.add('print-all');
     window.print();
     renderEdu();
@@ -317,10 +360,10 @@
 
   /* ---------- eventos ---------- */
   function bind() {
-    $$('.tab[data-tab]').forEach((b) => b.addEventListener('click', () => {
+    // Links normais (#clinica…): o hashchange faz a troca; no mesmo endereço, só reaplica a aba
+    $$('.tab[data-tab]').forEach((b) => b.addEventListener('click', (e) => {
       state.query = ''; $('#search').value = '';
-      if (location.hash === '#' + b.dataset.tab) setTab(b.dataset.tab);
-      else location.hash = b.dataset.tab;
+      if (location.hash === '#' + b.dataset.tab) { e.preventDefault(); setTab(b.dataset.tab); }
     }));
 
     $('#chips').addEventListener('click', (e) => {
@@ -395,8 +438,9 @@
     $('#calc-result').addEventListener('click', async (e) => {
       const text = $('#calc-result').dataset.summary;
       if (e.target.closest('[data-copy]')) {
-        try { await navigator.clipboard.writeText(text); e.target.textContent = '✔ Copiado'; }
-        catch (err) { e.target.textContent = 'Não foi possível copiar'; }
+        const label = $('[data-copy] span', $('#calc-result'));
+        try { await navigator.clipboard.writeText(text); label.textContent = 'Copiado'; }
+        catch (err) { label.textContent = 'Não foi possível copiar'; }
       }
       if (e.target.closest('[data-ask]')) {
         closeCalc();

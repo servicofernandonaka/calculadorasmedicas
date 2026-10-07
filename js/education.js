@@ -5,7 +5,7 @@
   window.EDU = [
     {
       id: 'has-oque',
-      icon: '❤️',
+      icon: 'heart',
       title: 'O que é pressão alta',
       keywords: 'o que é hipertensão pressão alta sintomas causas',
       html: `
@@ -16,7 +16,7 @@
         sangramento nasal não são sinais confiáveis. A única forma de saber é <strong>medindo</strong>.</p>
         <h3>Como entender os números</h3>
         <div class="table-wrap"><table>
-          <thead><tr><th>Categoria</th><th>Sistólica (máxima)</th><th></th><th>Diastólica (mínima)</th></tr></thead>
+          <thead><tr><th scope="col">Categoria</th><th scope="col">Sistólica (máxima)</th><th scope="col">Combinação</th><th scope="col">Diastólica (mínima)</th></tr></thead>
           <tbody>
             <tr><td>Normal</td><td>&lt; 120</td><td>e</td><td>&lt; 80</td></tr>
             <tr><td>Pré-hipertensão</td><td>120–139</td><td>e/ou</td><td>80–89</td></tr>
@@ -37,7 +37,7 @@
     },
     {
       id: 'has-tratamento',
-      icon: '💊',
+      icon: 'pill',
       title: 'Importância do tratamento',
       keywords: 'tratamento remédio medicamento adesão parar remédio importância complicações',
       html: `
@@ -67,13 +67,13 @@
     },
     {
       id: 'has-nutricao',
-      icon: '🥗',
+      icon: 'leaf',
       title: 'Alimentação',
       keywords: 'alimentação nutrição dieta sal sódio dash comida potássio frutas',
       html: `
         <p class="lead">A alimentação pode reduzir a pressão tanto quanto um remédio. O modelo mais estudado é a
         <strong>dieta DASH</strong>, rica em frutas, verduras, legumes, grãos integrais e laticínios com pouca gordura.</p>
-        <h3>🧂 Menos sal</h3>
+        <h3>Menos sal</h3>
         <ul>
           <li>Meta: no máximo <strong>5 g de sal por dia</strong> (≈ 1 colher de chá rasa), somando o sal de todos os alimentos.</li>
           <li>Tire o saleiro da mesa e cozinhe com <strong>temperos naturais</strong>: alho, cebola, limão, ervas, pimenta, cheiro-verde.</li>
@@ -81,7 +81,7 @@
           <li>Leia os rótulos: a lupa “<strong>ALTO EM SÓDIO</strong>” indica produtos a evitar.</li>
           <li>O paladar se adapta em 2 a 4 semanas — no começo a comida parece sem graça, depois o excesso de sal passa a incomodar.</li>
         </ul>
-        <h3>✅ Inclua todos os dias</h3>
+        <h3>Inclua todos os dias</h3>
         <ul>
           <li>Frutas e verduras em todas as refeições (fontes de potássio: banana, laranja, feijão, abacate, folhas verdes)*</li>
           <li>Feijão, lentilha, grão-de-bico</li>
@@ -91,7 +91,7 @@
           <li>Peixes 2 vezes por semana</li>
         </ul>
         <p class="note">* Quem tem doença renal ou usa certos remédios para pressão deve perguntar ao médico antes de aumentar o potássio ou usar “sal light”.</p>
-        <h3>⚠️ Reduza</h3>
+        <h3>Reduza</h3>
         <ul>
           <li>Ultraprocessados, frituras e carnes gordurosas</li>
           <li>Açúcar e refrigerantes</li>
@@ -103,7 +103,7 @@
     },
     {
       id: 'has-atividade',
-      icon: '🏃',
+      icon: 'activity',
       title: 'Atividade física',
       keywords: 'atividade física exercício caminhada academia musculação esporte',
       html: `
@@ -130,7 +130,7 @@
     },
     {
       id: 'has-medir',
-      icon: '🩺',
+      icon: 'gauge',
       title: 'Como medir a pressão em casa',
       keywords: 'medir pressão em casa aparelho mrpa técnica medida residencial',
       html: `
@@ -156,29 +156,29 @@
     },
     {
       id: 'has-habitos',
-      icon: '🌙',
+      icon: 'moon',
       title: 'Peso, sono, tabaco e estresse',
       keywords: 'peso emagrecer sono tabaco cigarro estresse ansiedade álcool hábitos',
       html: `
-        <h3>⚖️ Peso</h3>
+        <h3>Peso</h3>
         <p>Perder peso ajuda muito: cada quilo perdido reduz, em média, cerca de 1 mmHg na pressão. Mesmo perder
         5 a 10% do peso já traz benefício. Tente manter a cintura abaixo de 80 cm (mulheres) ou 94 cm (homens).</p>
-        <h3>🚭 Cigarro</h3>
+        <h3>Cigarro</h3>
         <p>O cigarro aumenta a pressão e multiplica o risco de infarto e AVC. Parar de fumar é a medida isolada mais
         importante para o coração. O SUS oferece tratamento gratuito para parar de fumar — pergunte na sua unidade de saúde.</p>
-        <h3>🍺 Álcool</h3>
+        <h3>Álcool</h3>
         <p>O excesso de álcool aumenta a pressão e atrapalha o efeito dos remédios. Quanto menos, melhor.</p>
-        <h3>😴 Sono</h3>
+        <h3>Sono</h3>
         <ul>
           <li>Durma de 7 a 9 horas por noite, com horários regulares.</li>
           <li>Ronco alto, pausas na respiração e sonolência durante o dia podem indicar <strong>apneia do sono</strong>, que piora a pressão — conte ao seu médico.</li>
         </ul>
-        <h3>🧘 Estresse</h3>
+        <h3>Estresse</h3>
         <p>Técnicas de respiração, meditação, atividades de lazer, contato social e atividade física ajudam a controlar o estresse.</p>`,
     },
     {
       id: 'has-alerta',
-      icon: '🚨',
+      icon: 'alert',
       title: 'Sinais de alerta',
       keywords: 'emergência urgência crise hipertensiva sinais alerta avc infarto samu',
       html: `

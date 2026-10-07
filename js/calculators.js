@@ -189,6 +189,8 @@
         main: `${v.sbp}/${v.dbp} mmHg`,
         sub: labels[c][0] + iso,
         level: labels[c][1],
+        grade: c >= 3 ? c - 2 : undefined,
+        scale: { step: c, labels: ['Normal', 'Pré-HAS', 'Est. 1', 'Est. 2', 'Est. 3'], names: [1, 2, 3, 4, 5].map((k) => labels[k][0]) },
         details:
           'O diagnóstico exige medidas repetidas com técnica adequada e, idealmente, confirmação fora do consultório ' +
           '(MRPA ou MAPA). Quando sistólica e diastólica caem em categorias diferentes, vale a maior.',
@@ -244,6 +246,10 @@
     tabs: ['clinica', 'geriatria'],
     category: 'Cardiovascular',
     keywords: 'sangramento anticoagulação hasbled varfarina fibrilação',
+    groups: [
+      { legend: 'Condições clínicas (1 ponto cada)', ids: ['h', 'ar', 'al', 's', 'b', 'e'], hidePts: true },
+      { legend: 'Tratamento e hábitos (1 ponto cada)', ids: ['l', 'd', 'a'], hidePts: true },
+    ],
     fields: [
       { id: 'h', label: 'Hipertensão não controlada (PAS > 160 mmHg)', type: 'check', points: 1 },
       { id: 'ar', label: 'Função renal alterada (diálise, transplante, Cr ≥ 2,26 mg/dL)', type: 'check', points: 1 },
@@ -324,6 +330,7 @@
       else if (bmi < 35) { sub = 'Obesidade grau I'; level = 'high'; }
       else if (bmi < 40) { sub = 'Obesidade grau II'; level = 'high'; }
       else { sub = 'Obesidade grau III'; level = 'high'; }
+      const idx = bmi < 18.5 ? 1 : bmi < 25 ? 2 : bmi < 30 ? 3 : bmi < 35 ? 4 : bmi < 40 ? 5 : 6;
       let details = '';
       if (v.waist) {
         const [a, b] = v.sex === 'f' ? [80, 88] : [94, 102];
@@ -331,7 +338,12 @@
         details = `Circunferência abdominal ${v.waist} cm: risco metabólico ${w} (cortes OMS: ≥ ${a} aumentado, ≥ ${b} muito aumentado). `;
       }
       details += 'Em idosos, atletas e gestantes, o IMC tem interpretação própria.';
-      return { main: fmt(bmi) + ' kg/m²', sub, level, details };
+      return {
+        main: fmt(bmi) + ' kg/m²', sub, level, details,
+        grade: idx >= 4 ? idx - 3 : undefined,
+        scale: { step: idx, fill: false, labels: ['Baixo', 'Normal', 'Sobre\u00adpeso', 'Ob. I', 'Ob. II', 'Ob. III'],
+          names: ['Baixo peso', 'Eutrofia', 'Sobrepeso', 'Obesidade grau I', 'Obesidade grau II', 'Obesidade grau III'] },
+      };
     },
     ref: 'OMS — classificação do estado nutricional.',
   });
@@ -423,8 +435,11 @@
       else if (g >= 30) { st = 'G3b — moderada a gravemente diminuída'; level = 'mod'; }
       else if (g >= 15) { st = 'G4 — gravemente diminuída'; level = 'high'; }
       else { st = 'G5 — falência renal'; level = 'high'; }
+      const step = g >= 90 ? 1 : g >= 60 ? 2 : g >= 45 ? 3 : g >= 30 ? 4 : g >= 15 ? 5 : 6;
       return {
         main: fmt(g, 0) + ' mL/min/1,73m²', sub: 'KDIGO ' + st, level,
+        grade: step === 5 ? 2 : step === 6 ? 3 : undefined,
+        scale: { step, labels: ['G1', 'G2', 'G3a', 'G3b', 'G4', 'G5'] },
         details: 'DRC requer alteração persistente por > 3 meses; estadie também a albuminúria (A1–A3).',
         warn: 'Não use em lesão renal aguda (creatinina instável): a TFG estimada superestima a função renal ' +
           'e pode levar a doses inadequadas de medicamentos.',
@@ -1129,22 +1144,26 @@
     tabs: ['gineco'],
     category: 'Pré-natal',
     hidePoints: true,
+    groups: [
+      { legend: 'Fatores de alto risco (basta 1 para indicar AAS)', ids: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] },
+      { legend: 'Fatores de risco moderado (2 ou mais indicam AAS)', ids: ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8'] },
+    ],
     keywords: 'pré-eclâmpsia aas aspirina hipertensão gestacional profilaxia cálcio',
     fields: [
-      { id: 'h1', label: 'ALTO: pré-eclâmpsia em gestação anterior', type: 'check', points: 10 },
-      { id: 'h2', label: 'ALTO: gestação múltipla', type: 'check', points: 10 },
-      { id: 'h3', label: 'ALTO: hipertensão crônica', type: 'check', points: 10 },
-      { id: 'h4', label: 'ALTO: diabetes tipo 1 ou 2 pré-gestacional', type: 'check', points: 10 },
-      { id: 'h5', label: 'ALTO: doença renal crônica', type: 'check', points: 10 },
-      { id: 'h6', label: 'ALTO: doença autoimune (LES, síndrome antifosfolípide)', type: 'check', points: 10 },
-      { id: 'm1', label: 'Moderado: nuliparidade', type: 'check', points: 1 },
-      { id: 'm2', label: 'Moderado: obesidade (IMC > 30)', type: 'check', points: 1 },
-      { id: 'm3', label: 'Moderado: mãe ou irmã com pré-eclâmpsia', type: 'check', points: 1 },
-      { id: 'm4', label: 'Moderado: idade ≥ 35 anos', type: 'check', points: 1 },
-      { id: 'm5', label: 'Moderado: intervalo interpartal > 10 anos', type: 'check', points: 1 },
-      { id: 'm6', label: 'Moderado: gestação por reprodução assistida', type: 'check', points: 1 },
-      { id: 'm7', label: 'Moderado: desfecho adverso prévio (RN PIG, baixo peso)', type: 'check', points: 1 },
-      { id: 'm8', label: 'Moderado: vulnerabilidade socioeconômica / mulher negra', type: 'check', points: 1 },
+      { id: 'h1', label: 'Pré-eclâmpsia em gestação anterior', type: 'check', points: 10 },
+      { id: 'h2', label: 'Gestação múltipla', type: 'check', points: 10 },
+      { id: 'h3', label: 'Hipertensão crônica', type: 'check', points: 10 },
+      { id: 'h4', label: 'Diabetes tipo 1 ou 2 pré-gestacional', type: 'check', points: 10 },
+      { id: 'h5', label: 'Doença renal crônica', type: 'check', points: 10 },
+      { id: 'h6', label: 'Doença autoimune (LES, síndrome antifosfolípide)', type: 'check', points: 10 },
+      { id: 'm1', label: 'Nuliparidade', type: 'check', points: 1 },
+      { id: 'm2', label: 'Obesidade (IMC > 30)', type: 'check', points: 1 },
+      { id: 'm3', label: 'Mãe ou irmã com pré-eclâmpsia', type: 'check', points: 1 },
+      { id: 'm4', label: 'Idade ≥ 35 anos', type: 'check', points: 1 },
+      { id: 'm5', label: 'Intervalo interpartal > 10 anos', type: 'check', points: 1 },
+      { id: 'm6', label: 'Gestação por reprodução assistida', type: 'check', points: 1 },
+      { id: 'm7', label: 'Desfecho adverso prévio (RN PIG, baixo peso)', type: 'check', points: 1 },
+      { id: 'm8', label: 'Vulnerabilidade socioeconômica / mulher negra', type: 'check', points: 1 },
     ],
     compute(v) {
       const s = sumPoints(this, v);
@@ -1316,6 +1335,18 @@
     tabs: ['geriatria'],
     category: 'Avaliação geriátrica ampla',
     keywords: 'ivcf ivcf-20 vulnerabilidade fragilidade idoso geriatria rastreio atenção primária',
+    groups: [
+      { legend: 'Atividades de vida diária instrumentais (máximo de 4 pontos)', ids: ['aivd1', 'aivd2', 'aivd3'] },
+      { legend: 'Atividade de vida diária básica', ids: ['abvd'] },
+      { legend: 'Cognição', ids: ['cog1', 'cog2', 'cog3'] },
+      { legend: 'Humor', ids: ['hum1', 'hum2'] },
+      { legend: 'Mobilidade: alcance, preensão e pinça', ids: ['mob1', 'mob2'] },
+      { legend: 'Capacidade aeróbica e/ou muscular', ids: ['cap'] },
+      { legend: 'Marcha', ids: ['mar1', 'mar2'] },
+      { legend: 'Continência esfincteriana', ids: ['cont'] },
+      { legend: 'Comunicação', ids: ['vis', 'aud'] },
+      { legend: 'Comorbidades múltiplas', ids: ['com'] },
+    ],
     fields: [
       { id: 'age', label: 'Idade', type: 'select', scored: true, options: [
         { v: '0', t: '60–74 anos' }, { v: '1', t: '75–84 anos' }, { v: '3', t: '≥ 85 anos' }] },
@@ -1568,6 +1599,7 @@
     tabs: ['geriatria'],
     category: 'Cuidados e funcionalidade',
     keywords: 'katz abvd atividades básicas vida diária funcionalidade dependência idoso',
+    checkLegend: 'Marque as atividades feitas sem ajuda',
     fields: [
       { id: 'b', label: 'Banho: independente (ajuda só para uma parte do corpo)', type: 'check', points: 1 },
       { id: 'v', label: 'Vestir-se: pega as roupas e se veste sem ajuda (exceto amarrar sapatos)', type: 'check', points: 1 },

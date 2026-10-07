@@ -141,7 +141,7 @@ ${eduCatalog}`;
       const calc = CALCS.find((c) => c.name === name.trim());
       const rel = calc ? CALCS.filter((c) => c.category === calc.category && c.id !== calc.id).slice(0, 4) : [];
       return 'No modo guia (offline) eu não interpreto casos individualmente — a interpretação de referência já aparece no quadro do resultado. ' +
-        'Para uma discussão detalhada com IA, configure sua chave da Anthropic em ⚙️.' +
+        'Para uma discussão detalhada com IA, configure sua chave da Anthropic em Configurações (botão do painel).' +
         (rel.length ? '\n\nFerramentas relacionadas que podem complementar a avaliação:\n' + rel.map((c) => `- [[calc:${c.id}]]`).join('\n') : '');
     }
     const calcs = rankCalcs(text);
@@ -158,7 +158,7 @@ ${eduCatalog}`;
       out = 'Não encontrei uma ferramenta específica para isso. Tente palavras como *risco cardiovascular*, *fratura*, ' +
         '*trombose*, *pré-operatório*, *gestação*, *rim* ou *pressão alta*.';
     }
-    if (!state.key) out += '\n\n_Modo guia por palavras-chave. Para respostas completas com IA, configure sua chave em ⚙️._';
+    if (!state.key) out += '\n\n_Modo guia por palavras-chave. Para respostas completas com IA, configure sua chave em Configurações._';
     return out;
   }
 
@@ -170,11 +170,11 @@ ${eduCatalog}`;
       .replace(/(^|\W)_(.+?)_(?=\W|$)/g, '$1<em>$2</em>')
       .replace(/\[\[calc:([a-z0-9_]+)\]\]/g, (m, id) => {
         const c = CALCS.find((x) => x.id === id);
-        return c ? `<button type="button" class="tool-link" data-calc="${id}">🧮 ${esc(c.name)}</button>` : '';
+        return c ? `<button type="button" class="tool-link" data-calc="${id}">${window.ICON('calculator')}${esc(c.name)}</button>` : '';
       })
       .replace(/\[\[edu:([a-z0-9-]+)\]\]/g, (m, id) => {
         const e = EDU.find((x) => x.id === id);
-        return e ? `<button type="button" class="tool-link" data-edu="${id}">📘 ${esc(e.title)}</button>` : '';
+        return e ? `<button type="button" class="tool-link" data-edu="${id}">${window.ICON('book')}${esc(e.title)}</button>` : '';
       });
   }
 
@@ -284,9 +284,9 @@ ${eduCatalog}`;
 
   function explainError(err, Anthropic) {
     if (Anthropic) {
-      if (err instanceof Anthropic.AuthenticationError) return 'Chave de API inválida. Confira em ⚙️.';
-      if (err instanceof Anthropic.PermissionDeniedError) return 'Sua chave não tem permissão para este modelo. Tente outro modelo em ⚙️.';
-      if (err instanceof Anthropic.NotFoundError) return 'Modelo não encontrado para esta conta. Escolha outro modelo em ⚙️.';
+      if (err instanceof Anthropic.AuthenticationError) return 'Chave de API inválida. Confira em Configurações.';
+      if (err instanceof Anthropic.PermissionDeniedError) return 'Sua chave não tem permissão para este modelo. Tente outro modelo em Configurações.';
+      if (err instanceof Anthropic.NotFoundError) return 'Modelo não encontrado para esta conta. Escolha outro modelo em Configurações.';
       if (err instanceof Anthropic.RateLimitError) return 'Limite de uso atingido. Aguarde alguns instantes e tente novamente.';
       if (err instanceof Anthropic.APIConnectionError) return 'Sem conexão com a API da Anthropic. Verifique sua internet.';
       if (err instanceof Anthropic.APIError) return `Erro da API (${err.status || '?'}): ${err.message}`;
