@@ -12,9 +12,26 @@
     cirurgia: { title: 'Especialidades cirúrgicas', sub: 'Avaliação pré-operatória, tromboprofilaxia, abdome agudo e trauma.' },
     gineco: { title: 'Ginecologia e obstetrícia', sub: 'Pré-natal, parto, saúde da mulher e osteoporose pós-menopausa.' },
     geriatria: { title: 'Geriatria', sub: 'Avaliação geriátrica ampla: fragilidade, funcionalidade, cognição, humor, delirium, quedas, nutrição e pele.' },
+    favoritos: { title: 'Favoritos', sub: 'Suas calculadoras marcadas com estrela, de todas as especialidades.' },
   };
+  const SPECIALTY = { clinica: 'Clínica', cirurgia: 'Cirúrgica', gineco: 'Gineco & Obstetrícia', geriatria: 'Geriatria' };
+
+  // Preferências locais (favoritos, tamanho do texto): o site funciona normalmente se o armazenamento falhar
+  const store = {
+    get(k, fallback) { try { const v = localStorage.getItem(k); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  };
+  const EDU_SIZES = [
+    { px: 16, label: 'Texto normal' }, { px: 18, label: 'Texto ampliado' }, { px: 20, label: 'Texto grande' },
+    { px: 22, label: 'Texto muito grande' }, { px: 24, label: 'Texto máximo' },
+  ];
 
   const state = { tab: 'clinica', category: null, query: '', edu: EDU[0].id, calc: null, touched: false };
+  let favs = store.get('favoritos', []);
+  if (!Array.isArray(favs)) favs = [];
+  favs = favs.filter((id) => CALCS.some((c) => c.id === id));
+  let eduSize = store.get('eduFontIndex', 1);
+  if (!(eduSize >= 0 && eduSize < EDU_SIZES.length)) eduSize = 1;
 
   const norm = (s) => (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -61,13 +78,40 @@
     }).filter((x) => x.score >= terms.length).sort((a, b) => b.score - a.score).map((x) => x.c);
   }
 
+  function origin(c) {
+    const [first, ...rest] = c.tabs.filter((t) => SPECIALTY[t]);
+    return `<span class="card-origin"><strong>${esc(SPECIALTY[first])}</strong>` +
+      (rest.length ? ` · também em ${esc(rest.map((t) => SPECIALTY[t]).join(', '))}` : '') + '</span>';
+  }
+
+  function cardHtml(c, showOrigin) {
+    const on = favs.includes(c.id);
+    return `
+      <div class="card calc-card">
+        <span class="pill">${esc(c.category)}</span>
+        <button class="card-open" type="button" data-calc="${c.id}" aria-describedby="d-${c.id}">
+          <span class="card-title">${esc(c.name)}</span>
+        </button>
+        <span class="card-desc" id="d-${c.id}">${esc(c.short)}</span>
+        ${showOrigin ? origin(c) : ''}
+        <button class="icon-btn fav" type="button" data-fav="${c.id}" aria-pressed="${on}"
+          aria-label="${on ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}: ${esc(c.name)}">${ICON('star')}</button>
+      </div>`;
+  }
+
   function renderCalcs() {
     const q = state.query.trim();
+    const isFav = !q && state.tab === 'favoritos';
     let list;
     if (q) {
       list = searchCalcs(q);
       $('#calc-title').textContent = 'Resultados da busca';
       $('#calc-subtitle').textContent = `${list.length} calculadora(s) para “${q}” em todas as especialidades.`;
+      $('#chips').innerHTML = '';
+    } else if (isFav) {
+      list = favs.map(byId);
+      $('#calc-title').textContent = TABS.favoritos.title;
+      $('#calc-subtitle').textContent = TABS.favoritos.sub;
       $('#chips').innerHTML = '';
     } else {
       const t = TABS[state.tab];
@@ -82,13 +126,44 @@
       }).join('');
       if (state.category) list = list.filter((c) => c.category === state.category);
     }
-    $('#grid').innerHTML = list.map((c) => `
-      <button class="card calc-card" type="button" data-calc="${c.id}">
-        <span class="pill">${esc(c.category)}</span>
-        <span class="card-title">${esc(c.name)}</span>
-        <span class="card-desc">${esc(c.short)}</span>
-      </button>`).join('');
-    $('#empty').hidden = list.length > 0;
+    $('#grid').innerHTML = list.map((c) => cardHtml(c, !!q || isFav)).join('');
+    $('#empty').hidden = list.length > 0 || isFav;
+    $('#fav-empty').hidden = !(isFav && !list.length);
+  }
+
+  /* ---------- favoritos ---------- */
+  function syncFavUi() {
+    const n = favs.length;
+    const badge = $('#fav-count');
+    badge.textContent = n;
+    badge.hidden = !n;
+    const tab = $('.tab[data-tab=favoritos]');
+    tab.setAttribute('aria-label', n ? `Favoritos (${n})` : 'Favoritos');
+    $$('[data-fav]').forEach((b) => {
+      const c = byId(b.dataset.fav), on = favs.includes(c.id);
+      b.setAttribute('aria-pressed', on);
+      b.setAttribute('aria-label', `${on ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}: ${c.name}`);
+    });
+    const d = $('#dlg-fav');
+    if (state.calc) {
+      const on = favs.includes(state.calc.id);
+      d.setAttribute('aria-pressed', on);
+      d.setAttribute('aria-label', on ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
+    }
+  }
+
+  function toggleFav(id) {
+    favs = favs.includes(id) ? favs.filter((x) => x !== id) : favs.concat(id);
+    store.set('favoritos', favs);
+    // Na própria aba de favoritos, a lista muda; o foco vai para o próximo cartão (ou para o título)
+    if (state.tab === 'favoritos' && !state.query.trim() && !$('#calc-dialog').open) {
+      const idx = $$('#grid [data-fav]').findIndex((b) => b.dataset.fav === id);
+      renderCalcs();
+      const next = $$('#grid .card-open')[Math.max(0, idx - (favs.includes(id) ? 0 : 1))] || $('#calc-title');
+      if (next === $('#calc-title')) next.setAttribute('tabindex', '-1');
+      next.focus();
+    }
+    syncFavUi();
   }
 
   /* ---------- diálogo da calculadora ---------- */
@@ -289,6 +364,7 @@
       checksHtml(calc) +
       '<div class="form-actions"><button class="btn btn-ghost" type="reset">Limpar</button></div>';
     state.calc = calc;
+    syncFavUi();
     update();
     const dlg = $('#calc-dialog');
     if (!dlg.open) dlg.showModal();
@@ -311,8 +387,10 @@
     const idx = EDU.indexOf(e);
     const next = EDU[idx + 1];
     $('#edu-content').innerHTML = `
+      ${printHead()}
       <h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>
       ${e.html}
+      ${printFoot()}
       <div class="edu-footer">
         ${next ? `<button class="btn" type="button" data-edu="${next.id}">Próximo: ${esc(next.title)}${ICON('arrow')}</button>` : ''}
         <button class="btn btn-ghost" type="button" data-print-one>${ICON('printer')}Imprimir este tópico</button>
@@ -329,13 +407,43 @@
     $('#edu-content').scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
   }
 
-  function printAllEdu() {
+  const printHead = () => `<header class="print-only print-head">
+      <strong>Hipertensão arterial — guia para o paciente</strong>
+      <span>MedCalc · material educativo · ${new Date().toLocaleDateString('pt-BR')}</span>
+    </header>`;
+  const printFoot = () => `<footer class="print-only print-foot">
+      Este material não substitui a orientação da sua equipe de saúde. Em caso de emergência, ligue 192 (SAMU).
+    </footer>`;
+
+  function renderPrintAll() {
     const box = $('#edu-content');
-    box.innerHTML = '<h1>Hipertensão arterial — guia para o paciente</h1>' +
-      EDU.map((e) => `<section><h2>${esc(e.title)}</h2>${e.html}</section>`).join('');
+    box.innerHTML = printHead() +
+      EDU.map((e) => `<section class="print-section"><h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>${e.html}</section>`).join('') +
+      printFoot();
     box.classList.add('print-all');
+  }
+
+  // Guia completo: monta todos os tópicos, imprime e volta ao tópico atual depois da impressão
+  function printAllEdu() {
+    renderPrintAll();
+    window.addEventListener('afterprint', () => renderEdu(), { once: true });
     window.print();
-    renderEdu();
+  }
+
+  function applyEduSize() {
+    const sz = EDU_SIZES[eduSize];
+    $('#edu-content').style.setProperty('--edu-fs', sz.px / 16 + 'rem');
+    $('#font-label').textContent = sz.label;
+    $('#font-dec').disabled = eduSize === 0;
+    $('#font-inc').disabled = eduSize === EDU_SIZES.length - 1;
+  }
+
+  function changeEduSize(delta) {
+    const next = Math.min(EDU_SIZES.length - 1, Math.max(0, eduSize + delta));
+    if (next === eduSize) return;
+    eduSize = next;
+    store.set('eduFontIndex', eduSize);
+    applyEduSize();
   }
 
   /* ---------- roteamento ---------- */
@@ -380,6 +488,9 @@
     });
 
     document.addEventListener('click', (e) => {
+      const fv = e.target.closest('[data-fav]');
+      if (fv) { toggleFav(fv.dataset.fav); return; }
+      if (e.target.closest('#dlg-fav')) { if (state.calc) toggleFav(state.calc.id); return; }
       const c = e.target.closest('[data-calc]');
       if (c) { openCalc(c.dataset.calc); return; }
       const ed = e.target.closest('[data-edu]');
@@ -432,6 +543,7 @@
     dlg.addEventListener('close', () => {
       if (dlg.open) return; // o diálogo já foi reaberto com outra calculadora
       state.calc = null;
+      if (state.tab === 'favoritos' && !state.query.trim()) renderCalcs();
       if (location.hash.startsWith('#calc/')) history.replaceState(null, '', '#' + state.tab);
     });
 
@@ -449,12 +561,16 @@
     });
 
     $('#print-edu').addEventListener('click', printAllEdu);
+    $('#font-dec').addEventListener('click', () => changeEduSize(-1));
+    $('#font-inc').addEventListener('click', () => changeEduSize(1));
     window.addEventListener('hashchange', route);
   }
 
-  window.App = { openCalc, openEdu, searchCalcs, byId, eduById, esc, norm };
+  window.App = { openCalc, openEdu, searchCalcs, byId, eduById, esc, norm, renderPrintAll };
 
   initTheme();
   bind();
+  applyEduSize();
+  syncFavUi();
   if (location.hash) route(); else setTab('clinica');
 })();

@@ -31,9 +31,9 @@
         <a class="tab" href="#cirurgia" data-tab="cirurgia"><span data-icon="bandage"></span>Cirúrgica</a>
         <a class="tab" href="#gineco" data-tab="gineco"><span data-icon="female"></span>Gineco &amp; Obstetrícia</a>
         <a class="tab" href="#geriatria" data-tab="geriatria"><span data-icon="elder"></span>Geriatria</a>
+        <a class="tab" href="#favoritos" data-tab="favoritos"><span data-icon="star"></span>Favoritos<span id="fav-count" class="count" hidden></span></a>
         <a class="tab" href="#educacao" data-tab="educacao"><span data-icon="book"></span>Paciente: Hipertensão</a>
       </nav>
-      <button class="tab-ai" data-open-ai type="button"><span data-icon="sparkles"></span>Assistente IA</button>
     </div>
   </header>
 
@@ -48,6 +48,11 @@
       </div>
       <div id="grid" class="grid"></div>
       <p id="empty" class="empty" hidden>Nenhuma calculadora encontrada. Tente outro termo ou pergunte ao <button class="link" data-open-ai type="button">Assistente IA</button>.</p>
+      <div id="fav-empty" class="empty-state" hidden>
+        <p><strong>Nenhuma calculadora favorita ainda.</strong></p>
+        <p>Toque na estrela <span data-icon="star"></span> de um cartão, ou dentro de uma calculadora aberta, para guardá-la aqui.
+          Os favoritos ficam salvos neste navegador.</p>
+      </div>
     </section>
 
     <section id="view-edu" class="view" hidden>
@@ -56,7 +61,14 @@
           <h1>Hipertensão arterial — guia para o paciente</h1>
           <p class="muted">Informações em linguagem simples para ler, imprimir ou enviar ao paciente.</p>
         </div>
-        <button id="print-edu" class="btn btn-ghost" type="button"><span data-icon="printer"></span>Imprimir / salvar PDF</button>
+        <div class="edu-tools">
+          <div class="textsize" role="group" aria-label="Tamanho do texto">
+            <button id="font-dec" class="btn btn-ghost" type="button" aria-label="Diminuir o texto"><span class="a-small" aria-hidden="true">A−</span></button>
+            <output id="font-label" for="font-dec font-inc" aria-live="polite">Texto ampliado</output>
+            <button id="font-inc" class="btn btn-ghost" type="button" aria-label="Aumentar o texto"><span class="a-big" aria-hidden="true">A+</span></button>
+          </div>
+          <button id="print-edu" class="btn btn-ghost" type="button"><span data-icon="printer"></span>Imprimir / salvar PDF</button>
+        </div>
       </div>
       <div class="edu-layout">
         <nav id="edu-nav" class="edu-nav" aria-label="Tópicos"></nav>
@@ -79,7 +91,10 @@
           <h2 id="dlg-title"></h2>
           <p id="dlg-short" class="muted"></p>
         </div>
-        <button class="icon-btn" data-close type="button" aria-label="Fechar calculadora"><span data-icon="close"></span></button>
+        <div class="dlg-actions">
+          <button id="dlg-fav" class="icon-btn fav" type="button" aria-pressed="false" aria-label="Adicionar aos favoritos"><span data-icon="star"></span></button>
+          <button class="icon-btn" data-close type="button" aria-label="Fechar calculadora"><span data-icon="close"></span></button>
+        </div>
       </div>
       <form id="calc-form" class="calc-form" novalidate></form>
       <p id="dlg-ref" class="ref"></p>
