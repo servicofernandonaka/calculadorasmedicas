@@ -76,7 +76,7 @@ ${eduCatalog}`;
   const SYN = {
     idoso: 'geriatria idoso', idosa: 'geriatria idoso', idosos: 'geriatria idoso', velhice: 'geriatria idoso',
     demencia: 'cognicao memoria', memoria: 'cognicao demencia', esquecimento: 'memoria cognicao',
-    confuso: 'delirium', confusao: 'delirium', depressao: 'humor gds', triste: 'depressao humor',
+    confuso: 'delirium', confusao: 'delirium', depressao: 'humor gds phq-9', triste: 'depressao humor',
     queda: 'quedas', caiu: 'queda', desnutricao: 'nutricao mna', escara: 'lesao por pressao braden',
     fragil: 'fragilidade', dependente: 'funcionalidade dependencia',
     gravida: 'gestacao gravidez pre-natal', gestante: 'gestacao gravidez pre-natal', gestacao: 'gravidez pre-natal',
@@ -89,7 +89,7 @@ ${eduCatalog}`;
     pressao: 'hipertensao pa', colesterol: 'ldl dislipidemia', triglicerides: 'dislipidemia', estatina: 'colesterol ldl',
     dpoc: 'gold pneumologia', enfisema: 'dpoc gold', asma: 'gina pneumologia', asmatico: 'asma gina', bronquite: 'dpoc asma',
     paliativo: 'paliativos spict pps', paliativos: 'spict pps ppi esas', terminal: 'paliativos prognostico', prognostico: 'ppi pps',
-    fibromialgia: 'dor cronica', ansiedade: 'depressao humor', panico: 'ansiedade',
+    fibromialgia: 'dor cronica', ansiedade: 'gad-7 depressao', panico: 'ansiedade gad-7', deprimido: 'depressao phq-9',
     diabetico: 'diabetes glicemia', insulina: 'diabetes', cardiaca: 'insuficiencia coracao', inchaco: 'insuficiencia cardiaca', hipertenso: 'hipertensao pa', hipertensao: 'pa pressao',
     gordura: 'obesidade imc', peso: 'imc obesidade', parto: 'bishop apgar parto',
     bebe: 'apgar recem-nascido peso fetal', menopausa: 'osteoporose densitometria',

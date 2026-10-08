@@ -2061,6 +2061,85 @@
     ref: 'Global Initiative for Asthma (GINA) — Global Strategy for Asthma Management and Prevention, 2025 update.',
   });
 
+  /* ============================== SAÚDE MENTAL ============================== */
+
+  const FREQ = [
+    { v: '0', t: 'Nenhuma vez' }, { v: '1', t: 'Vários dias' },
+    { v: '2', t: 'Mais da metade dos dias' }, { v: '3', t: 'Quase todos os dias' },
+  ];
+  const freqItems = (items) => items.map((label, i) => ({ id: 'q' + (i + 1), label: `${i + 1}. ${label}`, type: 'select', scored: true, options: FREQ }));
+
+  C.push({
+    id: 'phq9',
+    name: 'PHQ-9 (depressão)',
+    short: 'Rastreio e gravidade de depressão nas últimas 2 semanas.',
+    tabs: ['clinica', 'gineco'],
+    category: 'Saúde mental',
+    keywords: 'phq-9 phq9 depressão humor tristeza rastreio saúde mental questionário',
+    fields: freqItems([
+      'Pouco interesse ou pouco prazer em fazer as coisas',
+      'Sentir-se “para baixo”, deprimido(a) ou sem perspectiva',
+      'Dificuldade para pegar no sono ou permanecer dormindo, ou dormir mais do que o costume',
+      'Sentir-se cansado(a) ou com pouca energia',
+      'Falta de apetite ou comer demais',
+      'Sentir-se mal consigo mesmo(a), achar que é um fracasso ou que decepcionou sua família ou a si mesmo(a)',
+      'Dificuldade para se concentrar nas coisas, como ler o jornal ou ver televisão',
+      'Lentidão para se movimentar ou falar, a ponto de outras pessoas perceberem — ou o oposto: agitação ou inquietação muito maior que o costume',
+      'Pensar em se ferir de alguma maneira ou que seria melhor estar morto(a)',
+    ]),
+    compute(v) {
+      const s = sumPoints(this, v);
+      const cut = [[4, 'Sintomas mínimos', 'low'], [9, 'Depressão leve', 'low'], [14, 'Depressão moderada', 'mod'],
+        [19, 'Depressão moderadamente grave', 'high'], [27, 'Depressão grave', 'high']];
+      const step = cut.findIndex(([max]) => s <= max);
+      const [, sub, level] = cut[step];
+      return {
+        main: s + ' / 27', sub, level,
+        scale: { step: step + 1, labels: ['Mínima', 'Leve', 'Moderada', 'Mod. grave', 'Grave'] },
+        details: 'Período: últimas 2 semanas. Escore ≥ 10 tem boa sensibilidade e especificidade para depressão maior e pede avaliação clínica ' +
+          'para confirmar o diagnóstico. Em geral: 5–9 — acompanhar e orientar; 10–14 — plano terapêutico (psicoterapia e/ou antidepressivo); ' +
+          '≥ 15 — tratamento ativo, com antidepressivo e/ou psicoterapia. Útil também para monitorar a resposta: redução ≥ 50% indica resposta; < 5, remissão.',
+        warn: +v.q9 > 0 ? 'Item 9 positivo: pergunte diretamente sobre ideação, plano e meios de suicídio e avalie o risco hoje. ' +
+          'Risco imediato: não deixe a pessoa sozinha e acione SAMU 192 / emergência; oriente o CVV (188).' : undefined,
+        edu: 'mental-oque',
+      };
+    },
+    ref: 'Kroenke K, Spitzer RL, Williams JB. J Gen Intern Med 2001;16:606-613; Santos IS et al. Cad Saúde Pública 2013;29:1533-1543 (validação brasileira).',
+  });
+
+  C.push({
+    id: 'gad7',
+    name: 'GAD-7 (ansiedade)',
+    short: 'Rastreio e gravidade de ansiedade nas últimas 2 semanas.',
+    tabs: ['clinica', 'gineco'],
+    category: 'Saúde mental',
+    keywords: 'gad-7 gad7 ansiedade transtorno de ansiedade generalizada preocupação nervosismo pânico rastreio saúde mental',
+    fields: freqItems([
+      'Sentir-se nervoso(a), ansioso(a) ou muito tenso(a)',
+      'Não ser capaz de impedir ou de controlar as preocupações',
+      'Preocupar-se muito com diversas coisas',
+      'Dificuldade para relaxar',
+      'Ficar tão agitado(a) que se torna difícil permanecer sentado(a)',
+      'Ficar facilmente aborrecido(a) ou irritado(a)',
+      'Sentir medo, como se algo horrível fosse acontecer',
+    ]),
+    compute(v) {
+      const s = sumPoints(this, v);
+      const cut = [[4, 'Ansiedade mínima', 'low'], [9, 'Ansiedade leve', 'low'], [14, 'Ansiedade moderada', 'mod'], [21, 'Ansiedade grave', 'high']];
+      const step = cut.findIndex(([max]) => s <= max);
+      const [, sub, level] = cut[step];
+      return {
+        main: s + ' / 21', sub, level,
+        scale: { step: step + 1, labels: ['Mínima', 'Leve', 'Moderada', 'Grave'] },
+        details: 'Período: últimas 2 semanas. Escore ≥ 10 sugere transtorno de ansiedade generalizada provável e pede avaliação clínica; o GAD-7 ' +
+          'também rastreia, com menor precisão, pânico, ansiedade social e estresse pós-traumático. Exclua causas clínicas e por substâncias ' +
+          '(hipertireoidismo, cafeína, estimulantes, abstinência) e pesquise depressão associada (PHQ-9).',
+        edu: 'mental-oque',
+      };
+    },
+    ref: 'Spitzer RL et al. Arch Intern Med 2006;166:1092-1097; Moreno AL et al. Trends Psychiatry Psychother 2016 (versão brasileira).',
+  });
+
   /* ============================== CUIDADOS PALIATIVOS ============================== */
 
   C.push({

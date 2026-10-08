@@ -6,7 +6,7 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
   - **Clínica**: PREVENT (escore recomendado pela SBC 2025), Framingham e ASCVD (versões anteriores, para comparação),
     classificação da PA (Diretriz 2025), CHA₂DS₂-VA, HAS-BLED, LDL (Sampson e Friedewald), IMC/cintura, FINDRISC, HOMA-IR,
     TFG CKD-EPI 2021, Cockcroft-Gault, OST, ORAI, checklist dos fatores do FRAX,
-    CURB-65, qSOFA, Wells TEP/TVP, Pádua, Child-Pugh, MELD-Na, DPOC (GOLD 2025: grau e grupo ABE), asma (GINA: tratamento inicial e controle).
+    CURB-65, qSOFA, Wells TEP/TVP, Pádua, Child-Pugh, MELD-Na, DPOC (GOLD 2025: grau e grupo ABE), asma (GINA: tratamento inicial e controle), PHQ-9 e GAD-7.
   - **Cirúrgica**: Índice de Lee (RCRI), ASA, Caprini, STOP-BANG, Apfel, Alvarado, Glasgow, reposição em queimados (ATLS/Parkland), índice de choque (+ TFG, Wells, Child/MELD).
   - **Ginecologia e obstetrícia**: IG/DPP pela DUM e pela USG, ganho de peso gestacional (curvas brasileiras, MS 2022), risco de pré-eclâmpsia (AAS),
     diabetes gestacional, Bishop, Apgar, peso fetal (Hadlock), período fértil (+ osteoporose, Caprini, Wells).
