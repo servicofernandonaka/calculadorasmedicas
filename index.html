@@ -134,20 +134,30 @@
       </div>
     </div>
     <div id="ai-settings" class="ai-settings" hidden>
-      <p class="small">O guia funciona sem configuração (modo offline, por palavras-chave). Para respostas com IA generativa
-        (Claude, da Anthropic), informe sua chave de API. A chave fica salva <strong>apenas neste navegador</strong> e é
-        enviada diretamente à API da Anthropic.</p>
+      <p class="small">O guia funciona sem configuração (modo offline, por palavras-chave). Para respostas com IA generativa,
+        escolha a plataforma e informe sua chave de API. A chave fica salva <strong>apenas neste navegador</strong> e é
+        enviada diretamente à plataforma escolhida.</p>
       <label class="field">
-        <span>Chave da API Anthropic</span>
-        <input id="ai-key" type="password" placeholder="sk-ant-…" autocomplete="off">
+        <span>Plataforma</span>
+        <select id="ai-provider">
+          <option value="anthropic">Claude (Anthropic)</option>
+          <option value="gemini">Gemini (Google)</option>
+          <option value="openai">ChatGPT (OpenAI)</option>
+          <option value="openrouter">OpenRouter (vários modelos)</option>
+        </select>
       </label>
       <label class="field">
+        <span id="ai-key-label">Chave da API</span>
+        <input id="ai-key" type="password" placeholder="" autocomplete="off">
+      </label>
+      <p class="small"><a id="ai-key-link" href="#" target="_blank" rel="noopener">Como obter a chave</a></p>
+      <label class="field">
         <span>Modelo</span>
-        <select id="ai-model">
-          <option value="claude-opus-5-5">Claude Opus 5.5 (recomendado)</option>
-          <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (mais rápido)</option>
-          <option value="claude-haiku-4-5">Claude Haiku 4.5 (mais econômico)</option>
-        </select>
+        <select id="ai-model"></select>
+      </label>
+      <label class="field" id="ai-custom-wrap" hidden>
+        <span>ID do modelo</span>
+        <input id="ai-custom-model" type="text" placeholder="" autocomplete="off" spellcheck="false">
       </label>
       <div class="row">
         <button id="ai-save" class="btn" type="button">Salvar</button>
