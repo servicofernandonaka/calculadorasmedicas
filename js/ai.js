@@ -38,7 +38,8 @@
 
   /* ---------- prompt do sistema ---------- */
   const catalog = CALCS.map((c) => `- ${c.id} | ${c.name} | ${c.category} | abas: ${c.tabs.join(', ')} | ${c.short}`).join('\n');
-  const eduCatalog = EDU.map((e) => `- ${e.id} | ${e.title}`).join('\n');
+  const eduCatalog = window.EDU_GUIDES.map((g) => `${g.title}:\n` +
+    EDU.filter((e) => e.guide === g.id).map((e) => `- ${e.id} | ${e.title}`).join('\n')).join('\n');
   const SYSTEM = `Você é o assistente do site MedCalc, um conjunto de calculadoras médicas e material educativo em português do Brasil.
 Seu papel é GUIAR o usuário: entender a situação clínica, indicar quais calculadoras do site usar e em que ordem, explicar como
 interpretar os resultados e apontar o material educativo adequado para pacientes.
@@ -59,12 +60,12 @@ Regras:
   oriente ligar 192 (SAMU) ou procurar o pronto-socorro imediatamente.
 - Se o usuário enviar dados que identifiquem pacientes (nome, CPF, prontuário), lembre-o de não fazer isso.
 
-Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), geriatria (Geriatria), educacao (Paciente: Hipertensão).
+Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), geriatria (Geriatria), paliativos (Cuidados paliativos), educacao (Paciente: guias sobre hipertensão, diabetes, colesterol, insuficiência cardíaca, quedas, asma, DPOC, fibromialgia, depressão e ansiedade).
 
 Catálogo de calculadoras (ID | nome | categoria | abas | descrição):
 ${catalog}
 
-Material educativo para pacientes — hipertensão (ID | título):
+Material educativo para pacientes, por guia (ID | título):
 ${eduCatalog}`;
 
   /* ---------- modo guia (offline) ---------- */
@@ -75,7 +76,7 @@ ${eduCatalog}`;
   const SYN = {
     idoso: 'geriatria idoso', idosa: 'geriatria idoso', idosos: 'geriatria idoso', velhice: 'geriatria idoso',
     demencia: 'cognicao memoria', memoria: 'cognicao demencia', esquecimento: 'memoria cognicao',
-    confuso: 'delirium', confusao: 'delirium', depressao: 'humor gds', triste: 'depressao humor',
+    confuso: 'delirium', confusao: 'delirium', depressao: 'humor gds phq-9', triste: 'depressao humor',
     queda: 'quedas', caiu: 'queda', desnutricao: 'nutricao mna', escara: 'lesao por pressao braden',
     fragil: 'fragilidade', dependente: 'funcionalidade dependencia',
     gravida: 'gestacao gravidez pre-natal', gestante: 'gestacao gravidez pre-natal', gestacao: 'gravidez pre-natal',
@@ -85,7 +86,11 @@ ${eduCatalog}`;
     osso: 'osteoporose fratura', ossos: 'osteoporose fratura', fraturas: 'fratura osteoporose',
     trombose: 'tev tvp', embolia: 'tep', tev: 'trombose', rim: 'renal tfg creatinina', rins: 'renal tfg',
     figado: 'cirrose hepatica', acucar: 'diabetes glicemia', glicose: 'diabetes glicemia',
-    pressao: 'hipertensao pa', hipertenso: 'hipertensao pa', hipertensao: 'pa pressao',
+    pressao: 'hipertensao pa', colesterol: 'ldl dislipidemia', triglicerides: 'dislipidemia', estatina: 'colesterol ldl',
+    dpoc: 'gold pneumologia', enfisema: 'dpoc gold', asma: 'gina pneumologia', asmatico: 'asma gina', bronquite: 'dpoc asma',
+    paliativo: 'paliativos spict pps', paliativos: 'spict pps ppi esas', terminal: 'paliativos prognostico', prognostico: 'ppi pps',
+    fibromialgia: 'dor cronica', ansiedade: 'gad-7 depressao', panico: 'ansiedade gad-7', deprimido: 'depressao phq-9',
+    diabetico: 'diabetes glicemia', insulina: 'diabetes', cardiaca: 'insuficiencia coracao', inchaco: 'insuficiencia cardiaca', hipertenso: 'hipertensao pa', hipertensao: 'pa pressao',
     gordura: 'obesidade imc', peso: 'imc obesidade', parto: 'bishop apgar parto',
     bebe: 'apgar recem-nascido peso fetal', menopausa: 'osteoporose densitometria',
     sangramento: 'hemorragia sangramento choque', avc: 'fibrilacao avc', arritmia: 'fibrilacao',
@@ -124,7 +129,8 @@ ${eduCatalog}`;
   function rankEdu(text) {
     const toks = tokens(text);
     return EDU.map((e) => {
-      const hay = norm(e.title + ' ' + e.keywords);
+      const g = window.EDU_GUIDES.find((x) => x.id === e.guide);
+      const hay = norm(e.title + ' ' + e.keywords + ' ' + (g ? g.title : ''));
       return { e, s: toks.filter((t) => hay.includes(t)).length };
     }).filter((x) => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 3).map((x) => x.e);
   }
@@ -151,7 +157,7 @@ ${eduCatalog}`;
     if (calcs.length) {
       out += 'Estas calculadoras parecem relevantes:\n' + calcs.map((c) => `- [[calc:${c.id}]] — ${c.short}`).join('\n');
     }
-    if (edus.length && (wantsPatient || !calcs.length || /hipertens|pressao/.test(n))) {
+    if (edus.length && (wantsPatient || !calcs.length || /hipertens|pressao|diabet|glicemia|colesterol|triglic|insuficiencia cardiaca|queda|asma|dpoc|fibromialg|depress|ansied/.test(n))) {
       out += (out ? '\n\n' : '') + 'Material para o paciente:\n' + edus.map((e) => `- [[edu:${e.id}]]`).join('\n');
     }
     if (!out) {
@@ -321,6 +327,7 @@ ${eduCatalog}`;
     'Mulher de 65 anos: risco de fratura',
     'Idoso frágil: avaliação geriátrica',
     'Orientar paciente hipertenso',
+    'Orientar paciente com diabetes',
   ];
 
   function renderSuggestions() {
