@@ -1,7 +1,7 @@
 /*
  * Assistente IA.
  * - Modo guia (offline): sugere calculadoras e materiais por palavras-chave, sem enviar dados a lugar nenhum.
- * - Modo IA: Claude (SDK oficial da Anthropic), Gemini (Google) ou ChatGPT (OpenAI), chamados direto do navegador
+ * - Modo IA: Claude (SDK oficial da Anthropic), Gemini (Google), ChatGPT (OpenAI) ou OpenRouter, chamados direto do navegador
  *   com a chave do próprio usuário.
  */
 (function () {
@@ -51,10 +51,26 @@
       keyName: 'OpenAI',
       placeholder: 'sk-…',
       keyUrl: 'https://platform.openai.com/api-keys',
+      url: 'https://api.openai.com/v1/chat/completions',
       models: [
         ['gpt-5.6-terra', 'GPT-5.6 Terra (recomendado)'],
         ['gpt-5.6-sol', 'GPT-5.6 Sol (mais detalhado)'],
         ['gpt-5.4-mini', 'GPT-5.4 mini (mais rápido e econômico)'],
+      ],
+    },
+    // OpenRouter usa o mesmo formato da API da OpenAI e dá acesso a modelos de várias empresas com uma só chave.
+    openrouter: {
+      name: 'OpenRouter',
+      keyName: 'OpenRouter',
+      placeholder: 'sk-or-…',
+      keyUrl: 'https://openrouter.ai/settings/keys',
+      url: 'https://openrouter.ai/api/v1/chat/completions',
+      headers: { 'HTTP-Referer': location.origin + location.pathname, 'X-Title': 'CalcMed' },
+      models: [
+        ['anthropic/claude-sonnet-5.5', 'Claude Sonnet 5.5 (recomendado)'],
+        ['anthropic/claude-opus-5.5', 'Claude Opus 5.5 (mais detalhado)'],
+        ['google/gemini-3.8-flash', 'Gemini 3.8 Flash (rápido e econômico)'],
+        ['openai/gpt-5.6-terra', 'GPT-5.6 Terra'],
       ],
     },
   };
@@ -358,7 +374,11 @@ ${eduCatalog}`;
         if (!line.startsWith('data:')) continue;
         const data = line.slice(5).trim();
         if (!data || data === '[DONE]') continue;
-        try { onData(JSON.parse(data)); } catch (e) { /* linha incompleta ou não JSON */ }
+        let j;
+        try { j = JSON.parse(data); } catch (e) { continue; /* linha incompleta ou não JSON */ }
+        // OpenRouter pode enviar um erro no meio do streaming (ex.: falha do provedor).
+        if (j.error) throw new HttpError(j.error.code || 500, j.error.message || 'erro no streaming');
+        onData(j);
       }
     }
   }
@@ -389,9 +409,10 @@ ${eduCatalog}`;
   }
 
   function openaiRequest() {
-    return fetch('https://api.openai.com/v1/chat/completions', {
+    const cfg = PROVIDERS[state.provider];
+    return fetch(cfg.url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${state.key}` },
+      headers: Object.assign({ 'Content-Type': 'application/json', Authorization: `Bearer ${state.key}` }, cfg.headers),
       body: JSON.stringify({
         model: state.model,
         stream: true,
@@ -444,6 +465,7 @@ ${eduCatalog}`;
     if (s === 401 || (s === 400 && /api key|api_key/i.test(err.message))) return 'Chave de API inválida. Confira em Configurações.';
     if (s === 403) return 'Sua chave não tem permissão para este modelo (ou a API não está ativada na conta). Tente outro modelo em Configurações.';
     if (s === 404) return 'Modelo não encontrado para esta conta. Escolha outro modelo em Configurações.';
+    if (s === 402) return 'Créditos insuficientes na conta. Confira o saldo na plataforma.';
     if (s === 429) return 'Limite de uso ou de créditos atingido. Aguarde alguns instantes ou confira o saldo da conta.';
     return `Erro da API (${s}): ${err.message}`;
   }
@@ -547,7 +569,7 @@ ${eduCatalog}`;
     const known = cfg.models.some((m) => m[0] === model);
     $('#ai-model').value = known ? model : (p === 'anthropic' ? cfg.models[0][0] : CUSTOM);
     $('#ai-custom-model').value = known ? '' : model;
-    $('#ai-custom-model').placeholder = p === 'gemini' ? 'ex.: gemini-3.7-flash' : 'ex.: gpt-5.6-luna';
+    $('#ai-custom-model').placeholder = { gemini: 'ex.: gemini-3.7-flash', openai: 'ex.: gpt-5.6-luna', openrouter: 'ex.: deepseek/…' }[p] || '';
     $('#ai-custom-wrap').hidden = $('#ai-model').value !== CUSTOM;
   }
 

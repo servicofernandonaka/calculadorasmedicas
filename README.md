@@ -29,7 +29,7 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
   - **Modo Claude**: com uma chave da API da Anthropic (⚙️ no painel), usa o SDK oficial `@anthropic-ai/sdk` direto no navegador.
     A chave fica salva apenas no `localStorage` do navegador. Modelo padrão: Claude Opus 5.5; com fallback automático no servidor
     (`fallbacks: "default"`) caso um classificador de segurança recuse a resposta.
-  - **Modo Gemini ou ChatGPT**: escolha a plataforma em ⚙️ e informe a chave do Google AI Studio ou da OpenAI. As chamadas vão
+  - **Modo Gemini, ChatGPT ou OpenRouter**: escolha a plataforma em ⚙️ e informe a chave do Google AI Studio, da OpenAI ou do OpenRouter. As chamadas vão
     direto do navegador à API REST de cada plataforma, com streaming. Cada plataforma guarda sua própria chave; dá para digitar
     o ID de outro modelo em "Outro modelo".
 
@@ -54,7 +54,7 @@ css/styles.css      estilos (tema claro/escuro, responsivo, impressão)
 js/calculators.js   definição de cada calculadora (campos, fórmula, interpretação, referência)
 js/education.js     conteúdo educativo para pacientes (guias por tema)
 js/app.js           interface, busca, roteamento por hash
-js/ai.js            assistente (modo guia + Claude, Gemini e ChatGPT)
+js/ai.js            assistente (modo guia + Claude, Gemini, ChatGPT e OpenRouter)
 ```
 
 Para adicionar uma calculadora, inclua um objeto em `js/calculators.js` com `id`, `name`, `tabs`, `category`, `fields`
