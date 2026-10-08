@@ -6,19 +6,24 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
   - **Clínica**: PREVENT (escore recomendado pela SBC 2025), Framingham e ASCVD (versões anteriores, para comparação),
     classificação da PA (Diretriz 2025), CHA₂DS₂-VA, HAS-BLED, LDL (Sampson e Friedewald), IMC/cintura, FINDRISC, HOMA-IR,
     TFG CKD-EPI 2021, Cockcroft-Gault, OST, ORAI, checklist dos fatores do FRAX,
-    CURB-65, qSOFA, Wells TEP/TVP, Pádua, Child-Pugh, MELD-Na.
+    CURB-65, qSOFA, Wells TEP/TVP, Pádua, Child-Pugh, MELD-Na, DPOC (GOLD 2025: grau e grupo ABE), asma (GINA: tratamento inicial e controle).
   - **Cirúrgica**: Índice de Lee (RCRI), ASA, Caprini, STOP-BANG, Apfel, Alvarado, Glasgow, reposição em queimados (ATLS/Parkland), índice de choque (+ TFG, Wells, Child/MELD).
   - **Ginecologia e obstetrícia**: IG/DPP pela DUM e pela USG, ganho de peso gestacional (curvas brasileiras, MS 2022), risco de pré-eclâmpsia (AAS),
     diabetes gestacional, Bishop, Apgar, peso fetal (Hadlock), período fértil (+ osteoporose, Caprini, Wells).
   - **Geriatria**: IVCF-20, Escala Clínica de Fragilidade (CFS), FRAIL, SARC-F, velocidade de marcha, Timed Up and Go,
     Morse, Braden, Katz (ABVD), Lawton-Brody (AIVD), MEEM, Mini-Cog, GDS-15, 4AT (delirium) e MNA-SF
     (+ PA, CHA₂DS₂-VASc, HAS-BLED, TFG, Cockcroft-Gault, osteoporose/FRAX, Pádua, STOP-BANG, IMC).
+- **Cuidados paliativos**: SPICT-BR, PPS, Índice Prognóstico Paliativo (PPI), ECOG/Karnofsky, ESAS-r (+ CFS).
 - **Material para o paciente** (aba Paciente), em guias por tema, cada um impresso ou salvo em PDF separadamente:
   - **Hipertensão**: o que é, importância do tratamento, alimentação, atividade física, como medir a pressão em casa, hábitos e sinais de alerta.
   - **Diabetes**: o que é, tratamento e metas, alimentação e atividade física, hipoglicemia e dias de doença, cuidados com os pés.
   - **Colesterol e triglicerídeos**: exames e metas de LDL, remédios (estatinas), alimentação e hábitos.
   - **Insuficiência cardíaca**: o que é, remédios, autocuidado (peso, sal, líquidos) e sinais de alerta.
   - **Prevenção de quedas no idoso**: causas, casa segura, exercícios de força e equilíbrio, remédios, calçados e o que fazer após cair.
+  - **Asma**: o que é, remédios, como usar a bombinha, crise e plano de ação.
+  - **DPOC**: o que é, cigarro, remédios e vacinas, exercício e respiração, crise e sinais de alerta.
+  - **Fibromialgia**: o que é, tratamento, sono e dia a dia.
+  - **Depressão e ansiedade**: sintomas, tratamento, autocuidado e onde buscar ajuda em crise (CVV 188).
 - **Assistente IA** (botão ✨), que guia o usuário até as ferramentas certas:
   - **Modo guia (offline)**: funciona sem configuração, por palavras-chave, sem enviar dados a terceiros.
   - **Modo Claude**: com uma chave da API da Anthropic (⚙️ no painel), usa o SDK oficial `@anthropic-ai/sdk` direto no navegador.
@@ -36,7 +41,7 @@ python3 -m http.server 8000
 
 Para publicar no **GitHub Pages**: Settings → Pages → *Deploy from a branch* → selecione a branch e a pasta `/ (root)`.
 
-Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#educacao/has-nutricao`, `#educacao/dm` (abre o primeiro tópico do guia), `#calc/framingham`.
+Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#paliativos`, `#educacao/has-nutricao`, `#educacao/dm` (abre o primeiro tópico do guia), `#calc/framingham`.
 
 ## Estrutura
 

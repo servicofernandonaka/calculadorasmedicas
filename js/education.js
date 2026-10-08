@@ -1,4 +1,4 @@
-/* Material educativo para pacientes, organizado em guias por tema (hipertensão, diabetes, colesterol, insuficiência cardíaca, quedas) */
+/* Material educativo para pacientes, organizado em guias por tema (cardiometabólicos, respiratórios, quedas, dor crônica e saúde mental) */
 (function () {
   'use strict';
 
@@ -801,6 +801,494 @@
           </ul>
         </div>`,
     },
+
+    /* ===================== Asma ===================== */
+    {
+      id: 'asma-oque',
+      guide: 'asma',
+      sources: 'Global Initiative for Asthma (GINA) — relatório 2025; Sociedade Brasileira de Pneumologia e Tisiologia (SBPT) — Recomendações para o manejo da asma.',
+      icon: 'lungs',
+      title: 'O que é asma',
+      keywords: 'o que é asma bronquite chiado falta de ar tosse gatilhos alergia crise',
+      html: `
+        <p class="lead">Asma é uma <strong>inflamação crônica dos brônquios</strong>, os canais que levam o ar aos pulmões.
+        Eles ficam sensíveis e, diante de certos gatilhos, se fecham, causando os sintomas. Não é contagiosa e, com tratamento correto,
+        a maioria das pessoas leva uma vida normal, inclusive praticando esportes.</p>
+        <h3>Sintomas</h3>
+        <ul>
+          <li><strong>Chiado</strong> no peito, falta de ar e sensação de aperto no peito.</li>
+          <li><strong>Tosse</strong>, principalmente à noite, de madrugada ou com exercício.</li>
+          <li>Os sintomas vão e voltam e pioram com gatilhos.</li>
+        </ul>
+        <h3>Gatilhos comuns</h3>
+        <div class="grid-cards">
+          <div class="mini-card"><strong>Infecções</strong><span>Gripes e resfriados</span></div>
+          <div class="mini-card"><strong>Alérgenos</strong><span>Ácaros, poeira, mofo, pelos de animais, baratas</span></div>
+          <div class="mini-card"><strong>Fumaça</strong><span>Cigarro (inclusive eletrônico), queimadas, fogão a lenha</span></div>
+          <div class="mini-card"><strong>Ambiente</strong><span>Ar frio, poluição, cheiros fortes, produtos de limpeza</span></div>
+          <div class="mini-card"><strong>Outros</strong><span>Exercício sem tratamento, emoções fortes, alguns remédios (anti-inflamatórios, betabloqueadores)</span></div>
+        </div>
+        <h3>A inflamação continua mesmo sem sintomas</h3>
+        <p>Por isso o tratamento de base é feito com <strong>corticoide inalatório</strong>, que trata a inflamação.
+        Usar só a “bombinha de alívio” (como o salbutamol, a “bombinha azul”) melhora o sintoma na hora, mas
+        <strong>não trata a doença</strong> e, sozinha, aumenta o risco de crises graves.</p>
+        <h3>Asma bem controlada é quando você</h3>
+        <ul>
+          <li>Tem sintomas no máximo 2 vezes por semana.</li>
+          <li>Não acorda à noite por causa da asma.</li>
+          <li>Precisa do remédio de alívio no máximo 2 vezes por semana.</li>
+          <li>Consegue fazer todas as suas atividades, inclusive exercício.</li>
+        </ul>
+        <p>Se algum desses itens não acontece, converse com seu médico: o tratamento pode ser ajustado.</p>`,
+    },
+    {
+      id: 'asma-remedios',
+      guide: 'asma',
+      sources: 'Global Initiative for Asthma (GINA) — relatório 2025; SBPT — Recomendações para o manejo da asma.',
+      icon: 'pill',
+      title: 'Remédios da asma',
+      keywords: 'remédio asma bombinha corticoide inalatório budesonida formoterol salbutamol manutenção alívio',
+      html: `
+        <p class="lead">Os remédios da asma são, em sua maioria, <strong>inalados</strong>: vão direto aos pulmões,
+        em doses pequenas e com poucos efeitos no resto do corpo.</p>
+        <h3>Dois papéis diferentes</h3>
+        <div class="grid-cards">
+          <div class="mini-card"><strong>Controle (manutenção)</strong><span>Corticoide inalatório, sozinho ou junto com um broncodilatador de longa duração. Trata a inflamação e previne crises.</span></div>
+          <div class="mini-card"><strong>Alívio (resgate)</strong><span>Abre os brônquios em minutos, durante os sintomas.</span></div>
+        </div>
+        <h3>O esquema mais usado hoje</h3>
+        <p>Muitas pessoas usam <strong>uma única bombinha de budesonida + formoterol</strong> tanto para o controle
+        (todos os dias, se indicado) quanto para o alívio dos sintomas. Assim, cada vez que você alivia o sintoma, também trata a inflamação.
+        Seu médico vai dizer quantas inalações usar por dia e o máximo permitido.</p>
+        <h3>Como usar bem</h3>
+        <ul>
+          <li><strong>Use o remédio de controle todos os dias</strong>, se foi prescrito assim, mesmo quando estiver bem.</li>
+          <li>Depois de usar corticoide inalatório, <strong>enxágue a boca com água e cuspa</strong> para evitar sapinho e rouquidão.</li>
+          <li>Leve a bombinha às consultas e peça para conferirem sua técnica: o erro de técnica é uma das principais causas de asma descontrolada.</li>
+          <li>Tenha sempre a bombinha de alívio com você.</li>
+          <li>Se estiver usando o alívio mais de 2 vezes por semana, ou acordando à noite, <strong>volte ao médico</strong>: o tratamento precisa de ajuste.</li>
+        </ul>
+        <h3>Mitos</h3>
+        <ul>
+          <li><strong>“Bombinha vicia ou faz mal ao coração.”</strong> Mito. Usada como orientado, ela é segura.</li>
+          <li><strong>“Corticoide inalado engorda.”</strong> Mito. A dose é muito pequena; quem engorda é o corticoide em comprimido usado com frequência — e controlar a asma é justamente o que evita precisar dele.</li>
+        </ul>
+        <p class="note">Gestantes: continue o tratamento. Asma descontrolada é mais perigosa para o bebê do que os remédios inalatórios.</p>`,
+    },
+    {
+      id: 'asma-bombinha',
+      guide: 'asma',
+      sources: 'Global Initiative for Asthma (GINA) — relatório 2025; SBPT — Recomendações para o manejo da asma.',
+      icon: 'wind',
+      title: 'Como usar a bombinha',
+      keywords: 'como usar bombinha spray espaçador aerocâmara inalador pó seco técnica inalatória',
+      html: `
+        <p class="lead">Há dois tipos principais de inalador. Siga as instruções do seu modelo e peça para um profissional conferir.</p>
+        <h3>Spray (aerossol) — de preferência com espaçador</h3>
+        <ol>
+          <li>Retire a tampa e <strong>agite</strong> o spray.</li>
+          <li>Encaixe no espaçador (aerocâmara). Pode ser feito em casa com uma garrafa PET de 500 mL, se orientado pela equipe.</li>
+          <li>Solte todo o ar dos pulmões, longe do bocal.</li>
+          <li>Coloque o bocal na boca (ou a máscara bem ajustada no rosto), aperte o spray <strong>uma vez</strong>.</li>
+          <li>Puxe o ar <strong>devagar e fundo</strong> (ou respire normalmente 5 a 6 vezes dentro do espaçador).</li>
+          <li><strong>Prenda a respiração por cerca de 10 segundos</strong> e solte devagar.</li>
+          <li>Se for usar outro jato, espere 30 a 60 segundos e repita.</li>
+        </ol>
+        <h3>Pó seco (cápsula, disco ou turbo)</h3>
+        <ol>
+          <li>Prepare a dose conforme o modelo (gire, abra ou fure a cápsula). <strong>Não agite</strong> e não sopre dentro do aparelho.</li>
+          <li>Solte o ar longe do bocal.</li>
+          <li>Feche bem os lábios no bocal e <strong>puxe o ar rápido e com força</strong>, fundo.</li>
+          <li>Prenda a respiração por cerca de 10 segundos e solte devagar.</li>
+          <li>Guarde em local seco, com a tampa fechada.</li>
+        </ol>
+        <h3>Depois</h3>
+        <ul>
+          <li>Se o remédio tiver corticoide, enxágue a boca e cuspa.</li>
+          <li>Lave o espaçador uma vez por semana com água e detergente neutro e deixe secar ao ar, sem enxugar.</li>
+          <li>Confira o contador de doses ou a validade e não deixe o remédio acabar.</li>
+        </ul>`,
+    },
+    {
+      id: 'asma-crise',
+      guide: 'asma',
+      sources: 'Global Initiative for Asthma (GINA) — relatório 2025; SBPT — Recomendações para o manejo da asma.',
+      icon: 'alert',
+      title: 'Crise de asma e plano de ação',
+      keywords: 'crise de asma piora falta de ar plano de ação emergência pronto-socorro samu',
+      html: `
+        <p class="lead">Peça ao seu médico um <strong>plano de ação por escrito</strong>, com as doses que você deve usar em cada situação.
+        Em geral, ele segue este semáforo:</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Situação</th><th scope="col">O que você sente</th><th scope="col">O que fazer</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Verde</strong> — controlada</td><td>Sem sintomas ou poucos, dorme bem, faz as atividades</td><td>Continue o tratamento de controle</td></tr>
+            <tr><td><strong>Amarelo</strong> — piorando</td><td>Tosse, chiado ou falta de ar mais frequentes; acorda à noite; usa mais o alívio</td>
+              <td>Use o alívio conforme o plano e aumente o tratamento como combinado. Se não melhorar em 2 a 3 dias, procure a unidade de saúde</td></tr>
+            <tr><td><strong>Vermelho</strong> — crise grave</td><td>Falta de ar forte, dificuldade para falar frases, alívio não funciona ou dura pouco</td>
+              <td><strong>Use o alívio e procure atendimento imediatamente</strong> (192 ou pronto-socorro)</td></tr>
+          </tbody>
+        </table></div>
+        <div class="alert-box">
+          <strong>Ligue 192 (SAMU) ou vá ao pronto-socorro se:</strong>
+          <ul>
+            <li>Não consegue falar uma frase inteira por falta de ar</li>
+            <li>Lábios ou unhas ficam roxos ou acinzentados</li>
+            <li>Fica sonolento, confuso ou muito agitado</li>
+            <li>O remédio de alívio não melhora ou a melhora dura menos de 3 horas</li>
+          </ul>
+        </div>
+        <h3>Depois de uma crise</h3>
+        <ul>
+          <li>Se recebeu corticoide em comprimido, tome pelo número de dias prescrito.</li>
+          <li><strong>Marque consulta em até 1 semana</strong>: toda crise é um sinal de que o tratamento precisa ser revisto.</li>
+          <li>Vacine-se contra gripe todos os anos e contra covid-19 conforme o calendário.</li>
+        </ul>`,
+    },
+
+    /* ===================== DPOC ===================== */
+    {
+      id: 'dpoc-oque',
+      guide: 'dpoc',
+      sources: 'Global Initiative for Chronic Obstructive Lung Disease (GOLD) — relatório 2025; SBPT — Recomendações para o tratamento da DPOC.',
+      icon: 'lungs',
+      title: 'O que é DPOC',
+      keywords: 'o que é dpoc enfisema bronquite crônica cigarro fogão a lenha falta de ar tosse catarro espirometria',
+      html: `
+        <p class="lead">DPOC (doença pulmonar obstrutiva crônica) é uma doença em que os brônquios e os pulmões ficam
+        <strong>danificados de forma permanente</strong>, dificultando a saída do ar. Inclui o que muitos chamam de enfisema e bronquite crônica.</p>
+        <h3>Causas</h3>
+        <ul>
+          <li><strong>Cigarro</strong> é a principal causa — inclusive cigarro de palha, cachimbo, narguilé e cigarro eletrônico.</li>
+          <li><strong>Fumaça de fogão a lenha</strong> ou de carvão em ambiente fechado, por muitos anos.</li>
+          <li>Poeiras e produtos químicos no trabalho, poluição e, mais raramente, causas genéticas.</li>
+        </ul>
+        <h3>Sintomas</h3>
+        <ul>
+          <li><strong>Falta de ar</strong> que piora aos poucos, primeiro nos esforços (subir escada, andar rápido) e depois em atividades simples.</li>
+          <li>Tosse crônica, com ou sem catarro, principalmente pela manhã.</li>
+          <li>Chiado no peito e cansaço.</li>
+        </ul>
+        <h3>Como é feito o diagnóstico</h3>
+        <p>Pela <strong>espirometria</strong> (o “exame do sopro”), que mede o quanto e com que velocidade você consegue soltar o ar.</p>
+        <h3>O que dá para fazer</h3>
+        <p>A DPOC não tem cura, mas o tratamento <strong>alivia a falta de ar, reduz as crises e permite viver mais e melhor</strong>.
+        A medida mais importante de todas é <strong>parar de fumar</strong> — em qualquer idade e em qualquer fase da doença.</p>`,
+    },
+    {
+      id: 'dpoc-tratamento',
+      guide: 'dpoc',
+      sources: 'GOLD — relatório 2025; SBPT — Recomendações para o tratamento da DPOC; Ministério da Saúde — Programa Nacional de Controle do Tabagismo.',
+      icon: 'pill',
+      title: 'Tratamento: cigarro, remédios e vacinas',
+      keywords: 'tratamento dpoc parar de fumar tabagismo remédios inalatórios broncodilatador tiotrópio vacinas oxigênio',
+      html: `
+        <h3>Parar de fumar</h3>
+        <p>É o que mais muda o futuro da doença. O <strong>SUS oferece tratamento gratuito</strong> para parar de fumar,
+        com grupos de apoio, adesivos e gomas de nicotina e remédios. Pergunte na sua unidade de saúde.
+        Também evite ficar perto de fumaça de cigarro e de fogão a lenha.</p>
+        <h3>Remédios inalatórios</h3>
+        <ul>
+          <li>Os principais são <strong>broncodilatadores de longa duração</strong> (como tiotrópio, formoterol, salmeterol, umeclidínio e vilanterol), usados todos os dias para manter os brônquios abertos.</li>
+          <li>Algumas pessoas, com crises frequentes, também usam corticoide inalatório.</li>
+          <li>Um broncodilatador de curta duração (como o salbutamol) pode ser usado para alívio.</li>
+          <li><strong>A técnica correta importa tanto quanto o remédio</strong>: peça para conferirem como você usa o inalador.</li>
+        </ul>
+        <h3>Vacinas</h3>
+        <p>Mantenha em dia as vacinas contra <strong>gripe (todo ano), pneumonia (pneumococo), covid-19</strong> e, quando indicado,
+        coqueluche (dTpa), herpes-zóster e vírus sincicial respiratório. Infecções são a principal causa de crises.</p>
+        <h3>Oxigênio em casa</h3>
+        <p>Indicado apenas para quem tem oxigênio baixo no sangue, confirmado em exame. Quando indicado, ele aumenta a sobrevida se usado
+        <strong>pelo menos 15 horas por dia</strong>.</p>
+        <div class="alert-box">
+          <strong>Nunca fume nem fique perto de fogo, fogão ou velas usando oxigênio: há risco de queimaduras graves e incêndio.</strong>
+        </div>`,
+    },
+    {
+      id: 'dpoc-respirar',
+      guide: 'dpoc',
+      sources: 'GOLD — relatório 2025; SBPT — Recomendações para o tratamento da DPOC.',
+      icon: 'wind',
+      title: 'Exercício e técnicas de respiração',
+      keywords: 'reabilitação pulmonar exercício caminhada respiração frenolabial lábios franzidos falta de ar economizar energia',
+      html: `
+        <p class="lead">A falta de ar faz a pessoa se movimentar menos, o que enfraquece os músculos e piora ainda mais a falta de ar.
+        <strong>Exercício regular quebra esse ciclo.</strong></p>
+        <h3>Reabilitação pulmonar</h3>
+        <p>Programas supervisionados de exercício e orientação melhoram a falta de ar, a disposição e a qualidade de vida,
+        e reduzem internações. Pergunte se há um serviço de reabilitação ou fisioterapia respiratória perto de você.</p>
+        <h3>Em casa</h3>
+        <ul>
+          <li>Caminhe todos os dias, começando com poucos minutos e aumentando aos poucos. Sentir um pouco de falta de ar durante o exercício é esperado.</li>
+          <li>Faça exercícios para braços e pernas (levantar da cadeira, pesos leves, elásticos).</li>
+          <li>Use o broncodilatador de alívio antes do exercício, se orientado.</li>
+        </ul>
+        <h3>Respiração com lábios franzidos</h3>
+        <ol>
+          <li>Puxe o ar pelo nariz, devagar, contando até 2.</li>
+          <li>Franza os lábios como se fosse assobiar ou soprar uma vela.</li>
+          <li>Solte o ar devagar pela boca, contando até 4 (o dobro do tempo).</li>
+        </ol>
+        <p>Use nos esforços (subir escadas, tomar banho) e quando sentir falta de ar.</p>
+        <h3>Para poupar energia</h3>
+        <ul>
+          <li>Sente-se para tomar banho, se vestir e cozinhar.</li>
+          <li>Planeje as atividades mais pesadas para o horário em que se sente melhor e faça pausas.</li>
+          <li>Faça refeições menores e mais vezes ao dia; a barriga cheia aperta os pulmões.</li>
+        </ul>`,
+    },
+    {
+      id: 'dpoc-crise',
+      guide: 'dpoc',
+      sources: 'GOLD — relatório 2025.',
+      icon: 'alert',
+      title: 'Crise (exacerbação) e sinais de alerta',
+      keywords: 'crise dpoc exacerbação piora catarro falta de ar febre emergência samu',
+      html: `
+        <p class="lead">Crise, ou <strong>exacerbação</strong>, é quando os sintomas pioram além do habitual por alguns dias.
+        Tratar cedo evita internações. Combine com seu médico um <strong>plano de ação por escrito</strong>.</p>
+        <h3>Sinais de que uma crise está começando</h3>
+        <ul>
+          <li>Mais falta de ar do que o normal.</li>
+          <li>Mais catarro, ou catarro mais grosso, amarelo ou esverdeado.</li>
+          <li>Mais tosse ou chiado; precisar mais do remédio de alívio.</li>
+          <li>Febre, cansaço maior, inchaço nas pernas.</li>
+        </ul>
+        <p>Nesses casos, siga seu plano de ação e <strong>procure a unidade de saúde no mesmo dia ou no seguinte</strong>.</p>
+        <div class="alert-box">
+          <strong>Ligue 192 (SAMU) ou vá ao pronto-socorro se tiver:</strong>
+          <ul>
+            <li>Falta de ar intensa, mesmo em repouso, ou dificuldade para falar</li>
+            <li>Lábios ou unhas roxos</li>
+            <li>Sonolência, confusão ou agitação</li>
+            <li>Dor no peito</li>
+          </ul>
+        </div>
+        <h3>Depois de uma crise</h3>
+        <ul>
+          <li>Faça o tratamento completo (corticoide e antibiótico, se receitados).</li>
+          <li>Volte à consulta em poucas semanas: o tratamento de manutenção pode precisar de ajuste.</li>
+          <li>Retome a atividade física aos poucos e pergunte sobre reabilitação pulmonar.</li>
+        </ul>`,
+    },
+
+    /* ===================== Fibromialgia ===================== */
+    {
+      id: 'fibro-oque',
+      guide: 'fibro',
+      sources: 'Macfarlane GJ et al. EULAR revised recommendations for the management of fibromyalgia. Ann Rheum Dis 2017; Sociedade Brasileira de Reumatologia.',
+      icon: 'activity',
+      title: 'O que é fibromialgia',
+      keywords: 'o que é fibromialgia dor no corpo todo cansaço sono sensibilidade dor crônica',
+      html: `
+        <p class="lead">Fibromialgia é uma condição de <strong>dor crônica espalhada pelo corpo</strong>, acompanhada de cansaço,
+        sono que não descansa e, muitas vezes, dificuldade de memória e concentração.</p>
+        <h3>A dor é real</h3>
+        <p>Na fibromialgia, o sistema nervoso fica “com o volume da dor aumentado” — o que os médicos chamam de
+        <strong>sensibilização central</strong>. Os sinais de dor são amplificados, mesmo sem lesão nos músculos ou articulações.</p>
+        <h3>O que a fibromialgia não é</h3>
+        <ul>
+          <li><strong>Não é inflamação</strong> e <strong>não deforma</strong> nem destrói articulações.</li>
+          <li><strong>Não é “coisa da cabeça”</strong> nem fraqueza: é uma condição reconhecida e estudada.</li>
+          <li>Os exames de sangue e imagem costumam ser normais — e isso é esperado. Eles servem para descartar outras doenças.</li>
+        </ul>
+        <h3>O que pode piorar os sintomas</h3>
+        <ul>
+          <li>Noites mal dormidas</li>
+          <li>Estresse, ansiedade e depressão</li>
+          <li>Ficar parado demais — ou exagerar no esforço em um dia bom</li>
+          <li>Frio, infecções e mudanças bruscas na rotina</li>
+        </ul>
+        <h3>Tem tratamento</h3>
+        <p>Não existe um remédio que resolva sozinho, mas a combinação de <strong>exercício, sono, manejo do estresse e,
+        quando necessário, remédios</strong> reduz a dor e melhora muito a qualidade de vida.</p>`,
+    },
+    {
+      id: 'fibro-tratamento',
+      guide: 'fibro',
+      sources: 'Macfarlane GJ et al. EULAR revised recommendations for the management of fibromyalgia. Ann Rheum Dis 2017.',
+      icon: 'pill',
+      title: 'Tratamento',
+      keywords: 'tratamento fibromialgia exercício aeróbico hidroginástica terapia cognitivo-comportamental remédios amitriptilina duloxetina pregabalina',
+      html: `
+        <h3>1. Exercício físico: o tratamento mais eficaz</h3>
+        <ul>
+          <li><strong>Atividade aeróbica</strong> (caminhada, bicicleta, hidroginástica, dança) e <strong>fortalecimento</strong> reduzem a dor e o cansaço.</li>
+          <li><strong>Comece bem devagar</strong>: 5 a 10 minutos por dia, aumentando aos poucos ao longo de semanas, até cerca de 150 minutos por semana.</li>
+          <li>É normal sentir um pouco mais de dor no começo; isso não é sinal de lesão. Se piorar muito, reduza um pouco, mas não pare.</li>
+          <li>Atividades na água morna, yoga, tai chi e pilates também ajudam.</li>
+        </ul>
+        <h3>2. Psicoterapia</h3>
+        <p>A <strong>terapia cognitivo-comportamental</strong> ajuda a lidar com a dor, o sono e o estresse, e reduz o impacto da doença no dia a dia.</p>
+        <h3>3. Remédios, quando necessários</h3>
+        <ul>
+          <li>Alguns remédios usados em doses baixas, como <strong>amitriptilina, ciclobenzaprina, duloxetina ou pregabalina</strong>, ajudam parte das pessoas, principalmente no sono e na dor.</li>
+          <li>Eles atuam no sistema nervoso — e não significam que o médico acha que você tem “problema psicológico”.</li>
+          <li>O efeito aparece em algumas semanas. Não pare de repente sem orientação.</li>
+          <li><strong>Anti-inflamatórios e corticoides não funcionam</strong> na fibromialgia, e opioides fortes devem ser evitados: podem até piorar a dor com o tempo.</li>
+        </ul>
+        <h3>4. Outras opções</h3>
+        <p>Acupuntura, hidroterapia, massagem e meditação podem ajudar algumas pessoas como complemento.</p>`,
+    },
+    {
+      id: 'fibro-diaadia',
+      guide: 'fibro',
+      sources: 'Macfarlane GJ et al. Ann Rheum Dis 2017; Sociedade Brasileira de Reumatologia.',
+      icon: 'moon',
+      title: 'Sono, ritmo e dia a dia',
+      keywords: 'sono higiene do sono ritmo pacing energia dias ruins estresse rotina fibromialgia',
+      html: `
+        <h3>Dosar a energia</h3>
+        <ul>
+          <li>Evite o ciclo “fazer tudo no dia bom e passar os dias seguintes de cama”.</li>
+          <li><strong>Divida as tarefas</strong> em partes menores e intercale com pausas curtas.</li>
+          <li>Mantenha uma rotina mais ou menos parecida todos os dias, inclusive nos dias de mais dor.</li>
+        </ul>
+        <h3>Dormir melhor</h3>
+        <ul>
+          <li>Deite e levante sempre no mesmo horário, inclusive nos fins de semana.</li>
+          <li>Evite café, chá preto, chimarrão e refrigerante de cola depois do meio da tarde.</li>
+          <li>Desligue celular e TV pelo menos 30 minutos antes de deitar.</li>
+          <li>Evite cochilos longos durante o dia.</li>
+          <li>Ronco alto e pausas na respiração devem ser contados ao médico.</li>
+        </ul>
+        <h3>Estresse e emoções</h3>
+        <ul>
+          <li>Técnicas de respiração lenta, relaxamento e meditação reduzem a tensão e a dor.</li>
+          <li>Ansiedade e depressão são comuns e pioram a dor; tratá-las faz parte do tratamento da fibromialgia.</li>
+          <li>Mantenha contato com amigos e atividades de que gosta.</li>
+        </ul>
+        <h3>Nos dias de piora</h3>
+        <ul>
+          <li>Calor local (banho morno, bolsa morna) e alongamentos leves ajudam.</li>
+          <li>Reduza o ritmo, mas tente não ficar totalmente parado.</li>
+          <li>Lembre-se: a crise passa.</li>
+        </ul>
+        <p class="note">Procure o médico se aparecerem sintomas novos, como febre, perda de peso, inchaço nas articulações ou fraqueza: eles não são típicos da fibromialgia.</p>`,
+    },
+
+    /* ===================== Depressão e ansiedade ===================== */
+    {
+      id: 'mental-oque',
+      guide: 'mental',
+      sources: 'Organização Mundial da Saúde — mhGAP; Ministério da Saúde — Rede de Atenção Psicossocial; CANMAT 2023 (depressão).',
+      icon: 'smile',
+      title: 'Entendendo depressão e ansiedade',
+      keywords: 'o que é depressão ansiedade tristeza preocupação pânico sintomas saúde mental',
+      html: `
+        <p class="lead">Depressão e ansiedade são <strong>problemas de saúde comuns e tratáveis</strong>. Não são fraqueza,
+        frescura nem falta de força de vontade. Muitas vezes aparecem juntas.</p>
+        <h3>Sinais de depressão</h3>
+        <p>Por pelo menos 2 semanas, na maior parte dos dias:</p>
+        <ul>
+          <li>Tristeza, vazio ou irritação</li>
+          <li><strong>Perda do interesse ou do prazer</strong> em coisas de que gostava</li>
+          <li>Cansaço, falta de energia, mudança no sono ou no apetite</li>
+          <li>Dificuldade de concentração, sentimento de culpa ou de inutilidade</li>
+          <li>Pensamentos de morte ou de que seria melhor não estar vivo</li>
+        </ul>
+        <h3>Sinais de ansiedade</h3>
+        <ul>
+          <li>Preocupação excessiva e difícil de controlar, quase todos os dias</li>
+          <li>Inquietação, tensão muscular, irritabilidade e dificuldade para dormir</li>
+          <li>Crises de <strong>pânico</strong>: medo intenso e súbito, com coração disparado, falta de ar, tremor, suor e sensação de que algo grave vai acontecer</li>
+          <li>Evitar lugares ou situações por medo</li>
+        </ul>
+        <p class="note">Sintomas físicos como dor no peito ou falta de ar devem ser avaliados por um profissional antes de serem atribuídos à ansiedade.</p>
+        <h3>Quando procurar ajuda</h3>
+        <p>Quando os sintomas duram semanas, atrapalham o trabalho, os estudos, os relacionamentos ou o cuidado consigo.
+        <strong>A unidade básica de saúde é a porta de entrada</strong>; os CAPS atendem os casos mais graves.</p>`,
+    },
+    {
+      id: 'mental-tratamento',
+      guide: 'mental',
+      sources: 'CANMAT 2023 (depressão); Organização Mundial da Saúde — mhGAP; Ministério da Saúde — Rede de Atenção Psicossocial.',
+      icon: 'pill',
+      title: 'Tratamento',
+      keywords: 'tratamento depressão ansiedade psicoterapia antidepressivo calmante benzodiazepínico clonazepam sertralina fluoxetina efeito colateral',
+      html: `
+        <p class="lead">O tratamento funciona para a maioria das pessoas. Pode incluir <strong>psicoterapia, remédios ou os dois</strong>,
+        conforme a gravidade e a sua preferência.</p>
+        <h3>Psicoterapia</h3>
+        <p>Terapias como a cognitivo-comportamental ensinam formas de lidar com pensamentos, emoções e situações difíceis.
+        Para casos leves a moderados, podem ser tão eficazes quanto os remédios.</p>
+        <h3>Antidepressivos</h3>
+        <p>São usados tanto para depressão quanto para ansiedade (por exemplo, sertralina, fluoxetina, escitalopram).</p>
+        <ul>
+          <li><strong>O efeito leva de 2 a 6 semanas</strong> para aparecer. Não desista antes.</li>
+          <li>Enjoo, dor de cabeça ou um pouco mais de ansiedade podem surgir nos primeiros dias e costumam passar.</li>
+          <li><strong>Não viciam</strong>, mas não devem ser parados de repente: a retirada é feita aos poucos, com o médico.</li>
+          <li>Depois da melhora, continue por pelo menos <strong>6 a 12 meses</strong> para evitar que os sintomas voltem.</li>
+        </ul>
+        <h3>Calmantes (benzodiazepínicos)</h3>
+        <p>Remédios como clonazepam, diazepam e alprazolam aliviam rapidamente, mas <strong>causam dependência</strong>,
+        sonolência, problemas de memória e quedas. Devem ser usados apenas por pouco tempo, quando indicados, e nunca com álcool.</p>
+        <div class="alert-box">
+          <strong>Avise o médico logo se, ao iniciar ou mudar a dose de um remédio, surgirem pensamentos de se machucar, agitação intensa ou piora importante do humor.</strong>
+        </div>`,
+    },
+    {
+      id: 'mental-autocuidado',
+      guide: 'mental',
+      sources: 'Organização Mundial da Saúde — mhGAP; CANMAT 2023 (intervenções de estilo de vida).',
+      icon: 'leaf',
+      title: 'Autocuidado',
+      keywords: 'autocuidado exercício sono rotina álcool respiração relaxamento rede de apoio',
+      html: `
+        <p class="lead">Atitudes do dia a dia não substituem o tratamento, mas <strong>ajudam muito</strong> na recuperação.</p>
+        <ul>
+          <li><strong>Movimente-se</strong>: caminhar 30 minutos, na maioria dos dias, melhora o humor e a ansiedade.</li>
+          <li><strong>Mantenha uma rotina</strong> de horários para acordar, comer e dormir.</li>
+          <li>Planeje <strong>pequenas atividades prazerosas</strong> todos os dias, mesmo sem vontade: a vontade costuma vir depois de começar.</li>
+          <li><strong>Converse</strong> com pessoas de confiança; evite se isolar.</li>
+          <li><strong>Evite álcool e outras drogas</strong>: eles pioram a depressão e a ansiedade e interferem nos remédios.</li>
+          <li>Reduza café e energéticos se tiver ansiedade ou insônia.</li>
+          <li>Limite notícias e redes sociais quando elas aumentarem a angústia.</li>
+        </ul>
+        <h3>Respiração para momentos de ansiedade</h3>
+        <ol>
+          <li>Sente-se e apoie uma mão na barriga.</li>
+          <li>Puxe o ar pelo nariz contando até 4, enchendo a barriga.</li>
+          <li>Segure por 2 segundos.</li>
+          <li>Solte devagar pela boca contando até 6.</li>
+          <li>Repita por alguns minutos.</li>
+        </ol>
+        <p>Numa crise de pânico, lembre-se: <strong>ela é muito desconfortável, mas passa</strong>, geralmente em poucos minutos.</p>`,
+    },
+    {
+      id: 'mental-crise',
+      guide: 'mental',
+      sources: 'Centro de Valorização da Vida (CVV); Ministério da Saúde — Rede de Atenção Psicossocial; Organização Mundial da Saúde — mhGAP.',
+      icon: 'phone',
+      title: 'Em crise: onde buscar ajuda',
+      keywords: 'suicídio pensamentos de morte crise cvv 188 caps emergência samu ajuda',
+      html: `
+        <p class="lead">Pensar em morte ou em se machucar é um sintoma que <strong>tem tratamento</strong>. Falar sobre isso
+        não aumenta o risco — ao contrário, é o primeiro passo para receber ajuda.</p>
+        <div class="alert-box">
+          <strong>Se você está pensando em se machucar ou em tirar a própria vida:</strong>
+          <ul>
+            <li><strong>CVV — ligue 188</strong> (gratuito, 24 horas, sigiloso) ou acesse cvv.org.br</li>
+            <li><strong>SAMU — 192</strong> ou o pronto-socorro mais próximo, se houver risco imediato</li>
+            <li>Procure o <strong>CAPS</strong> ou a unidade de saúde da sua região</li>
+          </ul>
+        </div>
+        <h3>Para familiares e amigos: sinais de alerta</h3>
+        <ul>
+          <li>Falar em morrer, em “sumir” ou em ser um peso para os outros</li>
+          <li>Procurar meios de se machucar</li>
+          <li>Despedir-se, doar objetos pessoais, isolar-se de repente</li>
+          <li>Aumento do uso de álcool ou drogas</li>
+          <li>Calma súbita depois de um período de muito sofrimento</li>
+        </ul>
+        <h3>Como ajudar</h3>
+        <ul>
+          <li>Pergunte diretamente e <strong>escute sem julgar</strong>.</li>
+          <li>Não deixe a pessoa sozinha se houver risco imediato.</li>
+          <li>Afaste remédios em excesso, armas e outros meios perigosos.</li>
+          <li>Ajude a pessoa a buscar atendimento e acompanhe-a, se possível.</li>
+        </ul>`,
+    },
   ];
 
   // Guias exibidos na aba "Paciente", na ordem do seletor de temas
@@ -810,5 +1298,9 @@
     { id: 'dlp', title: 'Colesterol e triglicerídeos', icon: 'activity' },
     { id: 'ic', title: 'Insuficiência cardíaca', icon: 'heart' },
     { id: 'queda', title: 'Prevenção de quedas no idoso', icon: 'elder' },
+    { id: 'asma', title: 'Asma', icon: 'lungs' },
+    { id: 'dpoc', title: 'DPOC', icon: 'lungs' },
+    { id: 'fibro', title: 'Fibromialgia', icon: 'activity' },
+    { id: 'mental', title: 'Depressão e ansiedade', icon: 'smile' },
   ];
 })();

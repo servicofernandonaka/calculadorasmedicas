@@ -1499,7 +1499,7 @@
     id: 'cfs',
     name: 'Escala Clínica de Fragilidade (CFS)',
     short: 'Classificação de Rockwood, de 1 (muito em forma) a 9 (doente terminal).',
-    tabs: ['geriatria', 'clinica'],
+    tabs: ['geriatria', 'clinica', 'paliativos'],
     category: 'Fragilidade e sarcopenia',
     keywords: 'cfs rockwood fragilidade clinical frailty scale idoso geriatria',
     fields: [
@@ -1910,6 +1910,325 @@
       };
     },
     ref: 'Rubenstein LZ et al. J Gerontol 2001; Kaiser MJ et al. J Nutr Health Aging 2009.',
+  });
+
+  /* ============================== PNEUMOLOGIA ============================== */
+
+  C.push({
+    id: 'gold',
+    name: 'DPOC — GOLD (grau e grupo ABE)',
+    short: 'Gravidade espirométrica (GOLD 1–4), grupo A/B/E e tratamento farmacológico inicial.',
+    tabs: ['clinica', 'geriatria'],
+    category: 'Pneumologia',
+    keywords: 'dpoc gold enfisema bronquite crônica abe mmrc cat espirometria vef1 exacerbação broncodilatador lama laba tratamento',
+    fields: [
+      { id: 'ratio', label: 'VEF₁/CVF pós-broncodilatador', type: 'select', options: [
+        { v: '1', t: '< 0,70 (obstrução confirmada)' }, { v: '0', t: '≥ 0,70' }] },
+      { id: 'fev1', label: 'VEF₁ pós-broncodilatador', type: 'number', unit: '% do previsto', min: 5, max: 150 },
+      { id: 'mmrc', label: 'Dispneia — escala mMRC', type: 'select', options: [
+        { v: '0', t: '0 — Só com exercício intenso' },
+        { v: '1', t: '1 — Ao andar depressa no plano ou subir ladeira leve' },
+        { v: '2', t: '2 — Anda mais devagar que pessoas da mesma idade ou precisa parar no próprio passo' },
+        { v: '3', t: '3 — Para para respirar após ~100 m ou poucos minutos no plano' },
+        { v: '4', t: '4 — Não sai de casa ou tem falta de ar ao se vestir' }] },
+      { id: 'cat', label: 'Pontuação total do CAT (opcional)', type: 'number', unit: 'pontos', min: 0, max: 40, optional: true },
+      { id: 'exmod', label: 'Exacerbações moderadas no último ano (corticoide e/ou antibiótico, sem internação)', type: 'number', unit: 'n.º', min: 0, max: 20 },
+      { id: 'exhosp', label: 'Exacerbações com internação no último ano', type: 'number', unit: 'n.º', min: 0, max: 20 },
+      { id: 'eos', label: 'Eosinófilos no sangue (opcional)', type: 'number', unit: 'células/µL', min: 0, max: 5000, optional: true },
+    ],
+    compute(v) {
+      if (v.ratio === '0') {
+        return {
+          main: 'Sem obstrução fixa', sub: 'VEF₁/CVF ≥ 0,70 não confirma DPOC pelo critério GOLD', level: 'info',
+          details: 'Com sintomas respiratórios e VEF₁/CVF ≥ 0,70, considere outros diagnósticos (asma, IC, bronquiectasias) e ' +
+            'PRISm (VEF₁ < 80% com relação preservada). Valores limítrofes (0,60–0,80) podem ser repetidos em outra ocasião.',
+        };
+      }
+      const grade = v.fev1 >= 80 ? 1 : v.fev1 >= 50 ? 2 : v.fev1 >= 30 ? 3 : 4;
+      const gradeName = ['Leve', 'Moderada', 'Grave', 'Muito grave'][grade - 1];
+      const symptomatic = +v.mmrc >= 2 || (v.cat != null && v.cat >= 10);
+      const group = v.exmod >= 2 || v.exhosp >= 1 ? 'E' : symptomatic ? 'B' : 'A';
+      const eos = v.eos;
+      let tx;
+      if (group === 'A') tx = 'um broncodilatador — de preferência de longa duração (LAMA ou LABA), salvo dispneia muito ocasional.';
+      else if (group === 'B') tx = 'LABA + LAMA, de preferência em dispositivo único.';
+      else tx = 'LABA + LAMA' + (eos != null && eos >= 300 ? '; com eosinófilos ≥ 300/µL, considerar LABA + LAMA + CI (terapia tripla).' : '.');
+      const fu = 'Seguimento: dispneia persistente em monoterapia → LABA + LAMA. Exacerbações em LABA + LAMA → eosinófilos ≥ 100/µL: ' +
+        'acrescentar CI (tripla); < 100/µL: roflumilaste (VEF₁ < 50% e bronquite crônica) ou azitromicina (preferencialmente ex-tabagistas). ' +
+        'Em tripla com eosinófilos ≥ 300/µL e bronquite crônica, considerar imunobiológico (dupilumabe). LABA + CI isolado não é recomendado na DPOC ' +
+        '(se houver asma associada, o esquema deve conter CI).';
+      return {
+        main: `GOLD ${grade} · Grupo ${group}`,
+        sub: `Obstrução ${gradeName.toLowerCase()} (VEF₁ ${fmt(v.fev1, 0)}%) · ${symptomatic ? 'mais sintomas' : 'menos sintomas'}` +
+          (group === 'E' ? ' · exacerbador' : ''),
+        level: group === 'A' ? 'low' : group === 'B' ? 'mod' : 'high',
+        scale: { step: group === 'A' ? 1 : group === 'B' ? 2 : 3, labels: ['A', 'B', 'E'], fill: false,
+          names: ['Grupo A', 'Grupo B', 'Grupo E'] },
+        note: 'Tratamento inicial: ' + tx,
+        details: 'Para todos: cessação do tabagismo, vacinas (influenza, pneumocócica, covid-19, dTpa, zóster e VSR conforme idade), ' +
+          'técnica inalatória, plano de ação e atividade física. Reabilitação pulmonar nos grupos B e E. ' +
+          'Sintomas altos = mMRC ≥ 2 ou CAT ≥ 10. Grupo E = ≥ 2 exacerbações moderadas ou ≥ 1 com internação no último ano. ' + fu,
+        warn: grade >= 3 ? 'VEF₁ < 50%: meça a SpO₂ em repouso; se ≤ 92%, faça gasometria arterial para avaliar oxigenoterapia domiciliar ' +
+          '(PaO₂ ≤ 55 mmHg, ou ≤ 59 mmHg com cor pulmonale ou policitemia).' : undefined,
+        edu: 'dpoc-oque',
+      };
+    },
+    ref: 'Global Initiative for Chronic Obstructive Lung Disease (GOLD) — Global Strategy for Prevention, Diagnosis and Management of COPD, 2025 report.',
+  });
+
+  const GINA_STEPS = {
+    2: 'Etapas 1–2: CI-formoterol em dose baixa conforme necessidade (alívio anti-inflamatório, sem manutenção diária).',
+    3: 'Etapa 3: CI-formoterol em dose baixa de manutenção + alívio com o mesmo inalador (MART).',
+    4: 'Etapa 4: CI-formoterol em dose média de manutenção + alívio (MART).',
+    5: 'Etapa 5: acrescentar LAMA; encaminhar para avaliação fenotípica e considerar imunobiológico (anti-IgE, anti-IL-5/5R, anti-IL-4Rα, anti-TSLP); considerar CI-formoterol em dose alta.',
+  };
+  const GINA_TRACK2 = 'Via alternativa (alívio com SABA): etapa 1 — CI sempre que usar SABA; etapa 2 — CI dose baixa diário; ' +
+    'etapa 3 — CI-LABA dose baixa; etapa 4 — CI-LABA dose média/alta; etapa 5 — como acima. Só use se o paciente tiver boa adesão ao controle diário.';
+  const GINA_DOSES = 'Budesonida-formoterol 200/6 µg (dose medida): alívio — 1 inalação conforme necessidade; MART dose baixa — 1 inalação 1–2×/dia + alívio; ' +
+    'MART dose média — 2 inalações 2×/dia + alívio. Máximo de 12 inalações/dia (adultos).';
+
+  C.push({
+    id: 'gina_inicial',
+    name: 'Asma — tratamento inicial (GINA)',
+    short: 'Etapa inicial de tratamento para adultos e adolescentes ≥ 12 anos.',
+    tabs: ['clinica'],
+    category: 'Pneumologia',
+    keywords: 'asma gina tratamento inicial etapa step budesonida formoterol mart air corticoide inalatório',
+    fields: [
+      { id: 'p', label: 'Apresentação inicial', type: 'select', options: [
+        { v: '2', t: 'Sintomas em menos de 4–5 dias por semana, função pulmonar normal ou pouco reduzida' },
+        { v: '3', t: 'Sintomas na maioria dos dias ou despertar noturno ≥ 1×/semana' },
+        { v: '4', t: 'Sintomas diários, despertar ≥ 1×/semana e função pulmonar baixa' },
+        { v: '4e', t: 'Primeira apresentação com crise (exacerbação) aguda' }] },
+    ],
+    compute(v) {
+      const crisis = v.p === '4e';
+      const step = crisis ? 4 : +v.p;
+      return {
+        main: step === 2 ? 'Etapas 1–2' : 'Etapa ' + step,
+        sub: 'Via preferencial: CI-formoterol como alívio' + (step >= 3 ? ' e manutenção' : ''),
+        level: step === 2 ? 'low' : step === 3 ? 'mod' : 'high',
+        note: GINA_STEPS[step] + (crisis || step === 4 ? ' Na doença grave não controlada ou na crise, considere curso curto de corticoide oral.' : ''),
+        details: GINA_DOSES + ' ' + GINA_TRACK2 + ' Não trate asma só com SABA. Antes de iniciar: confirme o diagnóstico (espirometria com ' +
+          'resposta ao broncodilatador ou PFE), ensine a técnica inalatória, entregue plano de ação escrito e reavalie em 2–3 meses.',
+        warn: crisis ? 'Trate a crise primeiro: avalie gravidade (fala, FR, SpO₂, uso de musculatura acessória). SpO₂ < 90%, sonolência ou ' +
+          'tórax silencioso indicam crise grave — encaminhe para emergência.' : undefined,
+        edu: 'asma-remedios',
+      };
+    },
+    ref: 'Global Initiative for Asthma (GINA) — Global Strategy for Asthma Management and Prevention, 2025 update; SBPT — Recomendações para o manejo da asma.',
+  });
+
+  C.push({
+    id: 'gina_controle',
+    name: 'Asma — controle dos sintomas (GINA)',
+    short: 'Controle nas últimas 4 semanas e sugestão de ajuste de etapa.',
+    tabs: ['clinica'],
+    category: 'Pneumologia',
+    keywords: 'asma gina controle sintomas bem controlada parcialmente não controlada ajuste etapa step up step down',
+    checkLegend: 'Nas últimas 4 semanas, o paciente teve',
+    fields: [
+      { id: 'step', label: 'Etapa de tratamento atual (opcional)', type: 'select', optional: true, options: [
+        { v: '0', t: 'Sem tratamento de controle' }, { v: '2', t: 'Etapas 1–2' }, { v: '3', t: 'Etapa 3' },
+        { v: '4', t: 'Etapa 4' }, { v: '5', t: 'Etapa 5' }] },
+      { id: 'd', label: 'Sintomas diurnos mais de 2×/semana', type: 'check', points: 1 },
+      { id: 'n', label: 'Algum despertar noturno por asma', type: 'check', points: 1 },
+      { id: 'r', label: 'Uso de medicação de alívio mais de 2×/semana (exceto antes de exercício)', type: 'check', points: 1 },
+      { id: 'l', label: 'Alguma limitação de atividades por asma', type: 'check', points: 1 },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      const [sub, level] = s === 0 ? ['Asma bem controlada', 'low'] : s <= 2 ? ['Asma parcialmente controlada', 'mod'] : ['Asma não controlada', 'high'];
+      let note;
+      if (v.step != null) {
+        const st = +v.step;
+        if (st === 0) note = 'Sem tratamento de controle: veja a calculadora “Asma — tratamento inicial (GINA)”. Nenhum adulto ou adolescente deve ficar só com SABA.';
+        else if (s > 0 && st < 5) note = 'Após checar técnica, adesão, exposições e comorbidades, considere subir: ' + GINA_STEPS[st + 1];
+        else if (s > 0) note = 'Já na etapa 5: confirme o diagnóstico e encaminhe a serviço de asma grave para fenotipagem e imunobiológico.';
+        else if (st >= 3) note = 'Controlada: se estável há ≥ 3 meses e sem fatores de risco, considere reduzir para a menor etapa eficaz (sem suspender o CI).';
+        else note = 'Controlada na etapa 1–2: mantenha o CI-formoterol conforme necessidade e reavalie periodicamente.';
+      }
+      return {
+        main: s + ' / 4', sub, level,
+        scale: { step: s === 0 ? 1 : s <= 2 ? 2 : 3, labels: ['Controlada', 'Parcial', 'Não controlada'], fill: false },
+        note,
+        details: 'Antes de subir de etapa: confirme o diagnóstico, observe a técnica inalatória, cheque adesão, exposições (tabaco, alérgenos, ' +
+          'ocupação) e comorbidades (rinite, DRGE, obesidade, apneia do sono, ansiedade). Avalie também o risco de crises, independente do ' +
+          'controle: ≥ 1 crise grave no último ano, VEF₁ baixo, uso de ≥ 3 frascos de SABA/ano, ausência de CI, tabagismo e eosinofilia. ' + GINA_DOSES,
+        edu: 'asma-crise',
+      };
+    },
+    ref: 'Global Initiative for Asthma (GINA) — Global Strategy for Asthma Management and Prevention, 2025 update.',
+  });
+
+  /* ============================== CUIDADOS PALIATIVOS ============================== */
+
+  C.push({
+    id: 'spict',
+    name: 'SPICT-BR',
+    short: 'Identifica pessoas com doença avançada que podem se beneficiar de cuidados paliativos.',
+    tabs: ['paliativos', 'geriatria'],
+    category: 'Identificação',
+    keywords: 'spict spict-br cuidados paliativos identificação doença avançada fim de vida planejamento',
+    groups: [
+      { legend: 'Indicadores gerais de piora da saúde', ids: ['g1', 'g2', 'g3', 'g4', 'g5', 'g6'], hidePts: true },
+      { legend: 'Indicadores clínicos de doença avançada', ids: ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8'], hidePts: true },
+    ],
+    fields: [
+      { id: 'g1', label: 'Internações hospitalares não programadas', type: 'check', points: 1 },
+      { id: 'g2', label: 'Capacidade funcional ruim ou em declínio, pouco reversível (ex.: passa ≥ 50% do dia na cama ou cadeira)', type: 'check', points: 1 },
+      { id: 'g3', label: 'Depende de outros para cuidados por problemas físicos e/ou mentais; cuidador precisa de mais apoio', type: 'check', points: 1 },
+      { id: 'g4', label: 'Perda de peso significativa nos últimos 3–6 meses e/ou IMC baixo', type: 'check', points: 1 },
+      { id: 'g5', label: 'Sintomas persistentes apesar do tratamento otimizado das condições de base', type: 'check', points: 1 },
+      { id: 'g6', label: 'A pessoa ou a família pede cuidados paliativos, ou escolhe reduzir, suspender ou não iniciar tratamentos', type: 'check', points: 1 },
+      { id: 'c1', label: 'Câncer: declínio funcional por câncer progressivo, ou frágil demais para tratamento oncológico / tratamento só para controle de sintomas', type: 'check', points: 1 },
+      { id: 'c2', label: 'Demência/fragilidade: não se veste, anda ou come sem ajuda; come menos ou tem disfagia; incontinência; não se comunica; quedas ou fratura de fêmur; infecções ou pneumonia aspirativa recorrentes', type: 'check', points: 1 },
+      { id: 'c3', label: 'Neurológica (Parkinson, ELA, EM, AVC): declínio físico e/ou cognitivo progressivo apesar da terapia ótima; disfagia progressiva; pneumonia aspirativa; insuficiência respiratória', type: 'check', points: 1 },
+      { id: 'c4', label: 'Cardiovascular: IC ou DAC grave com dispneia ou dor torácica em repouso ou a mínimos esforços; doença vascular periférica grave e inoperável', type: 'check', points: 1 },
+      { id: 'c5', label: 'Respiratória: doença pulmonar crônica grave com dispneia em repouso ou a mínimos esforços entre exacerbações; hipoxemia com O₂ domiciliar; ventilação necessária ou contraindicada', type: 'check', points: 1 },
+      { id: 'c6', label: 'Renal: DRC estágio 4–5 (TFG < 30) com piora clínica; ou decisão de não iniciar ou de suspender diálise', type: 'check', points: 1 },
+      { id: 'c7', label: 'Hepática: cirrose com ≥ 1 complicação no último ano (ascite refratária, encefalopatia, síndrome hepatorrenal, PBE, sangramento varicoso recorrente); transplante contraindicado', type: 'check', points: 1 },
+      { id: 'c8', label: 'Outras: deterioração e risco de morrer por outra condição ou complicação irreversível, sem tratamento que mude o desfecho', type: 'check', points: 1 },
+    ],
+    compute(v) {
+      const g = ['g1', 'g2', 'g3', 'g4', 'g5', 'g6'].filter((k) => v[k]).length;
+      const c = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8'].filter((k) => v[k]).length;
+      const pos = g >= 2 || c >= 1;
+      return {
+        main: `${g} geral(is) · ${c} clínico(s)`,
+        sub: pos ? 'Pode se beneficiar de cuidados paliativos' : 'Sem indicadores suficientes no momento',
+        level: pos ? 'mod' : 'low',
+        details: 'Critério usado em estudos: ≥ 2 indicadores gerais e/ou ≥ 1 indicador clínico de doença avançada. Se positivo: revise o tratamento ' +
+          'e os medicamentos, avalie e trate sintomas, converse sobre valores, prioridades e preferências, registre um plano de cuidados ' +
+          'antecipado e apoie a família e os cuidadores. O SPICT é uma ferramenta de identificação, não de prognóstico; reavalie quando a situação mudar.',
+      };
+    },
+    ref: 'Highet G et al. BMJ Support Palliat Care 2014 (SPICT); Supportive and Palliative Care Indicators Tool, versão SPICT-BR (2022).',
+  });
+
+  C.push({
+    id: 'pps',
+    name: 'Palliative Performance Scale (PPS)',
+    short: 'Funcionalidade em cuidados paliativos, de 100% a 10%.',
+    tabs: ['paliativos'],
+    category: 'Prognóstico',
+    keywords: 'pps palliative performance scale funcionalidade paliativo prognóstico karnofsky',
+    fields: [
+      { id: 'pps', label: 'Nível (leia da esquerda para a direita: deambulação, atividade, autocuidado, ingesta, consciência)', type: 'select', options: [
+        { v: '100', t: '100% — Deambulação completa; atividade normal, sem evidência de doença; autocuidado completo; ingesta normal; consciência plena' },
+        { v: '90', t: '90% — Completa; atividade normal, alguma evidência de doença; autocuidado completo; ingesta normal; plena' },
+        { v: '80', t: '80% — Completa; atividade normal com esforço, alguma evidência de doença; completo; normal ou reduzida; plena' },
+        { v: '70', t: '70% — Reduzida; incapaz para o trabalho, doença significativa; completo; normal ou reduzida; plena' },
+        { v: '60', t: '60% — Reduzida; incapaz para hobbies/trabalho doméstico, doença significativa; assistência ocasional; normal ou reduzida; plena ou confusão' },
+        { v: '50', t: '50% — Maior parte do tempo sentado ou deitado; incapaz para qualquer trabalho, doença extensa; assistência considerável; normal ou reduzida; plena ou confusão' },
+        { v: '40', t: '40% — Maior parte do tempo acamado; incapaz para a maioria das atividades; assistência quase completa; normal ou reduzida; plena, sonolência ou confusão' },
+        { v: '30', t: '30% — Totalmente acamado; incapaz para qualquer atividade; dependência completa; normal ou reduzida; plena, sonolência ou confusão' },
+        { v: '20', t: '20% — Totalmente acamado; dependência completa; ingesta mínima (goles); plena, sonolência ou confusão' },
+        { v: '10', t: '10% — Totalmente acamado; dependência completa; apenas cuidados com a boca; sonolência ou coma' }] },
+    ],
+    compute(v) {
+      const n = +v.pps;
+      const [sub, level] = n >= 70 ? ['Funcionalidade preservada', 'low'] : n >= 40 ? ['Funcionalidade reduzida', 'mod'] : ['Funcionalidade muito reduzida', 'high'];
+      return {
+        main: 'PPS ' + n + '%', sub, level,
+        details: 'Classifique pela coluna mais à esquerda que descreve o paciente (a deambulação tem peso maior). Em coortes de cuidados ' +
+          'paliativos, PPS ≤ 30% associa-se a sobrevida medida em dias a poucas semanas, 40–60% a semanas a poucos meses, e ≥ 70% a meses — ' +
+          'com grande variação individual. Use em série: a queda do PPS é mais informativa que um valor isolado. É um dos componentes do PPI.',
+      };
+    },
+    ref: 'Anderson F et al. J Palliat Care 1996; Victoria Hospice Society — PPS versão 2 (2001); Lau F et al. J Pain Symptom Manage 2006.',
+  });
+
+  C.push({
+    id: 'ppi',
+    name: 'Índice Prognóstico Paliativo (PPI)',
+    short: 'Estima sobrevida em semanas em pacientes com doença avançada.',
+    tabs: ['paliativos'],
+    category: 'Prognóstico',
+    keywords: 'ppi palliative prognostic index prognóstico sobrevida paliativo semanas morita',
+    fields: [
+      { id: 'pps', label: 'PPS', type: 'select', scored: true, options: [
+        { v: '0', t: '≥ 60%' }, { v: '2.5', t: '30–50%' }, { v: '4', t: '10–20%' }] },
+      { id: 'oral', label: 'Ingesta oral', type: 'select', scored: true, options: [
+        { v: '0', t: 'Normal' }, { v: '1', t: 'Reduzida, mas mais que poucas colheradas' }, { v: '2.5', t: 'Gravemente reduzida (poucas colheradas ou menos)' }] },
+      { id: 'edema', label: 'Edema', type: 'check', points: 1 },
+      { id: 'dysp', label: 'Dispneia em repouso', type: 'check', points: 3.5 },
+      { id: 'delir', label: 'Delirium (não causado apenas por um medicamento)', type: 'check', points: 4 },
+    ],
+    compute(v) {
+      const s = sumPoints(this, v);
+      let sub, level;
+      if (s > 6) { sub = 'Sobrevida provável < 3 semanas'; level = 'high'; }
+      else if (s > 4) { sub = 'Sobrevida provável < 6 semanas'; level = 'mod'; }
+      else { sub = 'Sobrevida provável > 6 semanas'; level = 'low'; }
+      return {
+        main: fmt(s) + ' pontos', sub, level,
+        scale: { step: s > 6 ? 3 : s > 4 ? 2 : 1, labels: ['> 6 sem.', '< 6 sem.', '< 3 sem.'], fill: false },
+        details: 'No estudo original (pacientes com câncer em hospice), PPI > 6 previu sobrevida < 3 semanas com sensibilidade de 80% e ' +
+          'especificidade de 85%; PPI > 4 previu < 6 semanas. A estimativa orienta conversas e planejamento, mas não deve ser usada ' +
+          'isoladamente para decisões individuais; comunique-a como faixa de tempo e com incerteza.',
+      };
+    },
+    ref: 'Morita T et al. Support Care Cancer 1999;7:128-133; Stone CA et al. Palliat Med 2008 (validação).',
+  });
+
+  C.push({
+    id: 'ecog',
+    name: 'ECOG / Karnofsky',
+    short: 'Capacidade funcional (performance status) com equivalência aproximada entre as escalas.',
+    tabs: ['paliativos', 'clinica'],
+    category: 'Prognóstico',
+    keywords: 'ecog karnofsky kps performance status capacidade funcional oncologia paliativo zubrod',
+    fields: [
+      { id: 'e', label: 'Situação do paciente', type: 'select', options: [
+        { v: '0', t: 'ECOG 0 — Totalmente ativo, sem restrições' },
+        { v: '1', t: 'ECOG 1 — Restrito para esforço intenso, mas deambula e faz trabalho leve' },
+        { v: '2', t: 'ECOG 2 — Deambula e faz autocuidado, mas não trabalha; fora do leito > 50% do dia' },
+        { v: '3', t: 'ECOG 3 — Autocuidado limitado; no leito ou cadeira > 50% do dia' },
+        { v: '4', t: 'ECOG 4 — Completamente incapacitado; totalmente restrito ao leito ou cadeira' }] },
+    ],
+    compute(v) {
+      const e = +v.e;
+      const kps = ['90–100%', '70–80%', '50–60%', '30–40%', '10–20%'][e];
+      return {
+        main: `ECOG ${e} · Karnofsky ≈ ${kps}`,
+        sub: ['Totalmente ativo', 'Sintomático, ambulatorial', 'Fora do leito > 50% do dia', 'No leito > 50% do dia', 'Restrito ao leito'][e],
+        level: e <= 1 ? 'low' : e === 2 ? 'mod' : 'high',
+        details: 'A equivalência entre ECOG e Karnofsky é aproximada. ECOG ≥ 3 (Karnofsky ≤ 40%) costuma contraindicar quimioterapia citotóxica ' +
+          'e sinaliza a necessidade de discutir objetivos de cuidado; ECOG 5 corresponde a óbito.',
+      };
+    },
+    ref: 'Oken MM et al. Am J Clin Oncol 1982 (ECOG); Karnofsky DA, Burchenal JH 1949.',
+  });
+
+  const ESAS_ITEMS = [
+    ['dor', 'Dor'], ['cans', 'Cansaço (falta de energia)'], ['sono', 'Sonolência'], ['nau', 'Náusea (enjoo)'],
+    ['apet', 'Falta de apetite'], ['ar', 'Falta de ar'], ['dep', 'Depressão (tristeza)'], ['ans', 'Ansiedade (nervosismo)'],
+    ['bem', 'Bem-estar (0 = melhor, 10 = pior)'],
+  ];
+  C.push({
+    id: 'esas',
+    name: 'ESAS-r (Edmonton)',
+    short: 'Intensidade de 9 sintomas comuns em cuidados paliativos, de 0 a 10.',
+    tabs: ['paliativos'],
+    category: 'Sintomas',
+    keywords: 'esas esas-r edmonton sintomas dor cansaço náusea falta de ar ansiedade depressão paliativo',
+    fields: ESAS_ITEMS.map(([id, label]) => ({ id, label, type: 'number', unit: '0–10', min: 0, max: 10 })),
+    compute(v) {
+      const total = ESAS_ITEMS.reduce((a, [id]) => a + v[id], 0);
+      const sev = ESAS_ITEMS.filter(([id]) => v[id] >= 7).map(([, l]) => l.split(' (')[0]);
+      const mod = ESAS_ITEMS.filter(([id]) => v[id] >= 4 && v[id] < 7).map(([, l]) => l.split(' (')[0]);
+      return {
+        main: total + ' / 90',
+        sub: sev.length ? `${sev.length} sintoma(s) intenso(s)` : mod.length ? `${mod.length} sintoma(s) moderado(s)` : 'Sintomas leves ou ausentes',
+        level: sev.length ? 'high' : mod.length ? 'mod' : 'low',
+        note: (sev.length ? 'Intensos (7–10): ' + sev.join(', ') + '. ' : '') + (mod.length ? 'Moderados (4–6): ' + mod.join(', ') + '.' : '') || undefined,
+        details: 'O paciente marca a intensidade no momento da avaliação (ou o cuidador, se ele não puder). Sintomas ≥ 4 merecem avaliação ' +
+          'detalhada e plano de manejo; ≥ 7 pedem intervenção prioritária. O total (0–90) serve para acompanhar a carga de sintomas ao longo do tempo. ' +
+          'Repita a escala em cada visita.',
+      };
+    },
+    ref: 'Watanabe SM et al. J Pain Symptom Manage 2011 (ESAS-r); Monteiro DR et al. Rev Gaúcha Enferm 2013 (versão brasileira).',
   });
 
   window.CALCS = C;

@@ -60,7 +60,7 @@ Regras:
   oriente ligar 192 (SAMU) ou procurar o pronto-socorro imediatamente.
 - Se o usuário enviar dados que identifiquem pacientes (nome, CPF, prontuário), lembre-o de não fazer isso.
 
-Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), geriatria (Geriatria), educacao (Paciente: guias sobre hipertensão, diabetes, colesterol, insuficiência cardíaca e quedas).
+Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), geriatria (Geriatria), paliativos (Cuidados paliativos), educacao (Paciente: guias sobre hipertensão, diabetes, colesterol, insuficiência cardíaca, quedas, asma, DPOC, fibromialgia, depressão e ansiedade).
 
 Catálogo de calculadoras (ID | nome | categoria | abas | descrição):
 ${catalog}
@@ -87,6 +87,9 @@ ${eduCatalog}`;
     trombose: 'tev tvp', embolia: 'tep', tev: 'trombose', rim: 'renal tfg creatinina', rins: 'renal tfg',
     figado: 'cirrose hepatica', acucar: 'diabetes glicemia', glicose: 'diabetes glicemia',
     pressao: 'hipertensao pa', colesterol: 'ldl dislipidemia', triglicerides: 'dislipidemia', estatina: 'colesterol ldl',
+    dpoc: 'gold pneumologia', enfisema: 'dpoc gold', asma: 'gina pneumologia', asmatico: 'asma gina', bronquite: 'dpoc asma',
+    paliativo: 'paliativos spict pps', paliativos: 'spict pps ppi esas', terminal: 'paliativos prognostico', prognostico: 'ppi pps',
+    fibromialgia: 'dor cronica', ansiedade: 'depressao humor', panico: 'ansiedade',
     diabetico: 'diabetes glicemia', insulina: 'diabetes', cardiaca: 'insuficiencia coracao', inchaco: 'insuficiencia cardiaca', hipertenso: 'hipertensao pa', hipertensao: 'pa pressao',
     gordura: 'obesidade imc', peso: 'imc obesidade', parto: 'bishop apgar parto',
     bebe: 'apgar recem-nascido peso fetal', menopausa: 'osteoporose densitometria',
@@ -154,7 +157,7 @@ ${eduCatalog}`;
     if (calcs.length) {
       out += 'Estas calculadoras parecem relevantes:\n' + calcs.map((c) => `- [[calc:${c.id}]] — ${c.short}`).join('\n');
     }
-    if (edus.length && (wantsPatient || !calcs.length || /hipertens|pressao|diabet|glicemia|colesterol|triglic|insuficiencia cardiaca|queda/.test(n))) {
+    if (edus.length && (wantsPatient || !calcs.length || /hipertens|pressao|diabet|glicemia|colesterol|triglic|insuficiencia cardiaca|queda|asma|dpoc|fibromialg|depress|ansied/.test(n))) {
       out += (out ? '\n\n' : '') + 'Material para o paciente:\n' + edus.map((e) => `- [[edu:${e.id}]]`).join('\n');
     }
     if (!out) {
