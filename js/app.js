@@ -446,7 +446,7 @@
 
   const printHead = () => `<header class="print-only print-head">
       <strong>${esc(guideOf(eduById(state.edu) || EDU[0]).title)} — guia para o paciente</strong>
-      <span>MedCalc · material educativo · ${new Date().toLocaleDateString('pt-BR')}</span>
+      <span>CalcMed · material educativo · ${new Date().toLocaleDateString('pt-BR')}</span>
     </header>`;
   const printFoot = () => `<footer class="print-only print-foot">
       Este material não substitui a orientação da sua equipe de saúde. Em caso de emergência, ligue 192 (SAMU).

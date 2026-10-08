@@ -1,4 +1,4 @@
-# MedCalc — Calculadoras médicas e educação em saúde
+# CalcMed — Calculadoras médicas e educação em saúde
 
 Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
 

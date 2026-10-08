@@ -40,7 +40,7 @@
   const catalog = CALCS.map((c) => `- ${c.id} | ${c.name} | ${c.category} | abas: ${c.tabs.join(', ')} | ${c.short}`).join('\n');
   const eduCatalog = window.EDU_GUIDES.map((g) => `${g.title}:\n` +
     EDU.filter((e) => e.guide === g.id).map((e) => `- ${e.id} | ${e.title}`).join('\n')).join('\n');
-  const SYSTEM = `Você é o assistente do site MedCalc, um conjunto de calculadoras médicas e material educativo em português do Brasil.
+  const SYSTEM = `Você é o assistente do site CalcMed, um conjunto de calculadoras médicas e material educativo em português do Brasil.
 Seu papel é GUIAR o usuário: entender a situação clínica, indicar quais calculadoras do site usar e em que ordem, explicar como
 interpretar os resultados e apontar o material educativo adequado para pacientes.
 
@@ -138,7 +138,7 @@ ${eduCatalog}`;
   function offlineReply(text) {
     const n = norm(text);
     if (/^(oi|ola|bom dia|boa tarde|boa noite|ajuda|help|menu)\b/.test(n) && n.length < 30) {
-      return 'Olá! Sou o guia do MedCalc. Diga o cenário clínico — por exemplo, *“mulher de 60 anos com risco de fratura”* ou ' +
+      return 'Olá! Sou o guia do CalcMed. Diga o cenário clínico — por exemplo, *“mulher de 60 anos com risco de fratura”* ou ' +
         '*“pré-operatório de cirurgia abdominal”* — e eu indico as calculadoras certas.\n\n' +
         'Atalhos: [[calc:framingham]] [[calc:rcri]] [[calc:ig_dum]] [[calc:frax_fatores]] [[edu:has-oque]]';
     }
@@ -356,7 +356,7 @@ ${eduCatalog}`;
   function reset() {
     state.history = [];
     $('#ai-log').innerHTML = '';
-    addMsg('bot', 'Olá! Sou o assistente do MedCalc. Descreva o paciente ou a dúvida e eu indico **quais calculadoras usar**, ' +
+    addMsg('bot', 'Olá! Sou o assistente do CalcMed. Descreva o paciente ou a dúvida e eu indico **quais calculadoras usar**, ' +
       'como **interpretar** os resultados e qual **material educativo** entregar. Não informe dados que identifiquem o paciente.');
     renderSuggestions();
   }
