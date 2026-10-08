@@ -612,6 +612,7 @@
     category: 'Osso e fraturas',
     keywords: 'frax fratura osteoporose quadril risco fratura corticoide checklist',
     fields: [
+      { id: 'sex', label: 'Sexo', type: 'select', options: sexOpts },
       { id: 'age', label: 'Idade', type: 'number', unit: 'anos', min: 40, max: 90 },
       { id: 'w', label: 'Peso', type: 'number', unit: 'kg', min: 25, max: 250, step: 0.1 },
       { id: 'h', label: 'Altura', type: 'number', unit: 'cm', min: 100, max: 220 },
@@ -636,7 +637,7 @@
           'e, se houver, a densidade mineral do colo do fêmur.',
         warn: v.prev ? 'Fratura prévia por fragilidade, sobretudo de quadril ou vértebra, já indica alto risco de nova fratura: ' +
           'avalie tratamento independentemente do FRAX.' : undefined,
-        details: `Dados para o FRAX: idade ${v.age} anos, peso ${fmt(v.w)} kg, altura ${v.h} cm (IMC ${fmt(bmi)} kg/m²). ` +
+        details: `Dados para o FRAX: sexo ${v.sex === 'f' ? 'feminino' : 'masculino'}, idade ${v.age} anos, peso ${fmt(v.w)} kg, altura ${v.h} cm (IMC ${fmt(bmi)} kg/m²). ` +
           'No Brasil, os limiares de intervenção do FRAX são ajustados por idade (Zerbini 2015; ABRASSO).',
         link: { href: 'https://frax.shef.ac.uk/FRAX/tool.aspx?lang=pr', text: 'Calcular no FRAX oficial (Brasil)', primary: true },
       };
@@ -653,7 +654,7 @@
     keywords: 'pneumonia curb65 pac internação gravidade',
     fields: [
       { id: 'c', label: 'Confusão mental', type: 'check', points: 1 },
-      { id: 'u', label: 'Ureia > 43 mg/dL (> 7 mmol/L)', type: 'check', points: 1 },
+      { id: 'u', label: 'Ureia > 42 mg/dL (> 7 mmol/L)', type: 'check', points: 1 },
       { id: 'r', label: 'Frequência respiratória ≥ 30 irpm', type: 'check', points: 1 },
       { id: 'b', label: 'PAS < 90 ou PAD ≤ 60 mmHg', type: 'check', points: 1 },
       { id: 'a', label: 'Idade ≥ 65 anos', type: 'check', points: 1 },
@@ -948,6 +949,7 @@
       { id: 'chf', label: 'Insuficiência cardíaca (< 1 mês)', type: 'check', points: 1 },
       { id: 'ibd', label: 'Doença inflamatória intestinal', type: 'check', points: 1 },
       { id: 'bedmed', label: 'Paciente clínico acamado', type: 'check', points: 1 },
+      { id: 'msurg', label: 'Cirurgia maior prévia (< 1 mês)', type: 'check', points: 1 },
       { id: 'ca', label: 'Neoplasia (atual ou prévia)', type: 'check', points: 2 },
       { id: 'bed72', label: 'Restrito ao leito > 72 h', type: 'check', points: 2 },
       { id: 'cast', label: 'Imobilização gessada', type: 'check', points: 2 },
@@ -958,6 +960,7 @@
       { id: 'stroke', label: 'AVC (< 1 mês)', type: 'check', points: 5 },
       { id: 'frac', label: 'Fratura de quadril, pelve ou perna', type: 'check', points: 5 },
       { id: 'sci', label: 'Lesão medular aguda (< 1 mês)', type: 'check', points: 5 },
+      { id: 'trauma', label: 'Politrauma (< 1 mês)', type: 'check', points: 5 },
     ],
     compute(v) {
       const s = sumPoints(this, v);
@@ -990,10 +993,15 @@
     ],
     compute(v) {
       const s = sumPoints(this, v);
-      const [sub, level] = s <= 2 ? ['Baixo risco de AOS', 'low'] : s <= 4 ? ['Risco intermediário de AOS', 'mod'] : ['Alto risco de AOS', 'high'];
-      return { main: s + ' / 8', sub, level, details: 'Risco alto: planejar via aérea, minimizar opioides/sedativos e considerar polissonografia.' };
+      const stop = ['s', 't', 'o', 'p'].filter((k) => v[k]).length;
+      const upgrade = s >= 3 && s <= 4 && stop >= 2 && (v.g || v.b || v.n);
+      const [sub, level] = s <= 2 ? ['Baixo risco de AOS', 'low'] : s <= 4 && !upgrade ? ['Risco intermediário de AOS', 'mod'] :
+        [upgrade ? 'Alto risco de AOS (STOP ≥ 2 + sexo masculino, IMC > 35 ou pescoço > 40 cm)' : 'Alto risco de AOS', 'high'];
+      return { main: s + ' / 8', sub, level, details: 'Cortes: 0–2 baixo, 3–4 intermediário, 5–8 alto. Com 3–4 pontos, STOP ≥ 2 associado a sexo masculino, ' +
+        'IMC > 35 ou pescoço > 40 cm também indica alto risco (Chung, 2016). ' +
+        'Risco alto: planejar via aérea, minimizar opioides/sedativos e considerar polissonografia.' };
     },
-    ref: 'Chung F et al. Anesthesiology 2008.',
+    ref: 'Chung F et al. Anesthesiology 2008; Chung F et al. Chest 2016;149(3):631-8.',
   });
 
   C.push({
@@ -1164,7 +1172,8 @@
       return {
         main: weeksDays(days), sub: 'DPP: ' + fmtDate(dpp) + ' • ' + tri, level: 'info',
         details: extra + 'Termo: 37s0d – 41s6d (' + fmtDate(addDays(dum, 259)) + ' a ' + fmtDate(addDays(dum, 293)) + '). ' +
-          'A datação pela USG de 1º trimestre (CCN) é a mais precisa e prevalece se divergir > 7 dias da DUM.',
+          'A datação pela USG de 1º trimestre (CCN) é a mais precisa e prevalece se divergir da DUM em > 5 dias (antes de 9 semanas) ' +
+          'ou > 7 dias (9s0d a 13s6d).',
       };
     },
     ref: 'ACOG Committee Opinion 700 — Methods for Estimating the Due Date.',
@@ -1330,11 +1339,12 @@
     ],
     compute(v) {
       const s = sumPoints(this, v);
-      const [sub, level] = s >= 8 ? ['Colo favorável — indução com ocitocina tende ao sucesso', 'low'] :
+      const [sub, level] = s > 8 ? ['Colo favorável — indução com ocitocina tende ao sucesso', 'low'] :
         s >= 7 ? ['Colo intermediário', 'mod'] : ['Colo desfavorável — considerar preparo cervical', 'high'];
-      return { main: s + ' / 13', sub, level, details: 'Preparo cervical: misoprostol, dinoprostona ou sonda de Foley, conforme protocolo institucional.' };
+      return { main: s + ' / 13', sub, level, details: 'Cortes do ACOG: ≤ 6 desfavorável; > 8 favorável (chance de parto vaginal semelhante à do trabalho de parto espontâneo). ' +
+        'Preparo cervical: misoprostol, dinoprostona ou sonda de Foley, conforme protocolo institucional.' };
     },
-    ref: 'Bishop EH. Obstet Gynecol 1964.',
+    ref: 'Bishop EH. Obstet Gynecol 1964; ACOG Practice Bulletin 107 (2009) — Induction of labor.',
   });
 
   C.push({
@@ -1584,12 +1594,12 @@
     compute(v) {
       const s = v.d / v.t;
       let sub, level;
-      if (s < 0.8) { sub = 'Lenta (< 0,8 m/s) — baixo desempenho físico'; level = 'high'; }
-      else if (s < 1.0) { sub = 'Intermediária (0,8–1,0 m/s)'; level = 'mod'; }
+      if (s <= 0.8) { sub = 'Lenta (≤ 0,8 m/s) — baixo desempenho físico'; level = 'high'; }
+      else if (s < 1.0) { sub = 'Intermediária (> 0,8 e < 1,0 m/s)'; level = 'mod'; }
       else { sub = 'Normal (≥ 1,0 m/s)'; level = 'low'; }
       return {
         main: fmt(s, 2) + ' m/s', sub, level,
-        details: 'Use marcha habitual, com 1–2 m de aceleração antes do trecho cronometrado. Velocidade < 0,8 m/s indica sarcopenia grave ' +
+        details: 'Use marcha habitual, com 1–2 m de aceleração antes do trecho cronometrado. Velocidade ≤ 0,8 m/s indica sarcopenia grave ' +
           '(se massa e força baixas) e maior risco de quedas, hospitalização e morte.',
       };
     },
