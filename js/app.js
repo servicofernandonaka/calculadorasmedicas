@@ -16,6 +16,19 @@
     paliativos: { title: 'Cuidados paliativos', sub: 'Identificação de quem se beneficia, funcionalidade, prognóstico e avaliação de sintomas.' },
     favoritos: { title: 'Favoritos', sub: 'Suas calculadoras marcadas com estrela, de todas as especialidades.' },
   };
+  // Ícone e tom de cor por categoria (cartões e cabeçalho da calculadora)
+  const CAT_STYLE = {
+    'Cardiovascular': ['heart', 'red'], 'Metabólico': ['drop', 'amber'], 'Renal': ['kidney', 'blue'],
+    'Osso e fraturas': ['bone', 'slate'], 'Pneumologia e infecção': ['lungs', 'sky'], 'Pneumologia': ['lungs', 'sky'],
+    'Tromboembolismo': ['activity', 'red'], 'Hepatologia': ['liver', 'amber'], 'Avaliação pré-operatória': ['clipboard', 'teal'],
+    'Abdome agudo': ['stethoscope', 'teal'], 'Trauma e emergência': ['alert', 'red'], 'Pré-natal': ['baby', 'pink'],
+    'Parto': ['baby', 'pink'], 'Ginecologia': ['female', 'pink'], 'Avaliação geriátrica ampla': ['clipboard', 'violet'],
+    'Fragilidade e sarcopenia': ['elder', 'violet'], 'Quedas e mobilidade': ['foot', 'violet'], 'Cuidados e funcionalidade': ['home', 'violet'],
+    'Cognição, humor e delirium': ['brain', 'violet'], 'Saúde mental': ['smile', 'blue'], 'Identificação': ['care', 'teal'],
+    'Prognóstico': ['clock', 'slate'], 'Sintomas': ['gauge', 'amber'],
+  };
+  const catStyle = (cat) => CAT_STYLE[cat] || ['calculator', 'teal'];
+  const catIcon = (cat, cls = '') => { const [ic, tone] = catStyle(cat); return `<span class="cat-icon${cls}" data-tone="${tone}" aria-hidden="true">${ICON(ic)}</span>`; };
   const SPECIALTY = { clinica: 'Clínica', cirurgia: 'Cirúrgica', gineco: 'Gineco & Obstetrícia', geriatria: 'Geriatria', paliativos: 'Paliativos' };
 
   // Preferências locais (favoritos, tamanho do texto): o site funciona normalmente se o armazenamento falhar
@@ -94,12 +107,13 @@
     const on = favs.includes(c.id);
     return `
       <div class="card calc-card">
-        <span class="pill">${esc(c.category)}</span>
+        <div class="card-top">${catIcon(c.category)}<span class="card-cat">${esc(c.category)}</span></div>
         <button class="card-open" type="button" data-calc="${c.id}" aria-describedby="d-${c.id}">
           <span class="card-title">${esc(c.name)}</span>
         </button>
         <span class="card-desc" id="d-${c.id}">${esc(c.short)}</span>
         ${showOrigin ? origin(c) : ''}
+        <span class="card-go" aria-hidden="true">Abrir ${ICON('arrow')}</span>
         <button class="icon-btn fav" type="button" data-fav="${c.id}" aria-pressed="${on}"
           aria-label="${on ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}: ${esc(c.name)}">${ICON('star')}</button>
       </div>`;
@@ -132,6 +146,8 @@
       }).join('');
       if (state.category) list = list.filter((c) => c.category === state.category);
     }
+    $('#calc-count').textContent = list.length;
+    $('#calc-count-label').textContent = list.length === 1 ? 'ferramenta' : 'ferramentas';
     $('#grid').innerHTML = list.map((c) => cardHtml(c, !!q || isFav)).join('');
     $('#empty').hidden = list.length > 0 || isFav;
     $('#fav-empty').hidden = !(isFav && !list.length);
@@ -367,6 +383,9 @@
     state.calc = null; // eventos do formulário anterior (blur/change ao removê-lo) são ignorados
     state.touched = false;
     $('#dlg-cat').textContent = calc.category;
+    const [dIcon, dTone] = catStyle(calc.category);
+    $('#dlg-icon').dataset.tone = dTone;
+    $('#dlg-icon').innerHTML = ICON(dIcon);
     $('#dlg-title').textContent = calc.name;
     $('#dlg-short').textContent = calc.short;
     $('#dlg-ref').textContent = 'Referência: ' + calc.ref;
