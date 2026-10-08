@@ -50,10 +50,11 @@ Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#paliativos`, 
 
 ```
 index.html          página e componentes (abas, diálogo, painel da IA)
-css/styles.css      estilos (tema claro/escuro, responsivo, impressão)
+css/styles.css      estilos (tema claro/escuro, cor por especialidade, responsivo, impressão)
 js/calculators.js   definição de cada calculadora (campos, fórmula, interpretação, referência)
 js/education.js     conteúdo educativo para pacientes (guias por tema)
 js/app.js           interface, busca, roteamento por hash
+js/art.js           ilustrações SVG coloridas do cabeçalho de cada aba
 js/ai.js            assistente (modo guia + Claude, Gemini, ChatGPT e OpenRouter)
 ```
 

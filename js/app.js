@@ -28,6 +28,9 @@
     'Prognóstico': ['clock', 'slate'], 'Sintomas': ['gauge', 'amber'],
   };
   const catStyle = (cat) => CAT_STYLE[cat] || ['calculator', 'teal'];
+  const catTone = (cat) => catStyle(cat)[1];
+  // Tom de cor de cada guia do paciente (chips, título e ilustração)
+  const GUIDE_TONE = { has: 'red', dm: 'amber', dlp: 'teal', ic: 'pink', queda: 'violet', asma: 'sky', dpoc: 'blue', fibro: 'slate', mental: 'blue' };
   const catIcon = (cat, cls = '') => { const [ic, tone] = catStyle(cat); return `<span class="cat-icon${cls}" data-tone="${tone}" aria-hidden="true">${ICON(ic)}</span>`; };
   const SPECIALTY = { clinica: 'Clínica', cirurgia: 'Cirúrgica', gineco: 'Gineco & Obstetrícia', geriatria: 'Geriatria', paliativos: 'Paliativos' };
 
@@ -76,8 +79,15 @@
   /* ---------- abas ---------- */
   function setTab(tab) {
     state.tab = tab;
+    // A cor e a ilustração do cabeçalho acompanham a especialidade
+    document.documentElement.dataset.tab = tab;
+    $(tab === 'educacao' ? '#edu-art' : '#calc-art').innerHTML = window.ART(tab);
     $$('.tab[data-tab]').forEach((b) => {
-      if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+      if (b.dataset.tab === tab) {
+        b.setAttribute('aria-current', 'page');
+        // No celular a barra de abas rola na horizontal: mantém a aba ativa à vista
+        b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      } else b.removeAttribute('aria-current');
     });
     const isEdu = tab === 'educacao';
     $('#view-calcs').hidden = isEdu;
@@ -106,7 +116,7 @@
   function cardHtml(c, showOrigin) {
     const on = favs.includes(c.id);
     return `
-      <div class="card calc-card">
+      <div class="card calc-card" data-tone="${catTone(c.category)}">
         <div class="card-top">${catIcon(c.category)}<span class="card-cat">${esc(c.category)}</span></div>
         <button class="card-open" type="button" data-calc="${c.id}" aria-describedby="d-${c.id}">
           <span class="card-title">${esc(c.name)}</span>
@@ -142,7 +152,8 @@
       const cats = [...new Set(list.map((c) => c.category))];
       $('#chips').innerHTML = ['Todas', ...cats].map((c) => {
         const active = (c === 'Todas' && !state.category) || c === state.category;
-        return `<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${active}">${esc(c)}</button>`;
+        const dot = c === 'Todas' ? '' : `<span class="chip-dot" data-tone="${catTone(c)}" aria-hidden="true"></span>`;
+        return `<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${active}">${dot}${esc(c)}</button>`;
       }).join('');
       if (state.category) list = list.filter((c) => c.category === state.category);
     }
@@ -385,6 +396,7 @@
     $('#dlg-cat').textContent = calc.category;
     const [dIcon, dTone] = catStyle(calc.category);
     $('#dlg-icon').dataset.tone = dTone;
+    $('#dlg-cat').dataset.tone = dTone;
     $('#dlg-icon').innerHTML = ICON(dIcon);
     $('#dlg-title').textContent = calc.name;
     $('#dlg-short').textContent = calc.short;
@@ -417,7 +429,10 @@
     const topics = guideTopics(g.id);
     $('#edu-heading').textContent = g.title + ' — guia para o paciente';
     $('#edu-guides').innerHTML = GUIDES.map((x) =>
-      `<button class="chip" type="button" data-edu="${x.id}" aria-pressed="${x.id === g.id}">${esc(x.title)}</button>`).join('');
+      `<button class="chip chip-guide" type="button" data-edu="${x.id}" data-tone="${GUIDE_TONE[x.id] || 'teal'}" aria-pressed="${x.id === g.id}">` +
+      `${ICON(x.icon)}${esc(x.title)}</button>`).join('');
+    $('#edu-content').dataset.tone = GUIDE_TONE[g.id] || 'teal';
+    $('#edu-nav').dataset.tone = GUIDE_TONE[g.id] || 'teal';
     $('#edu-nav').innerHTML = topics.map((t) =>
       `<button type="button" data-edu="${t.id}" aria-current="${t.id === e.id}">${ICON(t.icon)}${esc(t.title)}</button>`).join('');
     const next = topics[topics.indexOf(e) + 1];

@@ -55,7 +55,6 @@
     --primary-ink: #04201d;
     --primary-soft: #123a37;
     --hero-a: #0c2f3f;
-  --logo-bg: #2FCDB8; --logo-fg: #0B2A3C; --logo-ink: #FFFFFF; --logo-accent: #2FCDB8;
     --logo-bg: #2FCDB8; --logo-fg: #0B2A3C; --logo-ink: #FFFFFF; --logo-accent: #2FCDB8;
     --hero-b: #0f4c47;
     --hero-ink: #f0fbfa;
@@ -283,13 +282,13 @@ a { color: var(--primary); }
 .cat-icon .icon { width: 22px; height: 22px; }
 .cat-icon-lg { width: 48px; height: 48px; border-radius: 14px; }
 .cat-icon-lg .icon { width: 26px; height: 26px; }
-.cat-icon[data-tone="red"] { --tone: var(--t-red); --tone-bg: var(--t-red-bg); }
-.cat-icon[data-tone="amber"] { --tone: var(--t-amber); --tone-bg: var(--t-amber-bg); }
-.cat-icon[data-tone="blue"] { --tone: var(--t-blue); --tone-bg: var(--t-blue-bg); }
-.cat-icon[data-tone="sky"] { --tone: var(--t-sky); --tone-bg: var(--t-sky-bg); }
-.cat-icon[data-tone="pink"] { --tone: var(--t-pink); --tone-bg: var(--t-pink-bg); }
-.cat-icon[data-tone="violet"] { --tone: var(--t-violet); --tone-bg: var(--t-violet-bg); }
-.cat-icon[data-tone="slate"] { --tone: var(--t-slate); --tone-bg: var(--t-slate-bg); }
+[data-tone="red"] { --tone: var(--t-red); --tone-bg: var(--t-red-bg); }
+[data-tone="amber"] { --tone: var(--t-amber); --tone-bg: var(--t-amber-bg); }
+[data-tone="blue"] { --tone: var(--t-blue); --tone-bg: var(--t-blue-bg); }
+[data-tone="sky"] { --tone: var(--t-sky); --tone-bg: var(--t-sky-bg); }
+[data-tone="pink"] { --tone: var(--t-pink); --tone-bg: var(--t-pink-bg); }
+[data-tone="violet"] { --tone: var(--t-violet); --tone-bg: var(--t-violet-bg); }
+[data-tone="slate"] { --tone: var(--t-slate); --tone-bg: var(--t-slate-bg); }
 .calc-card:has(.card-open:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
 /* O botão do título cobre o cartão inteiro; a estrela fica por cima, como controle separado */
 .card-open {
@@ -608,4 +607,121 @@ th { background: var(--surface-2); }
   .mini-card { border: 1px solid #888; }
   th { border-bottom: 2px solid #000; }
   .edu-title .icon { color: #000; }
+}
+
+/* ---------- cores por especialidade e ilustrações ---------- */
+[data-tone="teal"] { --tone: var(--t-teal); --tone-bg: var(--t-teal-bg); }
+:root {
+  /* tc: cor da aba (texto e ícone); ha/hb: degradê do cabeçalho */
+  --c-clinica: light-dark(#0f766e, #2dd4bf);
+  --c-cirurgia: light-dark(#2563eb, #93c5fd);
+  --c-gineco: light-dark(#db2777, #f9a8d4);
+  --c-geriatria: light-dark(#7c3aed, #c4b5fd);
+  --c-paliativos: light-dark(#c2410c, #fdba74);
+  --c-favoritos: light-dark(#a16207, #fde047);
+  --c-educacao: light-dark(#047857, #6ee7b7);
+  --accent: var(--c-clinica);
+  --ha: #0b4f6c; --hb: #0f766e;
+}
+:root[data-tab="cirurgia"] { --accent: var(--c-cirurgia); --ha: #1e3a8a; --hb: #0369a1; }
+:root[data-tab="gineco"] { --accent: var(--c-gineco); --ha: #831843; --hb: #c0266d; }
+:root[data-tab="geriatria"] { --accent: var(--c-geriatria); --ha: #3b1a8a; --hb: #7c3aed; }
+:root[data-tab="paliativos"] { --accent: var(--c-paliativos); --ha: #9a3412; --hb: #d0730a; }
+:root[data-tab="favoritos"] { --accent: var(--c-favoritos); --ha: #78350f; --hb: #b7791f; }
+:root[data-tab="educacao"] { --accent: var(--c-educacao); --ha: #064e3b; --hb: #059669; }
+
+.tab[data-tab="clinica"] { --tc: var(--c-clinica); }
+.tab[data-tab="cirurgia"] { --tc: var(--c-cirurgia); }
+.tab[data-tab="gineco"] { --tc: var(--c-gineco); }
+.tab[data-tab="geriatria"] { --tc: var(--c-geriatria); }
+.tab[data-tab="paliativos"] { --tc: var(--c-paliativos); }
+.tab[data-tab="favoritos"] { --tc: var(--c-favoritos); }
+.tab[data-tab="educacao"] { --tc: var(--c-educacao); }
+.tab .icon { color: var(--tc); }
+.tab:hover { background: color-mix(in srgb, var(--tc) 9%, transparent); }
+.tab[aria-current="page"] { color: var(--tc); background: color-mix(in srgb, var(--tc) 10%, transparent); }
+.tab[aria-current="page"]::after { background: var(--tc); }
+
+.hero {
+  background:
+    radial-gradient(90% 120% at 100% 0%, rgba(255, 255, 255, .16) 0%, transparent 55%),
+    radial-gradient(70% 90% at 0% 100%, rgba(255, 209, 102, .16) 0%, transparent 60%),
+    linear-gradient(120deg, var(--ha), var(--hb));
+  transition: background .3s;
+}
+:root[data-theme="dark"] .hero { background: linear-gradient(120deg, color-mix(in srgb, var(--ha) 70%, #000), color-mix(in srgb, var(--hb) 62%, #000)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero { background: linear-gradient(120deg, color-mix(in srgb, var(--ha) 70%, #000), color-mix(in srgb, var(--hb) 62%, #000)); }
+}
+.hero::after { display: none; }
+.hero .eyebrow { color: #FFD166; }
+.hero h1 { text-shadow: 0 2px 12px rgba(0, 0, 0, .18); }
+.hero-stat strong { color: #FFD166; }
+.hero-art {
+  position: absolute; right: 150px; top: 50%; transform: translateY(-50%); width: 230px; pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .18));
+}
+.hero-art svg { display: block; width: 100%; height: auto; }
+.hero-art:empty { display: none; }
+#view-calcs .hero-text { max-width: min(70ch, calc(100% - 400px)); }
+#view-edu .hero { align-items: flex-start; }
+#view-edu .hero-text { max-width: min(70ch, calc(100% - 220px)); }
+#view-edu .hero-art { right: 24px; top: 18px; transform: none; width: 190px; }
+#view-edu .hero .edu-tools { flex-basis: 100%; }
+
+.ai-fab { background: linear-gradient(135deg, var(--ha), var(--hb)); box-shadow: 0 10px 28px color-mix(in srgb, var(--ha) 45%, transparent); }
+
+/* Cartões: faixa colorida no topo e categoria na cor do tema */
+.calc-card { overflow: hidden; }
+.calc-card::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px;
+  background: linear-gradient(90deg, var(--tone), color-mix(in srgb, var(--tone) 25%, transparent));
+}
+.calc-card .card-cat { color: var(--tone); }
+.calc-card:has(.card-open:hover) { border-color: color-mix(in srgb, var(--tone) 50%, var(--border)); }
+.calc-card:has(.card-open:hover) .card-title { color: var(--tone); }
+.card-go { color: var(--tone, var(--primary)); }
+.cat-icon { background: linear-gradient(135deg, var(--tone-bg), color-mix(in srgb, var(--tone) 22%, var(--tone-bg))); }
+
+#dlg-cat { background: var(--tone-bg); color: var(--tone); }
+
+/* Chips: ponto colorido por categoria; o chip ativo usa a cor da especialidade */
+.chip { display: inline-flex; align-items: center; gap: 8px; }
+.chip-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--tone); flex-shrink: 0; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: light-dark(#fff, #10171a); box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent); }
+.chip[aria-pressed="true"] .chip-dot { background: currentColor; }
+.chip-guide .icon { width: 18px; height: 18px; color: var(--tone); }
+.chip-guide:hover { border-color: var(--tone); color: var(--tone); }
+.chip-guide[aria-pressed="true"] { background: var(--tone); border-color: var(--tone); box-shadow: 0 2px 8px color-mix(in srgb, var(--tone) 35%, transparent); }
+.chip-guide[aria-pressed="true"] .icon { color: currentColor; }
+
+/* Guia do paciente na cor do tema escolhido */
+.edu-content { border-top: 5px solid var(--tone, var(--primary)); }
+.edu-content .edu-title .icon {
+  color: var(--tone); background: var(--tone-bg); border-radius: 12px; padding: 8px; width: 44px; height: 44px; flex-shrink: 0;
+}
+.edu-content h3 { color: var(--tone, var(--text)); }
+.edu-nav .icon { color: var(--tone); }
+.edu-nav button[aria-current="true"] { border-color: var(--tone); color: var(--tone); }
+
+/* Rodapé com faixa nas cores das especialidades */
+.site-foot { border-top: 0; position: relative; }
+.site-foot::before {
+  content: ""; display: block; height: 4px;
+  background: linear-gradient(90deg, var(--c-clinica), var(--c-cirurgia), var(--c-gineco), var(--c-geriatria), var(--c-paliativos), var(--c-favoritos), var(--c-educacao));
+}
+
+@media (max-width: 900px) {
+  .hero-art { right: 16px; top: 16px; transform: none; width: 150px; opacity: .9; }
+  #view-calcs .hero-text, #view-edu .hero-text { max-width: calc(100% - 150px); }
+}
+@media (max-width: 600px) {
+  .hero-art, #view-edu .hero-art { right: -6px; top: 8px; width: 112px; opacity: .55; }
+  #view-calcs .hero-text, #view-edu .hero-text { max-width: none; padding-right: 64px; }
+}
+@media print {
+  .calc-card::before, .site-foot::before, .hero-art { display: none !important; }
+  .edu-content { border-top: 0; }
+  .edu-content h3, .edu-content .edu-title .icon { color: #000; background: none; }
 }
