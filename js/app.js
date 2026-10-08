@@ -4,6 +4,7 @@
 
   const CALCS = window.CALCS;
   const EDU = window.EDU;
+  const GUIDES = window.EDU_GUIDES;
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
 
@@ -39,6 +40,10 @@
   const ICON = window.ICON;
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const eduById = (id) => EDU.find((e) => e.id === id);
+  const guideOf = (e) => GUIDES.find((g) => g.id === e.guide) || GUIDES[0];
+  const guideTopics = (gid) => EDU.filter((e) => e.guide === gid);
+  // Aceita o ID de um tópico ou de um guia inteiro (abre o primeiro tópico do guia)
+  const resolveEdu = (id) => (eduById(id) ? id : (guideTopics(id)[0] || {}).id);
 
   /* ---------- tema ---------- */
   function initTheme() {
@@ -387,11 +392,15 @@
 
   /* ---------- material educativo ---------- */
   function renderEdu() {
-    $('#edu-nav').innerHTML = EDU.map((e) =>
-      `<button type="button" data-edu="${e.id}" aria-current="${e.id === state.edu}">${ICON(e.icon)}${esc(e.title)}</button>`).join('');
     const e = eduById(state.edu) || EDU[0];
-    const idx = EDU.indexOf(e);
-    const next = EDU[idx + 1];
+    const g = guideOf(e);
+    const topics = guideTopics(g.id);
+    $('#edu-heading').textContent = g.title + ' — guia para o paciente';
+    $('#edu-guides').innerHTML = GUIDES.map((x) =>
+      `<button class="chip" type="button" data-edu="${x.id}" aria-pressed="${x.id === g.id}">${esc(x.title)}</button>`).join('');
+    $('#edu-nav').innerHTML = topics.map((t) =>
+      `<button type="button" data-edu="${t.id}" aria-current="${t.id === e.id}">${ICON(t.icon)}${esc(t.title)}</button>`).join('');
+    const next = topics[topics.indexOf(e) + 1];
     $('#edu-content').innerHTML = `
       ${printHead()}
       <h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>
@@ -407,7 +416,8 @@
   }
 
   function openEdu(id) {
-    if (eduById(id)) state.edu = id;
+    const topic = resolveEdu(id);
+    if (topic) state.edu = topic;
     closeCalc();
     if (state.tab !== 'educacao') setTab('educacao'); else renderEdu();
     history.replaceState(null, '', '#educacao/' + state.edu);
@@ -415,17 +425,19 @@
   }
 
   const printHead = () => `<header class="print-only print-head">
-      <strong>Hipertensão arterial — guia para o paciente</strong>
+      <strong>${esc(guideOf(eduById(state.edu) || EDU[0]).title)} — guia para o paciente</strong>
       <span>MedCalc · material educativo · ${new Date().toLocaleDateString('pt-BR')}</span>
     </header>`;
   const printFoot = () => `<footer class="print-only print-foot">
       Este material não substitui a orientação da sua equipe de saúde. Em caso de emergência, ligue 192 (SAMU).
     </footer>`;
 
+  // Guia completo do tema atual (não todos os temas)
   function renderPrintAll() {
     const box = $('#edu-content');
+    const g = guideOf(eduById(state.edu) || EDU[0]);
     box.innerHTML = printHead() +
-      EDU.map((e) => `<section class="print-section"><h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>${e.html}` +
+      guideTopics(g.id).map((e) => `<section class="print-section"><h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>${e.html}` +
       `${e.sources ? `<p class="sources">Fontes: ${esc(e.sources)}</p>` : ''}</section>`).join('') +
       printFoot();
     box.classList.add('print-all');
@@ -466,8 +478,9 @@
       return;
     }
     if (h.startsWith('educacao')) {
-      const id = h.split('/')[1];
-      if (id && eduById(id)) state.edu = id;
+      const id = resolveEdu(h.split('/')[1]);
+      if (id) state.edu = id;
+      closeCalc();
       setTab('educacao');
       return;
     }
@@ -506,7 +519,7 @@
       if (e.target.closest('[data-print-one]')) { window.print(); return; }
       if (e.target.closest('[data-ask-edu]')) {
         const t = eduById(state.edu);
-        window.AI && window.AI.open(`Tenho dúvidas sobre “${t.title}” (hipertensão). `, false);
+        window.AI && window.AI.open(`Tenho dúvidas sobre “${t.title}” (${guideOf(t).title.toLowerCase()}). `, false);
       }
     });
 

@@ -1,10 +1,11 @@
-/* Material educativo para pacientes — Hipertensão arterial */
+/* Material educativo para pacientes, organizado em guias por tema (hipertensão, diabetes, colesterol, insuficiência cardíaca, quedas) */
 (function () {
   'use strict';
 
   window.EDU = [
     {
       id: 'has-oque',
+      guide: 'has',
       sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025 (SBC/SBH/SBN).',
       icon: 'heart',
       title: 'O que é pressão alta',
@@ -38,6 +39,7 @@
     },
     {
       id: 'has-tratamento',
+      guide: 'has',
       sources: 'Ettehad D et al. Lancet 2016 (meta-análise de 48 ensaios); Diretriz Brasileira de Hipertensão Arterial — 2025.',
       icon: 'pill',
       title: 'Importância do tratamento',
@@ -69,6 +71,7 @@
     },
     {
       id: 'has-nutricao',
+      guide: 'has',
       sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025 (sódio < 2 g/dia ≈ 5 g de sal); Organização Mundial da Saúde.',
       icon: 'leaf',
       title: 'Alimentação',
@@ -106,6 +109,7 @@
     },
     {
       id: 'has-atividade',
+      guide: 'has',
       sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025; OMS — Diretrizes de atividade física (2020).',
       icon: 'activity',
       title: 'Atividade física',
@@ -134,6 +138,7 @@
     },
     {
       id: 'has-medir',
+      guide: 'has',
       sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025 (MRPA).',
       icon: 'gauge',
       title: 'Como medir a pressão em casa',
@@ -161,6 +166,7 @@
     },
     {
       id: 'has-habitos',
+      guide: 'has',
       sources: 'Neter JE et al. Hypertension 2003 (perda de peso e pressão); Diretriz Brasileira de Hipertensão Arterial — 2025.',
       icon: 'moon',
       title: 'Peso, sono, tabaco e estresse',
@@ -184,6 +190,7 @@
     },
     {
       id: 'has-alerta',
+      guide: 'has',
       sources: 'Diretriz Brasileira de Hipertensão Arterial — 2025; Rede Brasil AVC (teste SAMU).',
       icon: 'alert',
       title: 'Sinais de alerta',
@@ -212,5 +219,596 @@
         novamente. Se continuar alta, entre em contato com sua equipe de saúde no mesmo dia. <strong>Não tome doses extras
         de remédio por conta própria</strong> — baixar a pressão rápido demais também pode fazer mal.</p>`,
     },
+
+    /* ===================== Diabetes ===================== */
+    {
+      id: 'dm-oque',
+      guide: 'dm',
+      sources: 'Diretriz da Sociedade Brasileira de Diabetes (SBD), edição 2024–2025.',
+      icon: 'drop',
+      title: 'O que é diabetes',
+      keywords: 'o que é diabetes açúcar no sangue glicose glicemia hemoglobina glicada pré-diabetes tipo 1 tipo 2 sintomas',
+      html: `
+        <p class="lead">Diabetes é quando o <strong>açúcar (glicose) no sangue fica alto</strong> de forma persistente,
+        porque o corpo produz pouca insulina ou não consegue usá-la bem. A insulina é o hormônio que leva a glicose do sangue para dentro das células.</p>
+        <h3>Tipos mais comuns</h3>
+        <ul>
+          <li><strong>Tipo 2</strong> (cerca de 9 em cada 10 casos): costuma aparecer em adultos, junto com excesso de peso, sedentarismo e histórico familiar.</li>
+          <li><strong>Tipo 1</strong>: o corpo deixa de produzir insulina; é mais comum em crianças e jovens e sempre precisa de insulina.</li>
+          <li><strong>Diabetes gestacional</strong>: aparece na gravidez e aumenta o risco de diabetes tipo 2 no futuro.</li>
+        </ul>
+        <h3>Muitas vezes não dá sintomas</h3>
+        <p>O diabetes tipo 2 pode passar anos sem sintomas. Quando a glicose está muito alta, podem aparecer
+        <strong>muita sede, urinar muito, fome excessiva, perda de peso sem motivo, cansaço, visão embaçada</strong> e feridas que demoram a cicatrizar.</p>
+        <h3>Como entender os exames</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Exame</th><th scope="col">Normal</th><th scope="col">Pré-diabetes</th><th scope="col">Diabetes</th></tr></thead>
+          <tbody>
+            <tr><td>Glicemia de jejum (mg/dL)</td><td>&lt; 100</td><td>100–125</td><td>≥ 126</td></tr>
+            <tr><td>Hemoglobina glicada — HbA1c (%)</td><td>&lt; 5,7</td><td>5,7–6,4</td><td>≥ 6,5</td></tr>
+            <tr><td>Glicemia 2 h após 75 g de glicose (mg/dL)</td><td>&lt; 140</td><td>140–199</td><td>≥ 200</td></tr>
+          </tbody>
+        </table></div>
+        <p class="note">O diagnóstico é feito pelo médico, em geral com dois exames alterados. A hemoglobina glicada mostra a média da glicose dos últimos 3 meses.</p>
+        <h3>Pré-diabetes tem volta</h3>
+        <p>Quem tem pré-diabetes pode <strong>evitar ou adiar o diabetes</strong> perdendo de 5 a 7% do peso e fazendo
+        150 minutos de atividade física por semana. Esse é o momento ideal para mudar os hábitos.</p>`,
+    },
+    {
+      id: 'dm-tratamento',
+      guide: 'dm',
+      sources: 'Diretriz da Sociedade Brasileira de Diabetes (SBD), edição 2024–2025.',
+      icon: 'pill',
+      title: 'Tratamento e metas',
+      keywords: 'tratamento diabetes remédio metformina insulina meta glicada glicemia controle exames complicações',
+      html: `
+        <p class="lead">Manter a glicose controlada <strong>protege olhos, rins, nervos, coração e cérebro</strong>.
+        O tratamento combina alimentação, atividade física e, quase sempre, remédios.</p>
+        <h3>O que o diabetes sem controle pode causar</h3>
+        <div class="grid-cards">
+          <div class="mini-card"><strong>Olhos</strong><span>Retinopatia e perda de visão</span></div>
+          <div class="mini-card"><strong>Rins</strong><span>Doença renal e necessidade de diálise</span></div>
+          <div class="mini-card"><strong>Nervos e pés</strong><span>Dormência, feridas e amputações</span></div>
+          <div class="mini-card"><strong>Coração e cérebro</strong><span>Infarto e AVC (derrame)</span></div>
+        </div>
+        <h3>Metas mais comuns</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Exame</th><th scope="col">Meta para a maioria dos adultos</th></tr></thead>
+          <tbody>
+            <tr><td>Hemoglobina glicada (HbA1c)</td><td>&lt; 7%</td></tr>
+            <tr><td>Glicemia em jejum e antes das refeições</td><td>80 a 130 mg/dL</td></tr>
+            <tr><td>Glicemia 2 horas após as refeições</td><td>&lt; 180 mg/dL</td></tr>
+            <tr><td>Pressão arterial</td><td>&lt; 130/80 mmHg</td></tr>
+          </tbody>
+        </table></div>
+        <p class="note">Para pessoas idosas, frágeis ou com risco de hipoglicemia, o médico costuma definir metas menos rígidas.</p>
+        <h3>Sobre os remédios</h3>
+        <ul>
+          <li><strong>Tome todos os dias</strong>, nos horários combinados, mesmo quando a glicose estiver boa.</li>
+          <li>A metformina pode causar enjoo ou diarreia no começo; tomar junto ou logo após a refeição costuma ajudar. Não pare sem falar com o médico.</li>
+          <li>Alguns remédios mais novos também <strong>protegem o coração e os rins</strong>, além de baixar a glicose.</li>
+          <li><strong>Precisar de insulina não é castigo nem sinal de fracasso</strong>: o diabetes muda com o tempo e a insulina é um tratamento seguro e eficaz.</li>
+          <li>Se usa insulina, aprenda a aplicar, a fazer rodízio dos locais de aplicação e a guardar o frasco ou caneta (geladeira, longe do congelador).</li>
+        </ul>
+        <h3>Exames de rotina</h3>
+        <ul>
+          <li>Hemoglobina glicada a cada 3 a 6 meses.</li>
+          <li>Uma vez por ano: <strong>exame de fundo de olho</strong>, exames de urina e sangue para os rins, colesterol e <strong>exame dos pés</strong>.</li>
+          <li>Vacinas em dia: gripe, pneumonia, covid-19 e hepatite B.</li>
+        </ul>`,
+    },
+    {
+      id: 'dm-alimentacao',
+      guide: 'dm',
+      sources: 'Diretriz da Sociedade Brasileira de Diabetes (SBD), edição 2024–2025; Ministério da Saúde — Guia Alimentar para a População Brasileira.',
+      icon: 'leaf',
+      title: 'Alimentação e atividade física',
+      keywords: 'alimentação dieta diabetes carboidrato açúcar doce fruta exercício atividade física caminhada peso',
+      html: `
+        <p class="lead">Não existe uma “dieta do diabético” única. O mais importante é <strong>comer comida de verdade,
+        em horários regulares</strong>, e controlar a quantidade de carboidratos (açúcares e amidos).</p>
+        <h3>Monte o prato</h3>
+        <ul>
+          <li><strong>Metade do prato</strong>: verduras e legumes (alface, couve, brócolis, abobrinha, tomate, cenoura).</li>
+          <li><strong>Um quarto</strong>: proteína (feijão, lentilha, ovo, frango, peixe, carne magra).</li>
+          <li><strong>Um quarto</strong>: carboidrato, de preferência integral (arroz integral, batata, mandioca, macarrão, pão).</li>
+        </ul>
+        <h3>Prefira</h3>
+        <ul>
+          <li>Feijão todos os dias, verduras e legumes à vontade.</li>
+          <li>Frutas inteiras (e não sucos), 2 a 3 porções por dia, de preferência após as refeições.</li>
+          <li>Água como bebida principal.</li>
+          <li>Alimentos integrais e ricos em fibras, como aveia.</li>
+        </ul>
+        <h3>Evite</h3>
+        <ul>
+          <li><strong>Refrigerantes, sucos (inclusive os naturais e de caixinha)</strong> e bebidas adoçadas: elevam a glicose muito rápido.</li>
+          <li>Doces, bolos, biscoitos recheados e ultraprocessados.</li>
+          <li>Excesso de pão branco, farinha e tapioca na mesma refeição.</li>
+          <li>Álcool em excesso; se beber, nunca em jejum (risco de hipoglicemia).</li>
+        </ul>
+        <h3>Atividade física</h3>
+        <ul>
+          <li>Pelo menos <strong>150 minutos por semana</strong> de atividade moderada (como caminhada rápida), sem ficar mais de 2 dias seguidos parado.</li>
+          <li>Exercícios de <strong>fortalecimento muscular</strong> 2 a 3 vezes por semana.</li>
+          <li>Uma caminhada de 10 a 15 minutos <strong>depois das refeições</strong> ajuda a baixar a glicose.</li>
+          <li>Se usa insulina ou glibenclamida/gliclazida, leve sempre um carboidrato rápido (como balas ou suco) para o caso de hipoglicemia.</li>
+          <li>Use tênis confortável e meias, e examine os pés depois do exercício.</li>
+        </ul>
+        <h3>Peso</h3>
+        <p>Perder de 5 a 10% do peso já melhora bastante a glicose — e, em algumas pessoas, pode até levar o diabetes tipo 2 à remissão.</p>`,
+    },
+    {
+      id: 'dm-hipo',
+      guide: 'dm',
+      sources: 'Diretriz da Sociedade Brasileira de Diabetes (SBD), edição 2024–2025 (regra dos 15).',
+      icon: 'alert',
+      title: 'Hipoglicemia e dias de doença',
+      keywords: 'hipoglicemia glicose baixa tremor suor desmaio regra dos 15 hiperglicemia glicose alta doença vômito febre',
+      html: `
+        <p class="lead"><strong>Hipoglicemia</strong> é a glicose abaixo de <strong>70 mg/dL</strong>. É mais comum em quem usa
+        insulina ou remédios como glibenclamida e gliclazida, principalmente após pular refeições, fazer exercício a mais ou beber álcool.</p>
+        <h3>Sinais de hipoglicemia</h3>
+        <p>Tremor, suor frio, coração acelerado, fome súbita, tontura, fraqueza, irritação, confusão, fala enrolada e, nos casos graves, desmaio ou convulsão.</p>
+        <h3>O que fazer: a regra dos 15</h3>
+        <ol>
+          <li>Se possível, meça a glicose.</li>
+          <li>Tome <strong>15 g de açúcar de absorção rápida</strong>: 1 colher de sopa de açúcar dissolvida em água, <strong>ou</strong> meio copo (150 mL) de suco de laranja ou de refrigerante comum (não diet).</li>
+          <li>Espere <strong>15 minutos</strong> e meça de novo.</li>
+          <li>Se continuar abaixo de 70, repita. Quando melhorar, faça um lanche ou a próxima refeição.</li>
+        </ol>
+        <div class="alert-box">
+          <strong>Se a pessoa estiver desmaiada ou sem conseguir engolir: não dê nada pela boca. Ligue 192 (SAMU).</strong>
+          <p>Avise o médico sempre que tiver hipoglicemia: talvez a dose precise de ajuste.</p>
+        </div>
+        <h3>Glicose muito alta</h3>
+        <p>Muita sede, urina em excesso, boca seca, cansaço e visão embaçada. Glicemias repetidas acima de 300 mg/dL,
+        principalmente com <strong>vômitos, dor na barriga, respiração rápida ou sonolência</strong>, exigem atendimento no mesmo dia.</p>
+        <h3>Dias de doença (gripe, febre, diarreia, vômitos)</h3>
+        <ul>
+          <li><strong>Não pare a insulina</strong> por conta própria, mesmo comendo pouco: a doença costuma aumentar a glicose.</li>
+          <li>Meça a glicose com mais frequência (a cada 3 a 4 horas, se possível).</li>
+          <li>Beba bastante líquido e tente comer porções pequenas.</li>
+          <li>Pergunte ao seu médico, com antecedência, <strong>quais remédios suspender</strong> se tiver vômitos, diarreia ou não conseguir se alimentar.</li>
+          <li>Procure atendimento se não conseguir se hidratar ou se a glicose não baixar.</li>
+        </ul>`,
+    },
+    {
+      id: 'dm-pes',
+      guide: 'dm',
+      sources: 'Diretriz da Sociedade Brasileira de Diabetes (SBD), edição 2024–2025; IWGDF — Diretrizes de pé diabético (2023).',
+      icon: 'foot',
+      title: 'Cuidados com os pés',
+      keywords: 'pé diabético feridas unha calo sapato calçado dormência neuropatia amputação',
+      html: `
+        <p class="lead">O diabetes pode diminuir a sensibilidade e a circulação dos pés. Um pequeno machucado pode
+        <strong>passar despercebido e virar uma ferida grave</strong>. A maioria das amputações pode ser evitada com cuidados simples.</p>
+        <h3>Todos os dias</h3>
+        <ul>
+          <li><strong>Olhe os pés</strong>, inclusive a sola e entre os dedos (use um espelho ou peça ajuda): procure cortes, bolhas, rachaduras, vermelhidão ou inchaço.</li>
+          <li>Lave com água morna (teste a temperatura com o cotovelo, não com o pé) e <strong>seque bem entre os dedos</strong>.</li>
+          <li>Hidrate a pele com creme, mas <strong>não passe entre os dedos</strong>.</li>
+          <li>Use meias claras, sem costuras e sem elástico apertado.</li>
+        </ul>
+        <h3>Calçados</h3>
+        <ul>
+          <li><strong>Nunca ande descalço</strong>, nem dentro de casa ou na praia.</li>
+          <li>Use calçados fechados, macios, confortáveis e do tamanho certo. Sapatos novos: use aos poucos.</li>
+          <li>Antes de calçar, passe a mão por dentro para ver se não há pedrinhas ou costuras.</li>
+        </ul>
+        <h3>Não faça</h3>
+        <ul>
+          <li>Não corte calos nem use calicida, lâminas ou alicates nas cutículas.</li>
+          <li>Não use bolsa de água quente, aquecedores ou escalda-pés.</li>
+          <li>Corte as unhas <strong>retas</strong>, sem aprofundar os cantos; se tiver dificuldade, procure um profissional.</li>
+        </ul>
+        <div class="alert-box">
+          <strong>Procure a unidade de saúde logo se notar:</strong>
+          <ul>
+            <li>Ferida, bolha ou corte que não melhora em poucos dias</li>
+            <li>Pé vermelho, quente, inchado ou com pus</li>
+            <li>Mudança de cor (pé roxo, pálido ou escuro) ou dor forte ao caminhar</li>
+          </ul>
+        </div>
+        <p>Peça para examinarem seus pés <strong>pelo menos uma vez por ano</strong> — ou em todas as consultas, se você já teve feridas ou tem perda de sensibilidade.</p>`,
+    },
+
+    /* ===================== Colesterol e triglicerídeos ===================== */
+    {
+      id: 'dlp-oque',
+      guide: 'dlp',
+      sources: 'Diretriz Brasileira de Dislipidemias e Prevenção da Aterosclerose — 2025 (SBC).',
+      icon: 'activity',
+      title: 'Entenda seus exames',
+      keywords: 'colesterol ldl hdl triglicerídeos gordura no sangue dislipidemia aterosclerose placa exames metas',
+      html: `
+        <p class="lead"><strong>Dislipidemia</strong> é o nome dado às alterações das gorduras do sangue: colesterol e triglicerídeos.
+        Ela <strong>não causa sintomas</strong>, mas com o tempo forma placas nas artérias (aterosclerose), que podem causar infarto e AVC.</p>
+        <h3>O que cada exame mede</h3>
+        <div class="grid-cards">
+          <div class="mini-card"><strong>LDL-colesterol</strong><span>O “colesterol ruim”: é o que forma placas. É o principal alvo do tratamento.</span></div>
+          <div class="mini-card"><strong>HDL-colesterol</strong><span>O “colesterol bom”: ajuda a retirar colesterol das artérias.</span></div>
+          <div class="mini-card"><strong>Triglicerídeos</strong><span>Sobem com açúcar, álcool e excesso de peso. Muito altos podem causar pancreatite.</span></div>
+          <div class="mini-card"><strong>Não-HDL</strong><span>Soma de todas as partículas que formam placas. Também usado como meta.</span></div>
+        </div>
+        <h3>Qual deve ser o meu LDL?</h3>
+        <p>Não existe um único valor “normal”: <strong>a meta depende do seu risco cardiovascular</strong>, que o médico calcula
+        considerando idade, pressão, diabetes, tabagismo, doença renal e se você já teve infarto ou AVC.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Risco cardiovascular</th><th scope="col">Meta de LDL (mg/dL)</th></tr></thead>
+          <tbody>
+            <tr><td>Baixo</td><td>&lt; 115</td></tr>
+            <tr><td>Intermediário</td><td>&lt; 100</td></tr>
+            <tr><td>Alto</td><td>&lt; 70</td></tr>
+            <tr><td>Muito alto (ex.: já teve infarto ou AVC)</td><td>&lt; 50</td></tr>
+            <tr><td>Extremo</td><td>&lt; 40</td></tr>
+          </tbody>
+        </table></div>
+        <p class="note">Triglicerídeos: desejável abaixo de 150 mg/dL em jejum (ou 175 mg/dL sem jejum).</p>
+        <h3>Colesterol muito alto desde jovem</h3>
+        <p>LDL <strong>acima de 190 mg/dL</strong>, ou casos de infarto precoce na família (homens antes dos 55 e mulheres
+        antes dos 65 anos), podem indicar <strong>hipercolesterolemia familiar</strong>, uma condição genética. Nesses casos, pais, irmãos e filhos também devem fazer o exame.</p>`,
+    },
+    {
+      id: 'dlp-tratamento',
+      guide: 'dlp',
+      sources: 'Diretriz Brasileira de Dislipidemias e Prevenção da Aterosclerose — 2025 (SBC); Cholesterol Treatment Trialists (CTT) Collaboration, Lancet 2010.',
+      icon: 'pill',
+      title: 'Remédios para o colesterol',
+      keywords: 'estatina sinvastatina atorvastatina rosuvastatina ezetimiba remédio colesterol dor muscular efeitos colaterais',
+      html: `
+        <p class="lead">Os remédios para colesterol, principalmente as <strong>estatinas</strong> (sinvastatina, atorvastatina,
+        rosuvastatina), estão entre os mais estudados da medicina. Eles <strong>reduzem infartos, AVCs e mortes</strong> — quanto mais baixam o LDL, maior a proteção.</p>
+        <h3>Como tomar</h3>
+        <ul>
+          <li><strong>Todos os dias</strong>, por tempo indeterminado. Se parar, o colesterol volta a subir em poucas semanas e a proteção se perde.</li>
+          <li>Sinvastatina funciona melhor à noite; atorvastatina e rosuvastatina podem ser tomadas em qualquer horário, sempre no mesmo.</li>
+          <li>O exame normal <strong>não</strong> significa que pode parar: ele está normal por causa do remédio.</li>
+          <li>Muitas pessoas precisam de um segundo remédio (como a <strong>ezetimiba</strong>) para chegar à meta.</li>
+        </ul>
+        <h3>Mitos e verdades</h3>
+        <ul>
+          <li><strong>“Estatina vicia.”</strong> Mito. Ela não causa dependência.</li>
+          <li><strong>“Estatina estraga o fígado.”</strong> Mito. Alterações importantes são raras; o médico acompanha com exames quando necessário.</li>
+          <li><strong>“Toda dor muscular é da estatina.”</strong> Mito. Na maioria das vezes a dor tem outra causa. Mesmo assim, <strong>avise o médico</strong>: trocar o remédio ou ajustar a dose costuma resolver.</li>
+          <li><strong>“Posso usar só chá ou suplemento.”</strong> Mito. Nenhum chá ou produto natural substitui o tratamento.</li>
+        </ul>
+        <div class="alert-box">
+          <strong>Procure atendimento se tiver dor muscular forte e generalizada com fraqueza ou urina escura (cor de Coca-Cola).</strong>
+          <p>É uma reação rara, mas precisa de avaliação no mesmo dia.</p>
+        </div>
+        <h3>Acompanhamento</h3>
+        <p>Repita o perfil lipídico conforme o médico pedir (geralmente de 4 a 12 semanas após iniciar ou mudar a dose, depois a cada 6 a 12 meses).</p>`,
+    },
+    {
+      id: 'dlp-habitos',
+      guide: 'dlp',
+      sources: 'Diretriz Brasileira de Dislipidemias e Prevenção da Aterosclerose — 2025 (SBC); Ministério da Saúde — Guia Alimentar para a População Brasileira.',
+      icon: 'leaf',
+      title: 'Alimentação e hábitos',
+      keywords: 'alimentação colesterol gordura saturada fritura ovo fibra aveia azeite peixe triglicerídeos álcool açúcar exercício',
+      html: `
+        <p class="lead">Mudanças nos hábitos ajudam a baixar o colesterol e, principalmente, os triglicerídeos.
+        Para quem tem risco alto, elas <strong>complementam</strong> o remédio, mas normalmente não o substituem.</p>
+        <h3>Reduza</h3>
+        <ul>
+          <li><strong>Gorduras saturadas</strong>: carnes gordas, pele de frango, bacon, torresmo, manteiga, banha, queijos amarelos e creme de leite.</li>
+          <li><strong>Embutidos</strong> (linguiça, salsicha, salame, presunto) e frituras.</li>
+          <li><strong>Ultraprocessados</strong> com gordura hidrogenada: biscoitos recheados, salgadinhos, sorvetes de massa, margarinas duras.</li>
+        </ul>
+        <h3>Prefira</h3>
+        <ul>
+          <li>Fibras: <strong>aveia</strong>, feijão, lentilha, grão-de-bico, frutas, verduras e legumes.</li>
+          <li>Gorduras boas, com moderação: <strong>azeite</strong>, abacate, castanhas, nozes e amendoim.</li>
+          <li>Peixes (sardinha, atum, salmão) 2 vezes por semana; frango sem pele e carnes magras.</li>
+          <li>Leite e iogurte desnatados.</li>
+          <li>Ovos podem fazer parte de uma alimentação saudável, sem exageros.</li>
+        </ul>
+        <h3>Se os triglicerídeos estão altos</h3>
+        <ul>
+          <li><strong>Corte açúcar, doces, refrigerantes e sucos</strong>, inclusive os naturais.</li>
+          <li>Reduza pão branco, massas e farinhas.</li>
+          <li><strong>Evite bebidas alcoólicas</strong>: o álcool eleva muito os triglicerídeos.</li>
+        </ul>
+        <h3>Outros hábitos</h3>
+        <ul>
+          <li><strong>Atividade física</strong>: 150 minutos por semana de exercício moderado, mais fortalecimento muscular; aumenta o HDL e baixa os triglicerídeos.</li>
+          <li><strong>Perder peso</strong>: mesmo 5 a 10% já melhoram os exames.</li>
+          <li><strong>Parar de fumar</strong>: o cigarro acelera a formação de placas. O SUS oferece tratamento gratuito.</li>
+        </ul>`,
+    },
+
+    /* ===================== Insuficiência cardíaca ===================== */
+    {
+      id: 'ic-oque',
+      guide: 'ic',
+      sources: 'Diretriz Brasileira de Insuficiência Cardíaca Crônica e Aguda (SBC, 2018) e Atualização de Tópicos Emergentes (SBC, 2021).',
+      icon: 'heart',
+      title: 'O que é insuficiência cardíaca',
+      keywords: 'insuficiência cardíaca coração fraco cansaço falta de ar inchaço pernas causas chagas',
+      html: `
+        <p class="lead">Na insuficiência cardíaca, o coração <strong>não consegue bombear ou encher-se de sangue</strong> como deveria.
+        Isso não quer dizer que o coração “parou”: é uma doença crônica que, com tratamento correto, permite viver mais e melhor.</p>
+        <h3>Sintomas mais comuns</h3>
+        <ul>
+          <li><strong>Falta de ar</strong> aos esforços, ao deitar (precisa de mais travesseiros) ou que acorda a pessoa à noite.</li>
+          <li><strong>Inchaço</strong> nas pernas, tornozelos ou barriga.</li>
+          <li>Cansaço e fraqueza, menos disposição para as atividades do dia a dia.</li>
+          <li><strong>Ganho de peso rápido</strong>, por retenção de líquidos.</li>
+          <li>Tosse seca à noite, perda de apetite.</li>
+        </ul>
+        <h3>Principais causas</h3>
+        <div class="grid-cards">
+          <div class="mini-card"><strong>Pressão alta</strong><span>Sem controle por muitos anos</span></div>
+          <div class="mini-card"><strong>Infarto</strong><span>E outras doenças das artérias do coração</span></div>
+          <div class="mini-card"><strong>Doença de Chagas</strong><span>Importante causa no Brasil</span></div>
+          <div class="mini-card"><strong>Válvulas</strong><span>Doenças das válvulas do coração</span></div>
+          <div class="mini-card"><strong>Outras</strong><span>Diabetes, álcool, arritmias, quimioterapia</span></div>
+        </div>
+        <h3>O que você pode fazer</h3>
+        <p>O tratamento tem três partes que funcionam juntas: <strong>remédios tomados corretamente</strong>,
+        <strong>autocuidado diário</strong> (peso, sal, sintomas) e <strong>acompanhamento regular</strong> com a equipe de saúde.
+        Os próximos tópicos explicam cada uma.</p>`,
+    },
+    {
+      id: 'ic-tratamento',
+      guide: 'ic',
+      sources: 'Diretriz Brasileira de Insuficiência Cardíaca Crônica e Aguda (SBC, 2018) e Atualização de Tópicos Emergentes (SBC, 2021).',
+      icon: 'pill',
+      title: 'Remédios',
+      keywords: 'remédios insuficiência cardíaca diurético furosemida betabloqueador carvedilol espironolactona dapagliflozina empagliflozina sacubitril enalapril losartana',
+      html: `
+        <p class="lead">Os remédios da insuficiência cardíaca <strong>fazem o coração trabalhar melhor, reduzem internações e
+        aumentam a sobrevida</strong> — mesmo quando você não sente diferença no dia a dia.</p>
+        <h3>Tipos de remédio</h3>
+        <ul>
+          <li><strong>Remédios que protegem o coração</strong> (geralmente 3 ou 4 tipos juntos): betabloqueadores (carvedilol, metoprolol, bisoprolol),
+          enalapril, losartana ou sacubitril/valsartana, espironolactona, e dapagliflozina ou empagliflozina.</li>
+          <li><strong>Diuréticos</strong> (como a furosemida): eliminam o excesso de líquido e aliviam o inchaço e a falta de ar. A dose pode variar conforme o peso e os sintomas.</li>
+        </ul>
+        <h3>Como tomar</h3>
+        <ul>
+          <li><strong>Não pare nem mude a dose por conta própria.</strong> Parar de repente pode levar à internação.</li>
+          <li>As doses costumam ser aumentadas aos poucos, a cada consulta, até a dose ideal. Isso é esperado.</li>
+          <li>Um pouco de cansaço ou tontura no começo é comum; levante-se devagar. Se for forte, avise o médico.</li>
+          <li>Tome o diurético pela manhã para não precisar levantar à noite para urinar.</li>
+          <li>Leve sempre a lista atualizada dos seus remédios às consultas e ao pronto-socorro.</li>
+        </ul>
+        <div class="alert-box">
+          <strong>Evite sem orientação médica:</strong>
+          <ul>
+            <li>Anti-inflamatórios (diclofenaco, ibuprofeno, nimesulida, cetoprofeno)</li>
+            <li>Antigripais e descongestionantes</li>
+            <li>Chás, suplementos e “remédios naturais”</li>
+          </ul>
+          <p>Eles podem reter líquido e piorar a insuficiência cardíaca.</p>
+        </div>
+        <h3>Vacinas</h3>
+        <p>Mantenha em dia as vacinas contra <strong>gripe (todo ano), pneumonia e covid-19</strong>: infecções respiratórias são causa frequente de piora.</p>`,
+    },
+    {
+      id: 'ic-autocuidado',
+      guide: 'ic',
+      sources: 'Diretriz Brasileira de Insuficiência Cardíaca Crônica e Aguda (SBC, 2018); Atualização de Tópicos Emergentes (SBC, 2021).',
+      icon: 'scale',
+      title: 'Autocuidado: peso, sal e líquidos',
+      keywords: 'pesar todo dia peso diário sal líquidos água restrição hídrica atividade física álcool autocuidado',
+      html: `
+        <p class="lead">Pequenos cuidados diários ajudam a perceber a piora <strong>antes</strong> que ela fique grave e evitam internações.</p>
+        <h3>Pese-se todos os dias</h3>
+        <ul>
+          <li>Pela manhã, <strong>depois de urinar e antes do café</strong>, com roupas leves e na mesma balança.</li>
+          <li>Anote o peso num caderno ou no celular e leve nas consultas.</li>
+          <li><strong>Ganho de mais de 2 kg em 3 dias</strong> geralmente é líquido acumulado: entre em contato com sua equipe de saúde.</li>
+        </ul>
+        <h3>Sal</h3>
+        <ul>
+          <li>Evite o excesso de sal: não use saleiro na mesa e prefira temperos naturais (alho, cebola, ervas, limão).</li>
+          <li>Evite embutidos, enlatados, temperos prontos, salgadinhos e comida de lanchonete.</li>
+        </ul>
+        <h3>Líquidos</h3>
+        <p>A maioria das pessoas <strong>não precisa</strong> restringir líquidos. Se o médico orientar limite (por exemplo, 1,5 litro por dia),
+        lembre que sopa, sucos, leite, gelatina e frutas como melancia também contam. Para aliviar a sede, chupe pedrinhas de gelo ou gomos de fruta gelada.</p>
+        <h3>Atividade física</h3>
+        <ul>
+          <li>Com a doença estável, exercícios regulares <strong>melhoram o fôlego e a qualidade de vida</strong>. Pergunte sobre reabilitação cardíaca.</li>
+          <li>Comece com caminhadas curtas e aumente aos poucos. Você deve conseguir conversar durante o exercício.</li>
+          <li>Não treine em dias de piora dos sintomas.</li>
+        </ul>
+        <h3>Outros cuidados</h3>
+        <ul>
+          <li><strong>Evite bebidas alcoólicas</strong> — se a causa da doença for o álcool, não beba nada.</li>
+          <li>Não fume.</li>
+          <li>Durma com a cabeceira elevada se tiver falta de ar ao deitar.</li>
+        </ul>`,
+    },
+    {
+      id: 'ic-alerta',
+      guide: 'ic',
+      sources: 'Diretriz Brasileira de Insuficiência Cardíaca Crônica e Aguda (SBC, 2018).',
+      icon: 'alert',
+      title: 'Sinais de alerta',
+      keywords: 'piora sinais alerta emergência falta de ar inchaço ganho de peso desmaio dor no peito samu',
+      html: `
+        <p class="lead">Use este semáforo para saber o que fazer conforme os sintomas.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Situação</th><th scope="col">O que você sente</th><th scope="col">O que fazer</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Verde</strong> — estável</td><td>Sem falta de ar nova, sem inchaço novo, peso estável</td><td>Continue os remédios e o autocuidado</td></tr>
+            <tr><td><strong>Amarelo</strong> — atenção</td><td>Ganho de mais de 2 kg em 3 dias; mais inchaço nas pernas ou barriga;
+              mais falta de ar nas atividades; precisa de mais travesseiros para dormir; tosse seca; tontura</td><td>Ligue ou vá à sua equipe de saúde <strong>no mesmo dia ou no dia seguinte</strong></td></tr>
+            <tr><td><strong>Vermelho</strong> — emergência</td><td>Falta de ar em repouso; acordar sufocado; dor no peito; desmaio;
+              coração disparado; confusão; escarro rosado com espuma</td><td><strong>Ligue 192 (SAMU)</strong> ou vá ao pronto-socorro imediatamente</td></tr>
+          </tbody>
+        </table></div>
+        <div class="alert-box">
+          <strong>Ligue 192 (SAMU) imediatamente se tiver:</strong>
+          <ul>
+            <li>Falta de ar intensa ou em repouso</li>
+            <li>Dor ou aperto no peito que não passa</li>
+            <li>Desmaio ou palpitação forte</li>
+          </ul>
+        </div>
+        <p>Não espere a próxima consulta se estiver na zona amarela: tratar a piora cedo, muitas vezes só ajustando o diurético, evita internações.</p>`,
+    },
+
+    /* ===================== Quedas ===================== */
+    {
+      id: 'queda-oque',
+      guide: 'queda',
+      sources: 'Montero-Odasso M et al. World guidelines for falls prevention and management for older adults. Age Ageing 2022; Ministério da Saúde — Caderneta da Pessoa Idosa.',
+      icon: 'elder',
+      title: 'Por que as quedas acontecem',
+      keywords: 'queda idoso risco de cair fratura fêmur medo de cair causas remédios tontura',
+      html: `
+        <p class="lead">Cerca de <strong>1 em cada 3 pessoas com mais de 65 anos cai pelo menos uma vez por ano</strong>.
+        Quedas <strong>não são “normais da idade”</strong>: quase sempre têm causas que podem ser tratadas.</p>
+        <h3>Por que é importante prevenir</h3>
+        <div class="grid-cards">
+          <div class="mini-card"><strong>Fraturas</strong><span>Principalmente de fêmur (quadril), punho e coluna</span></div>
+          <div class="mini-card"><strong>Traumatismo na cabeça</strong><span>Mais grave em quem usa anticoagulante</span></div>
+          <div class="mini-card"><strong>Medo de cair</strong><span>Leva a sair menos e a perder força</span></div>
+          <div class="mini-card"><strong>Independência</strong><span>Perda da autonomia e internações</span></div>
+        </div>
+        <h3>O que aumenta o risco</h3>
+        <ul>
+          <li><strong>Fraqueza nas pernas</strong> e falta de equilíbrio.</li>
+          <li><strong>Remédios</strong>: para dormir, calmantes, antidepressivos, para pressão e diuréticos, principalmente quando são muitos.</li>
+          <li><strong>Tontura ao levantar</strong> (queda da pressão ao ficar em pé).</li>
+          <li>Visão ruim, catarata, óculos desatualizados.</li>
+          <li>Dor ou deformidade nos pés e calçados inadequados.</li>
+          <li>Urgência para urinar, sobretudo à noite.</li>
+          <li>Perda de memória, doença de Parkinson, AVC prévio.</li>
+          <li>Casa com tapetes soltos, pouca luz e sem barras de apoio.</li>
+          <li>Álcool.</li>
+        </ul>
+        <h3>Já caiu?</h3>
+        <p><strong>Conte ao seu médico</strong>, mesmo que não tenha se machucado. Quem já caiu tem mais chance de cair de novo,
+        e uma avaliação (força, equilíbrio, remédios, visão, pressão) ajuda a evitar a próxima queda.</p>`,
+    },
+    {
+      id: 'queda-casa',
+      guide: 'queda',
+      sources: 'Ministério da Saúde — Caderneta da Pessoa Idosa; Montero-Odasso M et al. Age Ageing 2022.',
+      icon: 'home',
+      title: 'Casa segura',
+      keywords: 'casa segura tapete banheiro barra de apoio iluminação escada cama adaptação ambiente',
+      html: `
+        <p class="lead">A maioria das quedas acontece <strong>dentro de casa</strong>. Pequenas adaptações fazem grande diferença.</p>
+        <h3>Em toda a casa</h3>
+        <ul>
+          <li><strong>Retire tapetes soltos</strong> ou fixe-os com fita antiderrapante.</li>
+          <li>Deixe os caminhos livres: sem fios, objetos, caixas ou móveis baixos no meio.</li>
+          <li>Boa iluminação, com interruptores na entrada dos cômodos.</li>
+          <li>Seque logo o chão molhado; evite cera.</li>
+          <li>Cuidado com animais de estimação que circulam entre os pés.</li>
+        </ul>
+        <h3>Quarto</h3>
+        <ul>
+          <li>Deixe uma <strong>luz acesa no caminho até o banheiro</strong> à noite (luz noturna ou com sensor).</li>
+          <li>Abajur ou interruptor ao alcance da cama.</li>
+          <li>Cama em altura que permita sentar com os pés apoiados no chão.</li>
+          <li>Telefone ou celular ao alcance da cama.</li>
+        </ul>
+        <h3>Banheiro</h3>
+        <ul>
+          <li><strong>Barras de apoio</strong> no box e ao lado do vaso sanitário.</li>
+          <li>Tapete antiderrapante dentro e fora do box.</li>
+          <li>Cadeira de banho, se tiver pouco equilíbrio.</li>
+          <li>Não se apoie em toalheiros ou pias: eles não aguentam o peso.</li>
+        </ul>
+        <h3>Cozinha e escadas</h3>
+        <ul>
+          <li>Guarde o que usa com frequência em prateleiras à altura do peito; <strong>não suba em bancos ou cadeiras</strong>.</li>
+          <li>Escadas com <strong>corrimão dos dois lados</strong>, boa iluminação e faixa antiderrapante na beira dos degraus.</li>
+        </ul>`,
+    },
+    {
+      id: 'queda-exercicio',
+      guide: 'queda',
+      sources: 'Sherrington C et al. Cochrane Database Syst Rev 2019 (exercício reduz quedas em ~23%); Montero-Odasso M et al. Age Ageing 2022.',
+      icon: 'activity',
+      title: 'Exercícios de força e equilíbrio',
+      keywords: 'exercício equilíbrio força pernas tai chi fisioterapia caminhada levantar da cadeira prevenção',
+      html: `
+        <p class="lead">Exercícios de <strong>equilíbrio e fortalecimento das pernas</strong> são a medida que mais previne quedas:
+        reduzem em cerca de <strong>1 em cada 4</strong> as quedas em pessoas idosas.</p>
+        <h3>Como fazer</h3>
+        <ul>
+          <li>Pelo menos <strong>3 vezes por semana</strong>, de forma contínua — o benefício some se parar.</li>
+          <li>Aumente a dificuldade aos poucos. Grupos de exercício, fisioterapia, tai chi e dança são ótimas opções.</li>
+          <li>Pergunte na unidade de saúde sobre grupos gratuitos de atividade física (como o Programa Academia da Saúde).</li>
+        </ul>
+        <h3>Exemplos para fazer em casa</h3>
+        <p class="note">Faça sempre com <strong>apoio firme à frente</strong> (bancada da pia ou encosto de uma cadeira pesada) e, de preferência, com alguém por perto no começo.</p>
+        <ol>
+          <li><strong>Sentar e levantar</strong> de uma cadeira firme, sem usar as mãos se possível: 10 vezes.</li>
+          <li><strong>Ficar na ponta dos pés</strong> e descer devagar: 10 vezes.</li>
+          <li><strong>Ficar em um pé só</strong>, segurando no apoio, por 10 segundos; troque de pé. Com o tempo, segure só com um dedo.</li>
+          <li><strong>Andar em linha reta</strong>, colocando o calcanhar encostado na ponta do outro pé, junto à bancada: 10 passos.</li>
+          <li><strong>Levantar a perna para o lado</strong>, mantendo o tronco reto: 10 vezes de cada lado.</li>
+        </ol>
+        <h3>Segurança</h3>
+        <ul>
+          <li>Pare se sentir tontura, dor no peito ou falta de ar.</li>
+          <li>Use calçado firme ou fique descalço sobre piso não escorregadio, nunca de meias.</li>
+          <li>Caminhar é ótimo para o coração, mas sozinho não basta para prevenir quedas: inclua os exercícios de equilíbrio.</li>
+        </ul>`,
+    },
+    {
+      id: 'queda-cuidados',
+      guide: 'queda',
+      sources: 'Montero-Odasso M et al. World guidelines for falls prevention and management for older adults. Age Ageing 2022; Ministério da Saúde — Caderneta da Pessoa Idosa.',
+      icon: 'shield',
+      title: 'Remédios, visão, calçados e o que fazer se cair',
+      keywords: 'remédios para dormir calmante tontura levantar devagar óculos visão calçado bengala vitamina d osteoporose levantar do chão após queda',
+      html: `
+        <h3>Remédios</h3>
+        <ul>
+          <li>Leve <strong>todos os seus remédios</strong> (inclusive os comprados sem receita) para o médico revisar pelo menos uma vez por ano.</li>
+          <li>Remédios para dormir e calmantes aumentam muito o risco de queda. <strong>Não pare por conta própria</strong>: pergunte se é possível reduzir aos poucos.</li>
+        </ul>
+        <h3>Levante-se devagar</h3>
+        <ol>
+          <li>Ao acordar, sente-se na beira da cama e espere um pouco.</li>
+          <li>Mexa os pés e as pernas algumas vezes.</li>
+          <li>Levante-se apoiado e só comece a andar quando estiver firme. Se sentir tontura, sente-se de novo.</li>
+        </ol>
+        <h3>Visão, pés e calçados</h3>
+        <ul>
+          <li>Consulte o oftalmologista regularmente; catarata tem tratamento.</li>
+          <li>Óculos multifocais podem atrapalhar ao descer escadas ou andar na rua; tome cuidado redobrado.</li>
+          <li>Use calçados <strong>fechados atrás, com sola antiderrapante e salto baixo</strong>. Evite chinelos soltos e andar de meias.</li>
+          <li>Trate calos, unhas e dores nos pés.</li>
+          <li>Se precisar de bengala ou andador, peça orientação ao fisioterapeuta sobre o modelo e a altura corretos.</li>
+        </ul>
+        <h3>Ossos</h3>
+        <p>Pergunte ao médico sobre <strong>osteoporose</strong>: tratá-la reduz o risco de fratura se a queda acontecer.
+        Vitamina D e cálcio só devem ser suplementados com orientação.</p>
+        <h3>Se cair</h3>
+        <ol>
+          <li>Fique calmo e verifique se está machucado antes de tentar levantar.</li>
+          <li>Se conseguir, role de lado, fique de quatro apoios e vá até uma cadeira firme. Apoie as mãos no assento, coloque um joelho à frente e levante-se devagar.</li>
+          <li>Se não conseguir levantar, peça ajuda, cubra-se para não perder calor e mude de posição de tempos em tempos.</li>
+          <li>Deixe o celular sempre por perto; quem mora sozinho pode combinar contatos diários com alguém de confiança.</li>
+        </ol>
+        <div class="alert-box">
+          <strong>Ligue 192 (SAMU) ou procure o pronto-socorro se, após a queda, houver:</strong>
+          <ul>
+            <li>Batida na cabeça em quem usa anticoagulante, ou sonolência, vômitos e confusão</li>
+            <li>Dor forte no quadril ou incapacidade de apoiar a perna</li>
+            <li>Desmaio antes da queda ou dor no peito</li>
+          </ul>
+        </div>`,
+    },
+  ];
+
+  // Guias exibidos na aba "Paciente", na ordem do seletor de temas
+  window.EDU_GUIDES = [
+    { id: 'has', title: 'Hipertensão arterial', icon: 'heart' },
+    { id: 'dm', title: 'Diabetes', icon: 'drop' },
+    { id: 'dlp', title: 'Colesterol e triglicerídeos', icon: 'activity' },
+    { id: 'ic', title: 'Insuficiência cardíaca', icon: 'heart' },
+    { id: 'queda', title: 'Prevenção de quedas no idoso', icon: 'elder' },
   ];
 })();

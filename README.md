@@ -13,8 +13,12 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
   - **Geriatria**: IVCF-20, Escala Clínica de Fragilidade (CFS), FRAIL, SARC-F, velocidade de marcha, Timed Up and Go,
     Morse, Braden, Katz (ABVD), Lawton-Brody (AIVD), MEEM, Mini-Cog, GDS-15, 4AT (delirium) e MNA-SF
     (+ PA, CHA₂DS₂-VASc, HAS-BLED, TFG, Cockcroft-Gault, osteoporose/FRAX, Pádua, STOP-BANG, IMC).
-- **Material para o paciente — Hipertensão**: o que é, importância do tratamento, alimentação, atividade física,
-  como medir a pressão em casa, hábitos e sinais de alerta. Pode ser impresso ou salvo em PDF.
+- **Material para o paciente** (aba Paciente), em guias por tema, cada um impresso ou salvo em PDF separadamente:
+  - **Hipertensão**: o que é, importância do tratamento, alimentação, atividade física, como medir a pressão em casa, hábitos e sinais de alerta.
+  - **Diabetes**: o que é, tratamento e metas, alimentação e atividade física, hipoglicemia e dias de doença, cuidados com os pés.
+  - **Colesterol e triglicerídeos**: exames e metas de LDL, remédios (estatinas), alimentação e hábitos.
+  - **Insuficiência cardíaca**: o que é, remédios, autocuidado (peso, sal, líquidos) e sinais de alerta.
+  - **Prevenção de quedas no idoso**: causas, casa segura, exercícios de força e equilíbrio, remédios, calçados e o que fazer após cair.
 - **Assistente IA** (botão ✨), que guia o usuário até as ferramentas certas:
   - **Modo guia (offline)**: funciona sem configuração, por palavras-chave, sem enviar dados a terceiros.
   - **Modo Claude**: com uma chave da API da Anthropic (⚙️ no painel), usa o SDK oficial `@anthropic-ai/sdk` direto no navegador.
@@ -32,7 +36,7 @@ python3 -m http.server 8000
 
 Para publicar no **GitHub Pages**: Settings → Pages → *Deploy from a branch* → selecione a branch e a pasta `/ (root)`.
 
-Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#educacao/has-nutricao`, `#calc/framingham`.
+Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#educacao/has-nutricao`, `#educacao/dm` (abre o primeiro tópico do guia), `#calc/framingham`.
 
 ## Estrutura
 
@@ -40,7 +44,7 @@ Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#educacao/has-
 index.html          página e componentes (abas, diálogo, painel da IA)
 css/styles.css      estilos (tema claro/escuro, responsivo, impressão)
 js/calculators.js   definição de cada calculadora (campos, fórmula, interpretação, referência)
-js/education.js     conteúdo educativo sobre hipertensão
+js/education.js     conteúdo educativo para pacientes (guias por tema)
 js/app.js           interface, busca, roteamento por hash
 js/ai.js            assistente (modo guia + integração com Claude)
 ```

@@ -376,6 +376,7 @@
         details: fried + 'A diretriz SBC 2025 considera Martin/Hopkins e Sampson mais precisos que Friedewald, sobretudo com LDL baixo ' +
           'ou TG elevados; Sampson é válido até TG 800 mg/dL. As metas de LDL dependem da categoria de risco. ' +
           'LDL ≥ 190 mg/dL sugere hipercolesterolemia grave (investigar causa familiar).',
+        edu: 'dlp-oque',
       };
     },
     ref: 'Sampson M et al. JAMA Cardiol 2020;5(5):540-548; Friedewald WT et al. Clin Chem 1972; Diretriz Brasileira de Dislipidemias — 2025 (SBC).',
@@ -455,6 +456,7 @@
       return {
         main: s + ' ponto(s)', sub: sub + ' em 10 anos', level,
         details: 'Escore ≥ 12 sugere rastreamento com glicemia de jejum/HbA1c e intervenção intensiva em estilo de vida.',
+        edu: 'dm-oque',
       };
     },
     ref: 'Lindström J, Tuomilehto J. Diabetes Care 2003.',
@@ -1625,6 +1627,7 @@
         main: fmt(v.t) + ' s', sub, level,
         details: 'Use o calçado e o dispositivo de marcha habituais. TUG ≥ 12 s pede avaliação multifatorial de quedas ' +
           '(medicamentos, visão, hipotensão postural, pés e calçados, ambiente doméstico).',
+        edu: 'queda-oque',
       };
     },
     ref: 'Podsiadlo D, Richardson S. J Am Geriatr Soc 1991; CDC STEADI.',

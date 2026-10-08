@@ -320,6 +320,7 @@ a { color: var(--primary); }
 .ref { padding: 0 20px 20px; margin: 0; font-size: .875rem; color: var(--muted); }
 
 /* ---------- educação ---------- */
+.edu-guides { margin: -4px 0 20px; }
 .edu-layout { display: grid; grid-template-columns: 260px 1fr; gap: 20px; align-items: start; }
 .edu-nav { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 130px; }
 .edu-nav button {
@@ -417,6 +418,8 @@ th { background: var(--surface-2); }
   #theme-toggle { margin-left: auto; }
   .edu-layout { grid-template-columns: 1fr; }
   .edu-nav { position: static; flex-direction: row; overflow-x: auto; }
+  .edu-guides { flex-wrap: nowrap; overflow-x: auto; }
+  .edu-guides .chip { white-space: nowrap; }
   .edu-nav button { white-space: nowrap; }
   .edu-content { padding: 18px 16px; }
   .ai-fab .fab-label { display: none; }
@@ -449,7 +452,7 @@ th { background: var(--surface-2); }
     color-scheme: light;
   }
   body { background: #fff; color: #000; }
-  .skip, .topbar, .ai-fab, .ai-panel, .disclaimer, .calc-dialog, #view-edu .view-head, .edu-nav, .edu-footer { display: none !important; }
+  .skip, .topbar, .ai-fab, .ai-panel, .disclaimer, .calc-dialog, #view-edu .view-head, .edu-guides, .edu-nav, .edu-footer { display: none !important; }
   .container { max-width: none; padding: 0; }
   .edu-layout { display: block; }
   .edu-content { border: 0; box-shadow: none; padding: 0; font-size: 12pt; line-height: 1.5; }

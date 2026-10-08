@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MedCalc — Calculadoras Médicas</title>
-  <meta name="description" content="Calculadoras médicas para estratificação de risco em clínica, cirurgia, ginecologia e obstetrícia, material educativo sobre hipertensão e assistente com IA.">
+  <meta name="description" content="Calculadoras médicas para estratificação de risco em clínica, cirurgia, ginecologia e obstetrícia, material educativo para pacientes (hipertensão, diabetes, colesterol, insuficiência cardíaca e quedas) e assistente com IA.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f766e'/><path d='M42 20h16v22h22v16H58v22H42V58H20V42h22z' fill='white'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,7 +32,7 @@
         <a class="tab" href="#gineco" data-tab="gineco"><span data-icon="female"></span>Gineco &amp; Obstetrícia</a>
         <a class="tab" href="#geriatria" data-tab="geriatria"><span data-icon="elder"></span>Geriatria</a>
         <a class="tab" href="#favoritos" data-tab="favoritos"><span data-icon="star"></span>Favoritos<span id="fav-count" class="count" hidden></span></a>
-        <a class="tab" href="#educacao" data-tab="educacao"><span data-icon="book"></span>Paciente: Hipertensão</a>
+        <a class="tab" href="#educacao" data-tab="educacao"><span data-icon="book"></span>Paciente</a>
       </nav>
     </div>
   </header>
@@ -58,7 +58,7 @@
     <section id="view-edu" class="view" hidden>
       <div class="view-head">
         <div>
-          <h1>Hipertensão arterial — guia para o paciente</h1>
+          <h1 id="edu-heading">Guia para o paciente</h1>
           <p class="muted">Informações em linguagem simples para ler, imprimir ou enviar ao paciente.</p>
         </div>
         <div class="edu-tools">
@@ -67,9 +67,10 @@
             <output id="font-label" for="font-dec font-inc" aria-live="polite">Texto ampliado</output>
             <button id="font-inc" class="btn btn-ghost" type="button" aria-label="Aumentar o texto"><span class="a-big" aria-hidden="true">A+</span></button>
           </div>
-          <button id="print-edu" class="btn btn-ghost" type="button"><span data-icon="printer"></span>Imprimir / salvar PDF</button>
+          <button id="print-edu" class="btn btn-ghost" type="button"><span data-icon="printer"></span>Imprimir guia / salvar PDF</button>
         </div>
       </div>
+      <div id="edu-guides" class="chips edu-guides" role="group" aria-label="Escolha o tema"></div>
       <div class="edu-layout">
         <nav id="edu-nav" class="edu-nav" aria-label="Tópicos"></nav>
         <article id="edu-content" class="edu-content card"></article>
