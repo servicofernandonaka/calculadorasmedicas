@@ -69,6 +69,15 @@
       `<path d="M50 96l6 12 13 2-9 9 2 13-12-6-12 6 2-13-9-9 13-2z" fill="${C.mint}"/>` +
       spark(186, 34, 10, '#fff') + spark(46, 44, 7, C.yellow) + dot(120, 146, 4, '#fff', .7),
 
+    rastreio: halo +
+      `<rect x="62" y="32" width="88" height="108" rx="12" fill="#fff"/>` +
+      `<rect x="88" y="22" width="36" height="18" rx="7" fill="${C.sky}"/>` +
+      `<g stroke="#3FBF8F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M78 62l7 7 12-13M78 92l7 7 12-13"/></g>` +
+      `<g stroke="#C9D6DC" stroke-width="5" stroke-linecap="round"><path d="M108 64h28M108 94h28M78 120h50"/></g>` +
+      `<circle cx="166" cy="110" r="24" fill="${C.sky}" fill-opacity=".35" stroke="${C.yellow}" stroke-width="8"/>` +
+      `<path d="M183 127l18 18" stroke="${C.yellow}" stroke-width="10" stroke-linecap="round"/>` +
+      spark(40, 42, 9, C.mint) + plus(198, 38, 8, '#fff') + dot(44, 128, 5, C.yellow),
+
     educacao: halo +
       `<path d="M120 50C100 38 70 38 46 46v80c24-8 54-8 74 4z" fill="#fff"/>` +
       `<path d="M120 50c20-12 50-12 74-4v80c-24-8-54-8-74 4z" fill="#E6FFF6"/>` +

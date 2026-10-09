@@ -13,6 +13,8 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
   - **Geriatria**: IVCF-20, Escala Clínica de Fragilidade (CFS), FRAIL, SARC-F, velocidade de marcha, Timed Up and Go,
     Morse, Braden, Katz (ABVD), Lawton-Brody (AIVD), MEEM, Mini-Cog, GDS-15, 4AT (delirium) e MNA-SF
     (+ PA, CHA₂DS₂-VASc, HAS-BLED, TFG, Cockcroft-Gault, osteoporose/FRAX, Pádua, STOP-BANG, IMC).
+- **Rastreio (MedScreening)**: rastreamentos e vacinas indicados por idade, sexo e fatores de risco, com fonte e data de
+  conferência em cada regra (INCA/MS, SBD, SBC, SBIm, PNI, USPSTF). Roda inteiramente no navegador.
 - **Cuidados paliativos**: SPICT-BR, PPS, Índice Prognóstico Paliativo (PPI), ECOG/Karnofsky, ESAS-r (+ CFS).
 - **Material para o paciente** (aba Paciente), em guias por tema, cada um impresso ou salvo em PDF separadamente:
   - **Hipertensão**: o que é, importância do tratamento, alimentação, atividade física, como medir a pressão em casa, hábitos e sinais de alerta.
@@ -44,7 +46,7 @@ python3 -m http.server 8000
 
 Para publicar no **GitHub Pages**: Settings → Pages → *Deploy from a branch* → selecione a branch e a pasta `/ (root)`.
 
-Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#paliativos`, `#educacao/has-nutricao`, `#educacao/dm` (abre o primeiro tópico do guia), `#calc/framingham`.
+Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#paliativos`, `#rastreio`, `#educacao/has-nutricao`, `#educacao/dm` (abre o primeiro tópico do guia), `#calc/framingham`.
 
 ## Estrutura
 
