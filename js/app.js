@@ -16,6 +16,7 @@
     paliativos: { title: 'Cuidados paliativos', sub: 'Identificação de quem se beneficia, funcionalidade, prognóstico e avaliação de sintomas.' },
     favoritos: { title: 'Favoritos', sub: 'Suas calculadoras marcadas com estrela, de todas as especialidades.' },
     rastreio: { title: 'Rastreio', sub: '' },
+    mental: { title: 'Saúde mental', sub: '' },
   };
   // Ícone e tom de cor por categoria (cartões e cabeçalho da calculadora)
   const CAT_STYLE = {
@@ -82,7 +83,7 @@
     state.tab = tab;
     // A cor e a ilustração do cabeçalho acompanham a especialidade
     document.documentElement.dataset.tab = tab;
-    $(tab === 'educacao' ? '#edu-art' : tab === 'rastreio' ? '#ras-art' : '#calc-art').innerHTML = window.ART(tab);
+    $(tab === 'educacao' ? '#edu-art' : tab === 'rastreio' ? '#ras-art' : tab === 'mental' ? '#men-art' : '#calc-art').innerHTML = window.ART(tab);
     $$('.tab[data-tab]').forEach((b) => {
       if (b.dataset.tab === tab) {
         b.setAttribute('aria-current', 'page');
@@ -90,12 +91,13 @@
         b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       } else b.removeAttribute('aria-current');
     });
-    const isEdu = tab === 'educacao', isRas = tab === 'rastreio';
-    $('#view-calcs').hidden = isEdu || isRas;
+    const isEdu = tab === 'educacao', isRas = tab === 'rastreio', isMen = tab === 'mental';
+    $('#view-calcs').hidden = isEdu || isRas || isMen;
     $('#view-edu').hidden = !isEdu;
     $('#view-rastreio').hidden = !isRas;
+    $('#view-mental').hidden = !isMen;
     if (isEdu) renderEdu();
-    else if (isRas) { /* MedScreening já está montado */ }
+    else if (isRas || isMen) { /* MedScreening e Saúde mental já estão montados */ }
     else { state.category = null; renderCalcs(); }
   }
 
@@ -542,7 +544,7 @@
 
     $('#search').addEventListener('input', (e) => {
       state.query = e.target.value;
-      if ((state.tab === 'educacao' || state.tab === 'rastreio') && state.query) setTab('clinica');
+      if ((state.tab === 'educacao' || state.tab === 'rastreio' || state.tab === 'mental') && state.query) setTab('clinica');
       renderCalcs();
     });
 

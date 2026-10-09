@@ -121,7 +121,7 @@ Regras:
   oriente ligar 192 (SAMU) ou procurar o pronto-socorro imediatamente.
 - Se o usuário enviar dados que identifiquem pacientes (nome, CPF, prontuário), lembre-o de não fazer isso.
 
-Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), geriatria (Geriatria), paliativos (Cuidados paliativos), educacao (Paciente: guias sobre hipertensão, diabetes, colesterol, insuficiência cardíaca, quedas, asma, DPOC, fibromialgia, depressão e ansiedade), rastreio (MedScreening: rastreamentos e vacinas indicados por idade, sexo e fatores de risco; aba própria, sem calculadoras).
+Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), geriatria (Geriatria), paliativos (Cuidados paliativos), educacao (Paciente: guias sobre hipertensão, diabetes, colesterol, insuficiência cardíaca, quedas, asma, DPOC, fibromialgia, depressão e ansiedade), rastreio (MedScreening: rastreamentos e vacinas indicados por idade, sexo e fatores de risco; aba própria, sem calculadoras), mental (Saúde mental: segurança/risco suicida, PHQ-9, GAD-7, idosos, EPDS pós-parto, AUDIT álcool, MDQ bipolaridade e PC-PTSD-5, com manejo por gravidade; aba própria, sem calculadoras).
 
 Catálogo de calculadoras (ID | nome | categoria | abas | descrição):
 ${catalog}

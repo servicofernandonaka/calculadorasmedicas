@@ -35,6 +35,7 @@
         <a class="tab" href="#paliativos" data-tab="paliativos"><span data-icon="care"></span>Paliativos</a>
         <a class="tab" href="#favoritos" data-tab="favoritos"><span data-icon="star"></span>Favoritos<span id="fav-count" class="count" hidden></span></a>
         <a class="tab" href="#rastreio" data-tab="rastreio"><span data-icon="activity"></span>Rastreio</a>
+        <a class="tab" href="#mental" data-tab="mental"><span data-icon="brain"></span>Saúde mental</a>
         <a class="tab" href="#educacao" data-tab="educacao"><span data-icon="book"></span>Paciente</a>
       </nav>
     </div>
@@ -107,6 +108,27 @@
         </section>
         <section class="ms-results" aria-live="polite" aria-label="Resultado do rastreio"><div id="ms-resultado"></div>
           <p class="ms-foot" id="ms-rodape"></p>
+        </section>
+      </div>
+    </section>
+
+    <section id="view-mental" class="view" hidden>
+      <div class="hero view-head">
+        <div id="men-art" class="hero-art"></div>
+        <div class="hero-text">
+          <p class="eyebrow">Saúde mental</p>
+          <h1>Rastreio e segurança</h1>
+          <p class="hero-sub">Primeiro a segurança; depois PHQ-9, GAD-7, idosos, pós-parto (EPDS), álcool (AUDIT), bipolaridade (MDQ) e trauma (PC-PTSD-5), com manejo por gravidade e a fonte de cada regra.</p>
+        </div>
+      </div>
+      <p class="sm-notice"><strong>Apoio à decisão para profissionais de saúde (em evolução).</strong> Rastreio positivo não é diagnóstico, e a decisão e o protocolo local são do profissional. Nenhum dado é enviado ou guardado: tudo é calculado neste navegador. Algumas regras ainda têm conferência pendente; elas aparecem marcadas.</p>
+      <div class="sm-layout">
+        <section class="sm-panel sm-form-panel" aria-labelledby="sm-t-form">
+          <h2 id="sm-t-form">Paciente</h2>
+          <div id="sm-form"></div>
+        </section>
+        <section class="sm-results" aria-live="polite" aria-label="Resultado"><div id="sm-resultado"></div>
+          <p class="sm-foot" id="sm-rodape"></p>
         </section>
       </div>
     </section>
@@ -208,6 +230,7 @@
   <script src="js/calculators.js"></script>
   <script src="js/education.js"></script>
   <script src="js/medscreening.js"></script>
+  <script src="js/mentalhealth.js"></script>
   <script src="js/app.js"></script>
   <script src="js/ai.js"></script>
 </body>

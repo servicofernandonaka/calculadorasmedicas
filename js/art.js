@@ -78,6 +78,14 @@
       `<path d="M183 127l18 18" stroke="${C.yellow}" stroke-width="10" stroke-linecap="round"/>` +
       spark(40, 42, 9, C.mint) + plus(198, 38, 8, '#fff') + dot(44, 128, 5, C.yellow),
 
+    mental: halo +
+      `<path d="M112 40c-14-6-32 2-34 18-14 4-20 20-12 32-8 12 0 30 16 30 4 12 20 16 30 8z" fill="#fff"/>` +
+      `<path d="M128 40c14-6 32 2 34 18 14 4 20 20 12 32 8 12 0 30-16 30-4 12-20 16-30 8z" fill="${C.lilac}"/>` +
+      `<path d="M120 40v88" stroke="#B8B2E8" stroke-width="4" stroke-linecap="round"/>` +
+      `<g stroke="#B8B2E8" stroke-width="4" stroke-linecap="round" fill="none"><path d="M96 66c6 2 10 8 8 14M90 98c8-2 14 2 16 8"/><path d="M144 66c-6 2-10 8-8 14M150 98c-8-2-14 2-16 8" stroke="#fff"/></g>` +
+      heart(184, 120, 16, C.coral) +
+      spark(46, 40, 9, C.mint) + spark(194, 36, 7, '#fff') + dot(52, 132, 5, C.yellow),
+
     educacao: halo +
       `<path d="M120 50C100 38 70 38 46 46v80c24-8 54-8 74 4z" fill="#fff"/>` +
       `<path d="M120 50c20-12 50-12 74-4v80c-24-8-54-8-74 4z" fill="#E6FFF6"/>` +
