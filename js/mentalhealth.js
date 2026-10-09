@@ -977,7 +977,7 @@ const REGRAS={
 function avaliarMental(e, R) {
   const out = { avisos: [], seguranca: null, escalas: {}, manejo: null, diferencial: null, encaminhamento: null, ajuda: R.ajuda_ao_paciente };
   const idade = Number(e.idade);
-  const usuarioMedico = e.usuario !== 'enfermagem';
+  const usuarioMedico = e.usuario === 'medico';
   const seg = e.seg || {};
   const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
   const completo = (arr, n) => Array.isArray(arr) && arr.length === n && arr.every((v) => num(v) !== null && num(v) >= 0 && num(v) <= 3);
@@ -1128,7 +1128,7 @@ function avaliarMental(e, R) {
   const humor = ['phq9', 'gad7', 'gds15', 'minicog', 'epds'].some((k) => out.escalas[k]);
   out.diferencial = humor ? { itens: R.diferencial.itens.filter((t) => idade >= 60 || !t.startsWith('Em idosos')), conferencia: R.diferencial.conferencia, nota: R.diferencial.nota } : null;
   out.encaminhamento = Object.keys(out.escalas).length || nivel !== 'baixo' ? { criterios: R.encaminhamento.criterios, rede: R.encaminhamento.rede, fontes: R.encaminhamento.fontes } : null;
-  out.entrada_resumo = { idade, usuario: usuarioMedico ? 'médico' : 'enfermagem/outros' };
+  out.entrada_resumo = { idade, usuario: usuarioMedico ? 'médico' : e.usuario === 'enfermagem' ? 'enfermagem/outros' : 'não informado' };
   return out;
 }
 if (false && typeof module !== 'undefined') module.exports = { avaliarMental };
@@ -1139,7 +1139,7 @@ const $=(s,r=document)=>r.querySelector(s);
 const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl=(u)=>/^https:\/\//.test(u)?u:'#';
 const ES=REGRAS.escalas;
-const st={usuario:'medico',idade:'',gest:false,mania:false,prej:false,conf:false,seg:{},phq:Array(9).fill(null),func:null,gad:Array(7).fill(null),gds:Array(15).fill(null),mc:{palavras:'',relogio:''},epds:Array(10).fill(null),audit:Array(10).fill(null),mdq:{itens:Array(13).fill(null),junto:null,problema:null},ptsd:{exposicao:null,itens:Array(5).fill(null)}};
+const st={usuario:'',idade:'',gest:false,mania:false,prej:false,conf:false,seg:{},phq:Array(9).fill(null),func:null,gad:Array(7).fill(null),gds:Array(15).fill(null),mc:{palavras:'',relogio:''},epds:Array(10).fill(null),audit:Array(10).fill(null),mdq:{itens:Array(13).fill(null),junto:null,problema:null},ptsd:{exposicao:null,itens:Array(5).fill(null)}};
 const novoEstado=()=>({epds:Array(10).fill(null),audit:Array(10).fill(null),mdq:{itens:Array(13).fill(null),junto:null,problema:null},ptsd:{exposicao:null,itens:Array(5).fill(null)}});
 
 const SEG_A=[
@@ -1170,7 +1170,7 @@ function ynRows(key,textos,extra){
 }
 function build(){
  $('#sm-form').innerHTML=
- `<div class="sm-row2"><label class="sm-field"><span>Quem está usando</span><select id="sm-usuario"><option value="medico">Médico(a)</option><option value="enfermagem">Enfermagem e outros</option></select></label>
+ `<div class="sm-row2"><label class="sm-field"><span>Quem está usando</span><select id="sm-usuario"><option value="">Selecione…</option><option value="medico">Médico(a)</option><option value="enfermagem">Enfermagem e outros</option></select></label>
   <label class="sm-field" id="sm-f-idade"><span>Idade</span><input id="sm-idade" type="number" inputmode="numeric" min="0" max="120" step="1" autocomplete="off"></label></div>
   <div class="sm-checks" style="margin-top:10px">${chk('gest','Gestação ou puerpério','','data-ctx')}${chk('mania','História de mania ou hipomania','','data-ctx')}${chk('prej','Ansiedade com prejuízo funcional marcante','','data-ctx')}</div>
   <details class="sm-grp" open><summary><span>1. Segurança (pergunte antes de tudo)</span><span class="sm-cnt" id="sm-cnt-seg"></span></summary>
@@ -1239,7 +1239,7 @@ function manejo(r){
  }
  const m=r.manejo;let h='';
  if(m.depressao){const d=m.depressao;
-  h+=`<div class="sm-block"><h4>${esc(d.rotulo)}</h4><p class="sm-lab">Opções (todas podem ser primeira linha, em decisão compartilhada)</p>${ul(d.opcoes)}${d.medicamento?`<p class="sm-lab">Medicamento</p><p>${esc(d.medicamento)}</p><p class="sm-note">Classes e decisões, sem doses: a posologia fica com a bula e o seu julgamento.</p>`:(st.usuario==='enfermagem'?'<p class="sm-note">A decisão sobre medicamentos é do(a) médico(a).</p>':'')}<p><b>Seguimento:</b> ${esc(d.seguimento)}</p>${d.cautelas.length?`<details><summary>Cautelas com antidepressivos</summary>${ul(d.cautelas)}</details>`:''}${src(d.fontes)}</div>`;}
+  h+=`<div class="sm-block"><h4>${esc(d.rotulo)}</h4><p class="sm-lab">Opções (todas podem ser primeira linha, em decisão compartilhada)</p>${ul(d.opcoes)}${d.medicamento?`<p class="sm-lab">Medicamento</p><p>${esc(d.medicamento)}</p><p class="sm-note">Classes e decisões, sem doses: a posologia fica com a bula e o seu julgamento.</p>`:(st.usuario==='enfermagem'?'<p class="sm-note">A decisão sobre medicamentos é do(a) médico(a).</p>':(st.usuario===''?'<p class="sm-note">Selecione “Quem está usando” para ver as opções de medicamento.</p>':''))}<p><b>Seguimento:</b> ${esc(d.seguimento)}</p>${d.cautelas.length?`<details><summary>Cautelas com antidepressivos</summary>${ul(d.cautelas)}</details>`:''}${src(d.fontes)}</div>`;}
  if(m.ansiedade){const a=m.ansiedade;
   h+=`<div class="sm-block"><h4>Ansiedade</h4>${a.passos.map(p=>`<p class="sm-lab">${esc(p.rotulo)}</p>${ul(p.itens)}`).join('')}${a.medicamento?`<details><summary>Medicamento (CG113)</summary>${ul(a.medicamento)}<p class="sm-note">Sem doses, de propósito.</p></details>`:''}${a.passo4?`<p class="sm-note">${esc(a.passo4)}</p>`:''}${src(a.fontes)}</div>`;}
  m.avisos.forEach(t=>{h+=`<div class="sm-warn"><b>Atenção</b> ${esc(t)}</div>`;});
