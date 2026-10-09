@@ -979,6 +979,8 @@ function avaliarMental(e, R) {
   const idade = Number(e.idade);
   const usuarioMedico = e.usuario === 'medico';
   const seg = e.seg || {};
+  const sexoM = e.sexo === 'M';
+  const gest = !!e.gestacao_puerperio && !sexoM;
   const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
   const completo = (arr, n) => Array.isArray(arr) && arr.length === n && arr.every((v) => num(v) !== null && num(v) >= 0 && num(v) <= 3);
 
@@ -1020,7 +1022,7 @@ function avaliarMental(e, R) {
   const somaP = (arr, itens) => arr.reduce((a, v, i) => a + itens[i].p[Number(v)], 0);
   let epdsItem10 = null;
   const EP = R.escalas.epds;
-  if (idxOk(e.epds, EP.itens)) {
+  if (!sexoM && idxOk(e.epds, EP.itens)) {
     const tot = somaP(e.epds, EP.itens);
     epdsItem10 = EP.itens[EP.item_seguranca - 1].p[Number(e.epds[EP.item_seguranca - 1])];
     out.escalas.epds = { total: tot, positivo_br: tot >= EP.corte_brasil, positivo_pt: tot >= EP.corte_portugal, divergencia_corte: tot >= EP.corte_brasil && tot < EP.corte_portugal, item10: epdsItem10 };
@@ -1029,7 +1031,7 @@ function avaliarMental(e, R) {
   if (idxOk(e.audit, AU.itens)) {
     const tot = somaP(e.audit, AU.itens);
     const z = AU.zonas.find((x) => tot >= x.min && tot <= x.max);
-    out.escalas.audit = { total: tot, zona: z.rotulo, conduta: z.conduta, positivo: tot >= AU.corte_rastreio, dependencia_provavel: tot >= 20 };
+    out.escalas.audit = { total: tot, zona: z.rotulo, conduta: z.conduta, positivo: tot >= AU.corte_rastreio, dependencia_provavel: tot >= 20, limite_mulheres: e.sexo === 'F' && tot === 7 };
   }
   const MQ = R.escalas.mdq;
   let mdqPos = false;
@@ -1085,10 +1087,10 @@ function avaliarMental(e, R) {
   if (!e.triagem_confirmada && (phqOk || Object.keys(out.escalas).length)) out.avisos.push(R.seguranca.aviso_triagem_nao_confirmada);
   if (!Number.isFinite(idade)) { if (Object.keys(out.escalas).length) out.avisos.push('Informe a idade para liberar o manejo e o módulo de idosos.'); }
   else if (idade < 18) out.avisos.push('Esta versão é para adultos (18 anos ou mais). A triagem de segurança vale para qualquer idade; as escalas e o manejo abaixo não foram validados para menores.');
-  if (e.gestacao_puerperio) out.avisos.push('Gestação ou puerpério: usar a EPDS e a conduta específica; o manejo desta versão não cobre esse contexto.');
+  if (gest) out.avisos.push('Gestação ou puerpério: usar a EPDS e a conduta específica; o manejo desta versão não cobre esse contexto.');
 
   /* ---- manejo ---- */
-  const bloq = out.seguranca.bloqueia_manejo || !(idade >= 18) || !!e.gestacao_puerperio;
+  const bloq = out.seguranca.bloqueia_manejo || !(idade >= 18) || gest;
   if (!bloq) {
     const m = { depressao: null, ansiedade: null, avisos: [] };
     const p = out.escalas.phq9, g = out.escalas.gad7, gd = out.escalas.gds15;
@@ -1128,7 +1130,7 @@ function avaliarMental(e, R) {
   const humor = ['phq9', 'gad7', 'gds15', 'minicog', 'epds'].some((k) => out.escalas[k]);
   out.diferencial = humor ? { itens: R.diferencial.itens.filter((t) => idade >= 60 || !t.startsWith('Em idosos')), conferencia: R.diferencial.conferencia, nota: R.diferencial.nota } : null;
   out.encaminhamento = Object.keys(out.escalas).length || nivel !== 'baixo' ? { criterios: R.encaminhamento.criterios, rede: R.encaminhamento.rede, fontes: R.encaminhamento.fontes } : null;
-  out.entrada_resumo = { idade, usuario: usuarioMedico ? 'médico' : e.usuario === 'enfermagem' ? 'enfermagem/outros' : 'não informado' };
+  out.entrada_resumo = { idade, sexo: e.sexo || null, usuario: usuarioMedico ? 'médico' : e.usuario === 'enfermagem' ? 'enfermagem/outros' : 'não informado' };
   return out;
 }
 if (false && typeof module !== 'undefined') module.exports = { avaliarMental };
@@ -1139,7 +1141,7 @@ const $=(s,r=document)=>r.querySelector(s);
 const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl=(u)=>/^https:\/\//.test(u)?u:'#';
 const ES=REGRAS.escalas;
-const st={usuario:'',idade:'',gest:false,mania:false,prej:false,conf:false,seg:{},phq:Array(9).fill(null),func:null,gad:Array(7).fill(null),gds:Array(15).fill(null),mc:{palavras:'',relogio:''},epds:Array(10).fill(null),audit:Array(10).fill(null),mdq:{itens:Array(13).fill(null),junto:null,problema:null},ptsd:{exposicao:null,itens:Array(5).fill(null)}};
+const st={usuario:'',idade:'',sexo:'',gest:false,mania:false,prej:false,conf:false,seg:{},phq:Array(9).fill(null),func:null,gad:Array(7).fill(null),gds:Array(15).fill(null),mc:{palavras:'',relogio:''},epds:Array(10).fill(null),audit:Array(10).fill(null),mdq:{itens:Array(13).fill(null),junto:null,problema:null},ptsd:{exposicao:null,itens:Array(5).fill(null)}};
 const novoEstado=()=>({epds:Array(10).fill(null),audit:Array(10).fill(null),mdq:{itens:Array(13).fill(null),junto:null,problema:null},ptsd:{exposicao:null,itens:Array(5).fill(null)}});
 
 const SEG_A=[
@@ -1172,7 +1174,8 @@ function build(){
  $('#sm-form').innerHTML=
  `<div class="sm-row2"><label class="sm-field"><span>Quem está usando</span><select id="sm-usuario"><option value="">Selecione…</option><option value="medico">Médico(a)</option><option value="enfermagem">Enfermagem e outros</option></select></label>
   <label class="sm-field" id="sm-f-idade"><span>Idade</span><input id="sm-idade" type="number" inputmode="numeric" min="0" max="120" step="1" autocomplete="off"></label></div>
-  <div class="sm-checks" style="margin-top:10px">${chk('gest','Gestação ou puerpério','','data-ctx')}${chk('mania','História de mania ou hipomania','','data-ctx')}${chk('prej','Ansiedade com prejuízo funcional marcante','','data-ctx')}</div>
+  <div class="sm-row2" style="margin-top:10px"><label class="sm-field"><span>Sexo ao nascer</span><select id="sm-sexo"><option value="">Selecione…</option><option value="F">Feminino</option><option value="M">Masculino</option></select></label></div>
+  <div class="sm-checks" style="margin-top:10px"><span id="sm-gest-wrap" hidden>${chk('gest','Gestação ou puerpério','','data-ctx')}</span>${chk('mania','História de mania ou hipomania','','data-ctx')}${chk('prej','Ansiedade com prejuízo funcional marcante','','data-ctx')}</div>
   <details class="sm-grp" open><summary><span>1. Segurança (pergunte antes de tudo)</span><span class="sm-cnt" id="sm-cnt-seg"></span></summary>
    <div class="sm-checks">${chk('conf','Perguntei diretamente ao paciente sobre ideação suicida','','data-ctx')}
    <p class="sm-sub">Marque o que o paciente relata</p>${SEG_A.map(([k,l,h])=>chk(k,l,h,'data-seg')).join('')}
@@ -1203,7 +1206,7 @@ function build(){
 }
 function entrada(){
  const seg={};Object.keys(st.seg).forEach(k=>{if(st.seg[k])seg[k]=true;});
- return {idade:st.idade===''?NaN:Number(st.idade),usuario:st.usuario,triagem_confirmada:st.conf,seg,phq9:st.phq,phq9_func:st.func,gad7:st.gad,gds15:st.gds,
+ return {idade:st.idade===''?NaN:Number(st.idade),sexo:st.sexo,usuario:st.usuario,triagem_confirmada:st.conf,seg,phq9:st.phq,phq9_func:st.func,gad7:st.gad,gds15:st.gds,
   minicog:{palavras:st.mc.palavras===''?null:Number(st.mc.palavras),relogio:st.mc.relogio},historia_mania:st.mania,gestacao_puerperio:st.gest,prejuizo_marcante:st.prej,
   epds:st.epds,audit:st.audit,mdq:st.mdq,ptsd:st.ptsd};
 }
@@ -1226,7 +1229,7 @@ function escalas(r){
  if(e.gds15){const g=e.gds15;t.push(`<div class="sm-tile"><span class="sm-t-n">GDS-15</span><b>${g.total}<small>/15</small></b><span>${esc(g.faixa)}</span><span class="sm-t-s ${g.positivo?'sm-pos':''}">${g.positivo?'Rastreio positivo (≥5)':'Abaixo do corte (≥5)'}</span></div>`);}
  if(e.minicog){const g=e.minicog;t.push(`<div class="sm-tile"><span class="sm-t-n">Mini-Cog</span><b>${g.total}<small>/5</small></b><span class="sm-t-s ${g.positivo?'sm-pos':''}">${g.positivo?'Positivo (menor que 3)':'Negativo'}</span></div>`);}
  if(e.epds){const g=e.epds;t.push(`<div class="sm-tile"><span class="sm-t-n">EPDS (pós-parto)</span><b>${g.total}<small>/30</small></b><span class="sm-t-s ${g.positivo_br?'sm-pos':''}">${g.positivo_br?'Rastreio positivo (corte brasileiro ≥10)':'Abaixo do corte brasileiro (≥10)'}</span>${g.divergencia_corte?'<small class="sm-warnline">Pontuação 10 ou 11: positivo no corte brasileiro (Figueira 2009), abaixo do corte ≥12 de material português. Decida clinicamente.</small>':''}${g.item10>0?'<small class="sm-warnline">Item 10 positivo: faça a avaliação de risco (veja Segurança).</small>':''}</div>`);}
- if(e.audit){const g=e.audit;t.push(`<div class="sm-tile"><span class="sm-t-n">AUDIT (álcool)</span><b>${g.total}<small>/40</small></b><span class="sm-t-s ${g.positivo?'sm-pos':''}">${esc(g.zona)}</span><small>${esc(g.conduta)}</small></div>`);}
+ if(e.audit){const g=e.audit;t.push(`<div class="sm-tile"><span class="sm-t-n">AUDIT (álcool)</span><b>${g.total}<small>/40</small></b><span class="sm-t-s ${g.positivo?'sm-pos':''}">${esc(g.zona)}</span><small>${esc(g.conduta)}</small>${g.limite_mulheres?'<small class="sm-warnline">Pontuação 7 em mulher: algumas versões do AUDIT já classificam como zona II (uso de risco). Considere a intervenção breve.</small>':''}</div>`);}
  if(e.mdq){const g=e.mdq;t.push(`<div class="sm-tile"><span class="sm-t-n">MDQ (bipolaridade)</span><b>${g.itens_sim}<small>/13 itens</small></b><span class="sm-t-s ${g.positivo?'sm-pos':''}">${g.positivo?'Rastreio positivo (7+ itens, juntos, problema moderado ou sério)':'Rastreio negativo pelo critério original'}</span>${!g.positivo&&g.criterio_br8?'<small class="sm-warnline">8 ou mais itens: o corte da validação brasileira (Castelo 2010) usa só a contagem de itens. Considere investigar.</small>':''}</div>`);}
  if(e.pcptsd5){const g=e.pcptsd5;t.push(`<div class="sm-tile"><span class="sm-t-n">PC-PTSD-5</span><b>${g.total}<small>/5</small></b><span class="sm-t-s ${g.positivo?'sm-pos':''}">${g.sem_exposicao?'Sem exposição a evento traumático':(g.positivo?(g.provavel?'Positivo (≥4: TEPT provável)':'Positivo (≥3)'):'Negativo (<3)')}</span></div>`);}
  if(!t.length)return '';
@@ -1258,7 +1261,7 @@ function fontesFim(){
 }
 let ultimo='';
 function resumo(r){
- const L=['Saúde mental: rastreio e segurança (apoio à decisão; confirme clinicamente)',`Idade: ${st.idade||'não informada'}`,`Segurança: ${r.seguranca.rotulo}`];
+ const L=['Saúde mental: rastreio e segurança (apoio à decisão; confirme clinicamente)',`Idade: ${st.idade||'não informada'}`,`Sexo ao nascer: ${st.sexo==='F'?'feminino':st.sexo==='M'?'masculino':'não informado'}`,`Segurança: ${r.seguranca.rotulo}`];
  if(r.seguranca.motivos.length)L.push('Motivo: '+r.seguranca.motivos.join('; '));
  const e=r.escalas;
  if(e.phq9)L.push(`PHQ-9: ${e.phq9.total}/27 (${e.phq9.faixa})`);
@@ -1292,7 +1295,7 @@ function render(){
  $('#sm-pt-itens').hidden=st.ptsd.exposicao!==1;
  $('#sm-copiar').disabled=false;
 }
-function syncIdoso(){const v=Number(st.idade);$('#sm-idoso').hidden=!(st.idade!==''&&v>=60);$('#sm-puerp').hidden=!st.gest;}
+function syncIdoso(){const v=Number(st.idade);$('#sm-idoso').hidden=!(st.idade!==''&&v>=60);$('#sm-puerp').hidden=!(st.sexo==='F'&&st.gest);$('#sm-gest-wrap').hidden=st.sexo!=='F';}
 function init(){
  build();
  const f=$('#sm-form');
@@ -1302,6 +1305,7 @@ function init(){
   else if(t.matches('input[data-ctx]')){const k=t.dataset.ctx;st[k]=t.checked;if(k==='gest')syncIdoso();}
   else if(t.matches('input[type=radio]')){const k=t.dataset.k,v=Number(t.value);if(k==='func')st.func=v;else if(k==='mdq')st.mdq.itens[Number(t.dataset.i)]=v;else if(k==='mdqj')st.mdq.junto=v;else if(k==='mdqp')st.mdq.problema=v;else if(k==='ptx')st.ptsd.exposicao=v;else if(k==='pti')st.ptsd.itens[Number(t.dataset.i)]=v;else st[k][Number(t.dataset.i)]=v;}
   else if(t.id==='sm-usuario')st.usuario=t.value;
+  else if(t.id==='sm-sexo'){st.sexo=t.value;if(st.sexo!=='F'){st.gest=false;const c=$('input[data-ctx=gest]');if(c)c.checked=false;}syncIdoso();}
   else if(t.id==='sm-mc-p')st.mc.palavras=t.value;
   else if(t.id==='sm-mc-r')st.mc.relogio=t.value;
   render();
@@ -1312,7 +1316,7 @@ function init(){
   else if(e.target.closest('#sm-copiar')){copiar();}
  });
  function limpar(){
-  Object.assign(st,{usuario:st.usuario,idade:'',gest:false,mania:false,prej:false,conf:false,seg:{},phq:Array(9).fill(null),func:null,gad:Array(7).fill(null),gds:Array(15).fill(null),mc:{palavras:'',relogio:''}},novoEstado());
+  Object.assign(st,{usuario:st.usuario,idade:'',sexo:'',gest:false,mania:false,prej:false,conf:false,seg:{},phq:Array(9).fill(null),func:null,gad:Array(7).fill(null),gds:Array(15).fill(null),mc:{palavras:'',relogio:''}},novoEstado());
   const u=st.usuario;build();$('#sm-usuario').value=u;syncIdoso();render();$('#sm-idade').focus();
  }
  function copiar(){
