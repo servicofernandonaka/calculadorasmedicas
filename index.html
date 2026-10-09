@@ -32,6 +32,7 @@
         <a class="tab" href="#gineco" data-tab="gineco"><span data-icon="female"></span>Gineco &amp; Obstetrícia</a>
         <a class="tab" href="#geriatria" data-tab="geriatria"><span data-icon="elder"></span>Geriatria</a>
         <a class="tab" href="#favoritos" data-tab="favoritos"><span data-icon="star"></span>Favoritos<span id="fav-count" class="count" hidden></span></a>
+        <a class="tab" href="#rastreio" data-tab="rastreio"><span data-icon="activity"></span>Rastreio</a>
         <a class="tab" href="#educacao" data-tab="educacao"><span data-icon="book"></span>Paciente: Hipertensão</a>
       </nav>
     </div>
@@ -75,6 +76,31 @@
         <article id="edu-content" class="edu-content card"></article>
       </div>
     </section>
+
+    <section id="view-rastreio" class="view" hidden>
+      <div class="view-head">
+        <div>
+          <h1>MedScreening — rastreamentos e vacinas</h1>
+          <p class="muted">O que está indicado, em dia ou vale discutir, para a idade, o sexo e os fatores de risco do paciente.</p>
+        </div>
+      </div>
+      <p class="ms-notice"><strong>Apoio à decisão para profissionais de saúde.</strong> Não substitui o julgamento clínico nem o protocolo local. Nenhum dado é enviado ou guardado: o cálculo roda neste navegador, e cada regra mostra a fonte e a data de conferência.</p>
+      <div class="ms-layout">
+        <section class="ms-panel ms-form-panel" aria-labelledby="ms-t-form">
+          <h2 id="ms-t-form">Perfil do paciente</h2>
+          <div class="ms-row2">
+            <label class="ms-field" id="ms-f-idade"><span>Idade</span><input id="ms-idade" type="number" inputmode="numeric" min="0" max="120" step="1" autocomplete="off" aria-required="true" aria-describedby="ms-idade-hint"><span id="ms-idade-hint" class="ms-hint" hidden>Use um número inteiro de 0 a 120.</span></label>
+            <label class="ms-field"><span>Sexo ao nascer</span><select id="ms-sexo" aria-required="true"><option value="">Selecione…</option><option value="F">Feminino</option><option value="M">Masculino</option></select></label>
+          </div>
+          <div id="ms-grupos"></div>
+          <div class="ms-actions" style="margin-top:16px"><button id="ms-limpar" class="btn btn-ghost" type="button">Limpar</button><button id="ms-copiar" class="btn" type="button">Copiar resumo</button></div>
+        </section>
+        <section class="ms-results" aria-live="polite" aria-label="Resultado do rastreio"><div id="ms-resultado"></div>
+          <p class="ms-foot" id="ms-rodape"></p>
+        </section>
+      </div>
+    </section>
+
 
     <p class="disclaimer">
       Ferramenta de apoio à decisão para profissionais de saúde e de educação para pacientes. Não substitui a avaliação
@@ -152,6 +178,7 @@
   <script src="js/icons.js"></script>
   <script src="js/calculators.js"></script>
   <script src="js/education.js"></script>
+  <script src="js/medscreening.js"></script>
   <script src="js/app.js"></script>
   <script src="js/ai.js"></script>
 </body>

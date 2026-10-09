@@ -13,6 +13,7 @@
     gineco: { title: 'Ginecologia e obstetrícia', sub: 'Pré-natal, parto, saúde da mulher e osteoporose pós-menopausa.' },
     geriatria: { title: 'Geriatria', sub: 'Avaliação geriátrica ampla: fragilidade, funcionalidade, cognição, humor, delirium, quedas, nutrição e pele.' },
     favoritos: { title: 'Favoritos', sub: 'Suas calculadoras marcadas com estrela, de todas as especialidades.' },
+    rastreio: { title: 'Rastreio', sub: '' },
   };
   const SPECIALTY = { clinica: 'Clínica', cirurgia: 'Cirúrgica', gineco: 'Gineco & Obstetrícia', geriatria: 'Geriatria' };
 
@@ -60,10 +61,12 @@
     $$('.tab[data-tab]').forEach((b) => {
       if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
-    const isEdu = tab === 'educacao';
-    $('#view-calcs').hidden = isEdu;
+    const isEdu = tab === 'educacao', isRas = tab === 'rastreio';
+    $('#view-calcs').hidden = isEdu || isRas;
     $('#view-edu').hidden = !isEdu;
+    $('#view-rastreio').hidden = !isRas;
     if (isEdu) renderEdu();
+    else if (isRas) { /* MedScreening já está montado */ }
     else { state.category = null; renderCalcs(); }
   }
 
@@ -491,7 +494,7 @@
 
     $('#search').addEventListener('input', (e) => {
       state.query = e.target.value;
-      if (state.tab === 'educacao' && state.query) setTab('clinica');
+      if ((state.tab === 'educacao' || state.tab === 'rastreio') && state.query) setTab('clinica');
       renderCalcs();
     });
 
