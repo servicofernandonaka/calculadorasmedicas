@@ -4,6 +4,7 @@
 
   const CALCS = window.CALCS;
   const EDU = window.EDU;
+  const GUIDES = window.EDU_GUIDES;
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
 
@@ -12,10 +13,27 @@
     cirurgia: { title: 'Especialidades cirúrgicas', sub: 'Avaliação pré-operatória, tromboprofilaxia, abdome agudo e trauma.' },
     gineco: { title: 'Ginecologia e obstetrícia', sub: 'Pré-natal, parto, saúde da mulher e osteoporose pós-menopausa.' },
     geriatria: { title: 'Geriatria', sub: 'Avaliação geriátrica ampla: fragilidade, funcionalidade, cognição, humor, delirium, quedas, nutrição e pele.' },
+    paliativos: { title: 'Cuidados paliativos', sub: 'Identificação de quem se beneficia, funcionalidade, prognóstico e avaliação de sintomas.' },
     favoritos: { title: 'Favoritos', sub: 'Suas calculadoras marcadas com estrela, de todas as especialidades.' },
     rastreio: { title: 'Rastreio', sub: '' },
   };
-  const SPECIALTY = { clinica: 'Clínica', cirurgia: 'Cirúrgica', gineco: 'Gineco & Obstetrícia', geriatria: 'Geriatria' };
+  // Ícone e tom de cor por categoria (cartões e cabeçalho da calculadora)
+  const CAT_STYLE = {
+    'Cardiovascular': ['heart', 'red'], 'Metabólico': ['drop', 'amber'], 'Renal': ['kidney', 'blue'],
+    'Osso e fraturas': ['bone', 'slate'], 'Pneumologia e infecção': ['lungs', 'sky'], 'Pneumologia': ['lungs', 'sky'],
+    'Tromboembolismo': ['activity', 'red'], 'Hepatologia': ['liver', 'amber'], 'Avaliação pré-operatória': ['clipboard', 'teal'],
+    'Abdome agudo': ['stethoscope', 'teal'], 'Trauma e emergência': ['alert', 'red'], 'Pré-natal': ['baby', 'pink'],
+    'Parto': ['baby', 'pink'], 'Ginecologia': ['female', 'pink'], 'Avaliação geriátrica ampla': ['clipboard', 'violet'],
+    'Fragilidade e sarcopenia': ['elder', 'violet'], 'Quedas e mobilidade': ['foot', 'violet'], 'Cuidados e funcionalidade': ['home', 'violet'],
+    'Cognição, humor e delirium': ['brain', 'violet'], 'Saúde mental': ['smile', 'blue'], 'Identificação': ['care', 'teal'],
+    'Prognóstico': ['clock', 'slate'], 'Sintomas': ['gauge', 'amber'],
+  };
+  const catStyle = (cat) => CAT_STYLE[cat] || ['calculator', 'teal'];
+  const catTone = (cat) => catStyle(cat)[1];
+  // Tom de cor de cada guia do paciente (chips, título e ilustração)
+  const GUIDE_TONE = { has: 'red', dm: 'amber', dlp: 'teal', ic: 'pink', queda: 'violet', asma: 'sky', dpoc: 'blue', fibro: 'slate', mental: 'blue' };
+  const catIcon = (cat, cls = '') => { const [ic, tone] = catStyle(cat); return `<span class="cat-icon${cls}" data-tone="${tone}" aria-hidden="true">${ICON(ic)}</span>`; };
+  const SPECIALTY = { clinica: 'Clínica', cirurgia: 'Cirúrgica', gineco: 'Gineco & Obstetrícia', geriatria: 'Geriatria', paliativos: 'Paliativos' };
 
   // Preferências locais (favoritos, tamanho do texto): o site funciona normalmente se o armazenamento falhar
   const store = {
@@ -40,6 +58,10 @@
   const ICON = window.ICON;
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const eduById = (id) => EDU.find((e) => e.id === id);
+  const guideOf = (e) => GUIDES.find((g) => g.id === e.guide) || GUIDES[0];
+  const guideTopics = (gid) => EDU.filter((e) => e.guide === gid);
+  // Aceita o ID de um tópico ou de um guia inteiro (abre o primeiro tópico do guia)
+  const resolveEdu = (id) => (eduById(id) ? id : (guideTopics(id)[0] || {}).id);
 
   /* ---------- tema ---------- */
   function initTheme() {
@@ -58,8 +80,15 @@
   /* ---------- abas ---------- */
   function setTab(tab) {
     state.tab = tab;
+    // A cor e a ilustração do cabeçalho acompanham a especialidade
+    document.documentElement.dataset.tab = tab;
+    $(tab === 'educacao' ? '#edu-art' : tab === 'rastreio' ? '#ras-art' : '#calc-art').innerHTML = window.ART(tab);
     $$('.tab[data-tab]').forEach((b) => {
-      if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+      if (b.dataset.tab === tab) {
+        b.setAttribute('aria-current', 'page');
+        // No celular a barra de abas rola na horizontal: mantém a aba ativa à vista
+        b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      } else b.removeAttribute('aria-current');
     });
     const isEdu = tab === 'educacao', isRas = tab === 'rastreio';
     $('#view-calcs').hidden = isEdu || isRas;
@@ -90,13 +119,14 @@
   function cardHtml(c, showOrigin) {
     const on = favs.includes(c.id);
     return `
-      <div class="card calc-card">
-        <span class="pill">${esc(c.category)}</span>
+      <div class="card calc-card" data-tone="${catTone(c.category)}">
+        <div class="card-top">${catIcon(c.category)}<span class="card-cat">${esc(c.category)}</span></div>
         <button class="card-open" type="button" data-calc="${c.id}" aria-describedby="d-${c.id}">
           <span class="card-title">${esc(c.name)}</span>
         </button>
         <span class="card-desc" id="d-${c.id}">${esc(c.short)}</span>
         ${showOrigin ? origin(c) : ''}
+        <span class="card-go" aria-hidden="true">Abrir ${ICON('arrow')}</span>
         <button class="icon-btn fav" type="button" data-fav="${c.id}" aria-pressed="${on}"
           aria-label="${on ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}: ${esc(c.name)}">${ICON('star')}</button>
       </div>`;
@@ -125,10 +155,13 @@
       const cats = [...new Set(list.map((c) => c.category))];
       $('#chips').innerHTML = ['Todas', ...cats].map((c) => {
         const active = (c === 'Todas' && !state.category) || c === state.category;
-        return `<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${active}">${esc(c)}</button>`;
+        const dot = c === 'Todas' ? '' : `<span class="chip-dot" data-tone="${catTone(c)}" aria-hidden="true"></span>`;
+        return `<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${active}">${dot}${esc(c)}</button>`;
       }).join('');
       if (state.category) list = list.filter((c) => c.category === state.category);
     }
+    $('#calc-count').textContent = list.length;
+    $('#calc-count-label').textContent = list.length === 1 ? 'ferramenta' : 'ferramentas';
     $('#grid').innerHTML = list.map((c) => cardHtml(c, !!q || isFav)).join('');
     $('#empty').hidden = list.length > 0 || isFav;
     $('#fav-empty').hidden = !(isFav && !list.length);
@@ -364,6 +397,10 @@
     state.calc = null; // eventos do formulário anterior (blur/change ao removê-lo) são ignorados
     state.touched = false;
     $('#dlg-cat').textContent = calc.category;
+    const [dIcon, dTone] = catStyle(calc.category);
+    $('#dlg-icon').dataset.tone = dTone;
+    $('#dlg-cat').dataset.tone = dTone;
+    $('#dlg-icon').innerHTML = ICON(dIcon);
     $('#dlg-title').textContent = calc.name;
     $('#dlg-short').textContent = calc.short;
     $('#dlg-ref').textContent = 'Referência: ' + calc.ref;
@@ -390,11 +427,18 @@
 
   /* ---------- material educativo ---------- */
   function renderEdu() {
-    $('#edu-nav').innerHTML = EDU.map((e) =>
-      `<button type="button" data-edu="${e.id}" aria-current="${e.id === state.edu}">${ICON(e.icon)}${esc(e.title)}</button>`).join('');
     const e = eduById(state.edu) || EDU[0];
-    const idx = EDU.indexOf(e);
-    const next = EDU[idx + 1];
+    const g = guideOf(e);
+    const topics = guideTopics(g.id);
+    $('#edu-heading').textContent = g.title + ' — guia para o paciente';
+    $('#edu-guides').innerHTML = GUIDES.map((x) =>
+      `<button class="chip chip-guide" type="button" data-edu="${x.id}" data-tone="${GUIDE_TONE[x.id] || 'teal'}" aria-pressed="${x.id === g.id}">` +
+      `${ICON(x.icon)}${esc(x.title)}</button>`).join('');
+    $('#edu-content').dataset.tone = GUIDE_TONE[g.id] || 'teal';
+    $('#edu-nav').dataset.tone = GUIDE_TONE[g.id] || 'teal';
+    $('#edu-nav').innerHTML = topics.map((t) =>
+      `<button type="button" data-edu="${t.id}" aria-current="${t.id === e.id}">${ICON(t.icon)}${esc(t.title)}</button>`).join('');
+    const next = topics[topics.indexOf(e) + 1];
     $('#edu-content').innerHTML = `
       ${printHead()}
       <h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>
@@ -410,7 +454,8 @@
   }
 
   function openEdu(id) {
-    if (eduById(id)) state.edu = id;
+    const topic = resolveEdu(id);
+    if (topic) state.edu = topic;
     closeCalc();
     if (state.tab !== 'educacao') setTab('educacao'); else renderEdu();
     history.replaceState(null, '', '#educacao/' + state.edu);
@@ -418,17 +463,19 @@
   }
 
   const printHead = () => `<header class="print-only print-head">
-      <strong>Hipertensão arterial — guia para o paciente</strong>
-      <span>MedCalc · material educativo · ${new Date().toLocaleDateString('pt-BR')}</span>
+      <strong>${esc(guideOf(eduById(state.edu) || EDU[0]).title)} — guia para o paciente</strong>
+      <span>CalcMed · material educativo · ${new Date().toLocaleDateString('pt-BR')}</span>
     </header>`;
   const printFoot = () => `<footer class="print-only print-foot">
       Este material não substitui a orientação da sua equipe de saúde. Em caso de emergência, ligue 192 (SAMU).
     </footer>`;
 
+  // Guia completo do tema atual (não todos os temas)
   function renderPrintAll() {
     const box = $('#edu-content');
+    const g = guideOf(eduById(state.edu) || EDU[0]);
     box.innerHTML = printHead() +
-      EDU.map((e) => `<section class="print-section"><h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>${e.html}` +
+      guideTopics(g.id).map((e) => `<section class="print-section"><h2 class="edu-title">${ICON(e.icon)}${esc(e.title)}</h2>${e.html}` +
       `${e.sources ? `<p class="sources">Fontes: ${esc(e.sources)}</p>` : ''}</section>`).join('') +
       printFoot();
     box.classList.add('print-all');
@@ -469,8 +516,9 @@
       return;
     }
     if (h.startsWith('educacao')) {
-      const id = h.split('/')[1];
-      if (id && eduById(id)) state.edu = id;
+      const id = resolveEdu(h.split('/')[1]);
+      if (id) state.edu = id;
+      closeCalc();
       setTab('educacao');
       return;
     }
@@ -509,7 +557,7 @@
       if (e.target.closest('[data-print-one]')) { window.print(); return; }
       if (e.target.closest('[data-ask-edu]')) {
         const t = eduById(state.edu);
-        window.AI && window.AI.open(`Tenho dúvidas sobre “${t.title}” (hipertensão). `, false);
+        window.AI && window.AI.open(`Tenho dúvidas sobre “${t.title}” (${guideOf(t).title.toLowerCase()}). `, false);
       }
     });
 

@@ -1,7 +1,8 @@
 /*
  * Assistente IA.
  * - Modo guia (offline): sugere calculadoras e materiais por palavras-chave, sem enviar dados a lugar nenhum.
- * - Modo Claude: usa o SDK oficial da Anthropic direto no navegador com a chave do próprio usuário.
+ * - Modo IA: Claude (SDK oficial da Anthropic), Gemini (Google), ChatGPT (OpenAI) ou OpenRouter, chamados direto do navegador
+ *   com a chave do próprio usuário.
  */
 (function () {
   'use strict';
@@ -20,6 +21,59 @@
     'claude-sonnet-5-5': { effort: true, fallbacks: true },
     'claude-haiku-4-5': { effort: false, fallbacks: false },
   };
+  const CUSTOM = '__custom';
+  const PROVIDERS = {
+    anthropic: {
+      name: 'Claude',
+      keyName: 'Anthropic',
+      placeholder: 'sk-ant-…',
+      keyUrl: 'https://console.anthropic.com/settings/keys',
+      models: [
+        ['claude-opus-5-5', 'Claude Opus 5.5 (recomendado)'],
+        ['claude-sonnet-5-5', 'Claude Sonnet 5.5 (mais rápido)'],
+        ['claude-haiku-4-5', 'Claude Haiku 4.5 (mais econômico)'],
+      ],
+    },
+    gemini: {
+      name: 'Gemini',
+      keyName: 'Google Gemini',
+      placeholder: 'AIza…',
+      keyUrl: 'https://aistudio.google.com/apikey',
+      models: [
+        ['gemini-3.8-flash', 'Gemini 3.8 Flash (recomendado)'],
+        ['gemini-flash-latest', 'Gemini Flash (sempre a versão mais nova)'],
+        ['gemini-3.1-pro-preview', 'Gemini 3.1 Pro (prévia, mais detalhado)'],
+        ['gemini-3.5-flash-lite', 'Gemini 3.5 Flash-Lite (mais econômico)'],
+      ],
+    },
+    openai: {
+      name: 'ChatGPT',
+      keyName: 'OpenAI',
+      placeholder: 'sk-…',
+      keyUrl: 'https://platform.openai.com/api-keys',
+      url: 'https://api.openai.com/v1/chat/completions',
+      models: [
+        ['gpt-5.6-terra', 'GPT-5.6 Terra (recomendado)'],
+        ['gpt-5.6-sol', 'GPT-5.6 Sol (mais detalhado)'],
+        ['gpt-5.4-mini', 'GPT-5.4 mini (mais rápido e econômico)'],
+      ],
+    },
+    // OpenRouter usa o mesmo formato da API da OpenAI e dá acesso a modelos de várias empresas com uma só chave.
+    openrouter: {
+      name: 'OpenRouter',
+      keyName: 'OpenRouter',
+      placeholder: 'sk-or-…',
+      keyUrl: 'https://openrouter.ai/settings/keys',
+      url: 'https://openrouter.ai/api/v1/chat/completions',
+      headers: { 'HTTP-Referer': location.origin + location.pathname, 'X-Title': 'CalcMed' },
+      models: [
+        ['anthropic/claude-sonnet-5.5', 'Claude Sonnet 5.5 (recomendado)'],
+        ['anthropic/claude-opus-5.5', 'Claude Opus 5.5 (mais detalhado)'],
+        ['google/gemini-3.8-flash', 'Gemini 3.8 Flash (rápido e econômico)'],
+        ['openai/gpt-5.6-terra', 'GPT-5.6 Terra'],
+      ],
+    },
+  };
 
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -27,19 +81,27 @@
     del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignora */ } },
   };
 
+  const savedKey = (p) => store.get(p + '_key') || '';
+  const savedModel = (p) => store.get(p + '_model') || PROVIDERS[p].models[0][0];
+
   const state = {
-    key: store.get('anthropic_key') || '',
-    model: store.get('anthropic_model') || 'claude-opus-5-5',
-    history: [], // histórico enviado à API (somente no modo Claude)
+    provider: PROVIDERS[store.get('ai_provider')] ? store.get('ai_provider') : 'anthropic',
+    key: '',
+    model: '',
+    history: [], // histórico enviado à API do Claude (blocos de conteúdo completos)
+    chat: [], // histórico simples ({ role, text }) para Gemini e ChatGPT
     busy: false,
     sdk: null,
   };
-  if (!MODELS[state.model]) state.model = 'claude-opus-5-5';
+  state.key = savedKey(state.provider);
+  state.model = savedModel(state.provider);
+  if (state.provider === 'anthropic' && !MODELS[state.model]) state.model = 'claude-opus-5-5';
 
   /* ---------- prompt do sistema ---------- */
   const catalog = CALCS.map((c) => `- ${c.id} | ${c.name} | ${c.category} | abas: ${c.tabs.join(', ')} | ${c.short}`).join('\n');
-  const eduCatalog = EDU.map((e) => `- ${e.id} | ${e.title}`).join('\n');
-  const SYSTEM = `Você é o assistente do site MedCalc, um conjunto de calculadoras médicas e material educativo em português do Brasil.
+  const eduCatalog = window.EDU_GUIDES.map((g) => `${g.title}:\n` +
+    EDU.filter((e) => e.guide === g.id).map((e) => `- ${e.id} | ${e.title}`).join('\n')).join('\n');
+  const SYSTEM = `Você é o assistente do site CalcMed, um conjunto de calculadoras médicas e material educativo em português do Brasil.
 Seu papel é GUIAR o usuário: entender a situação clínica, indicar quais calculadoras do site usar e em que ordem, explicar como
 interpretar os resultados e apontar o material educativo adequado para pacientes.
 
@@ -59,12 +121,12 @@ Regras:
   oriente ligar 192 (SAMU) ou procurar o pronto-socorro imediatamente.
 - Se o usuário enviar dados que identifiquem pacientes (nome, CPF, prontuário), lembre-o de não fazer isso.
 
-Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), geriatria (Geriatria), educacao (Paciente: Hipertensão), rastreio (MedScreening: rastreamentos e vacinas indicados por idade, sexo e fatores de risco; aba própria, sem calculadoras).
+Abas do site: clinica (Clínica), cirurgia (Cirúrgica), gineco (Ginecologia & Obstetrícia), geriatria (Geriatria), paliativos (Cuidados paliativos), educacao (Paciente: guias sobre hipertensão, diabetes, colesterol, insuficiência cardíaca, quedas, asma, DPOC, fibromialgia, depressão e ansiedade), rastreio (MedScreening: rastreamentos e vacinas indicados por idade, sexo e fatores de risco; aba própria, sem calculadoras).
 
 Catálogo de calculadoras (ID | nome | categoria | abas | descrição):
 ${catalog}
 
-Material educativo para pacientes — hipertensão (ID | título):
+Material educativo para pacientes, por guia (ID | título):
 ${eduCatalog}`;
 
   /* ---------- modo guia (offline) ---------- */
@@ -75,7 +137,7 @@ ${eduCatalog}`;
   const SYN = {
     idoso: 'geriatria idoso', idosa: 'geriatria idoso', idosos: 'geriatria idoso', velhice: 'geriatria idoso',
     demencia: 'cognicao memoria', memoria: 'cognicao demencia', esquecimento: 'memoria cognicao',
-    confuso: 'delirium', confusao: 'delirium', depressao: 'humor gds', triste: 'depressao humor',
+    confuso: 'delirium', confusao: 'delirium', depressao: 'humor gds phq-9', triste: 'depressao humor',
     queda: 'quedas', caiu: 'queda', desnutricao: 'nutricao mna', escara: 'lesao por pressao braden',
     fragil: 'fragilidade', dependente: 'funcionalidade dependencia',
     gravida: 'gestacao gravidez pre-natal', gestante: 'gestacao gravidez pre-natal', gestacao: 'gravidez pre-natal',
@@ -85,7 +147,11 @@ ${eduCatalog}`;
     osso: 'osteoporose fratura', ossos: 'osteoporose fratura', fraturas: 'fratura osteoporose',
     trombose: 'tev tvp', embolia: 'tep', tev: 'trombose', rim: 'renal tfg creatinina', rins: 'renal tfg',
     figado: 'cirrose hepatica', acucar: 'diabetes glicemia', glicose: 'diabetes glicemia',
-    pressao: 'hipertensao pa', hipertenso: 'hipertensao pa', hipertensao: 'pa pressao',
+    pressao: 'hipertensao pa', colesterol: 'ldl dislipidemia', triglicerides: 'dislipidemia', estatina: 'colesterol ldl',
+    dpoc: 'gold pneumologia', enfisema: 'dpoc gold', asma: 'gina pneumologia', asmatico: 'asma gina', bronquite: 'dpoc asma',
+    paliativo: 'paliativos spict pps', paliativos: 'spict pps ppi esas', terminal: 'paliativos prognostico', prognostico: 'ppi pps',
+    fibromialgia: 'dor cronica', ansiedade: 'gad-7 depressao', panico: 'ansiedade gad-7', deprimido: 'depressao phq-9',
+    diabetico: 'diabetes glicemia', insulina: 'diabetes', cardiaca: 'insuficiencia coracao', inchaco: 'insuficiencia cardiaca', hipertenso: 'hipertensao pa', hipertensao: 'pa pressao',
     gordura: 'obesidade imc', peso: 'imc obesidade', parto: 'bishop apgar parto',
     bebe: 'apgar recem-nascido peso fetal', menopausa: 'osteoporose densitometria',
     sangramento: 'hemorragia sangramento choque', avc: 'fibrilacao avc', arritmia: 'fibrilacao',
@@ -124,7 +190,8 @@ ${eduCatalog}`;
   function rankEdu(text) {
     const toks = tokens(text);
     return EDU.map((e) => {
-      const hay = norm(e.title + ' ' + e.keywords);
+      const g = window.EDU_GUIDES.find((x) => x.id === e.guide);
+      const hay = norm(e.title + ' ' + e.keywords + ' ' + (g ? g.title : ''));
       return { e, s: toks.filter((t) => hay.includes(t)).length };
     }).filter((x) => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 3).map((x) => x.e);
   }
@@ -132,7 +199,7 @@ ${eduCatalog}`;
   function offlineReply(text) {
     const n = norm(text);
     if (/^(oi|ola|bom dia|boa tarde|boa noite|ajuda|help|menu)\b/.test(n) && n.length < 30) {
-      return 'Olá! Sou o guia do MedCalc. Diga o cenário clínico — por exemplo, *“mulher de 60 anos com risco de fratura”* ou ' +
+      return 'Olá! Sou o guia do CalcMed. Diga o cenário clínico — por exemplo, *“mulher de 60 anos com risco de fratura”* ou ' +
         '*“pré-operatório de cirurgia abdominal”* — e eu indico as calculadoras certas.\n\n' +
         'Atalhos: [[calc:framingham]] [[calc:rcri]] [[calc:ig_dum]] [[calc:frax_fatores]] [[edu:has-oque]]';
     }
@@ -151,7 +218,7 @@ ${eduCatalog}`;
     if (calcs.length) {
       out += 'Estas calculadoras parecem relevantes:\n' + calcs.map((c) => `- [[calc:${c.id}]] — ${c.short}`).join('\n');
     }
-    if (edus.length && (wantsPatient || !calcs.length || /hipertens|pressao/.test(n))) {
+    if (edus.length && (wantsPatient || !calcs.length || /hipertens|pressao|diabet|glicemia|colesterol|triglic|insuficiencia cardiaca|queda|asma|dpoc|fibromialg|depress|ansied/.test(n))) {
       out += (out ? '\n\n' : '') + 'Material para o paciente:\n' + edus.map((e) => `- [[edu:${e.id}]]`).join('\n');
     }
     if (!out) {
@@ -213,8 +280,13 @@ ${eduCatalog}`;
     return div;
   }
 
+  function modelLabel(p, id) {
+    const m = PROVIDERS[p].models.find((x) => x[0] === id);
+    return m ? m[1].replace(/ \(.*\)/, '') : id;
+  }
+
   function updateMode() {
-    $('#ai-mode').textContent = state.key ? `Claude • ${$('#ai-model').selectedOptions[0].text.replace(/ \(.*\)/, '')}` : 'Modo guia (offline)';
+    $('#ai-mode').textContent = state.key ? `${PROVIDERS[state.provider].name} • ${modelLabel(state.provider, state.model)}` : 'Modo guia (offline)';
   }
 
   /* ---------- Claude ---------- */
@@ -282,7 +354,127 @@ ${eduCatalog}`;
     }
   }
 
+  /* ---------- Gemini e ChatGPT (REST com streaming SSE) ---------- */
+  class HttpError extends Error {
+    constructor(status, message) { super(message); this.status = status; }
+  }
+
+  async function readSse(res, onData) {
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i).trim();
+        buf = buf.slice(i + 1);
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        if (!data || data === '[DONE]') continue;
+        let j;
+        try { j = JSON.parse(data); } catch (e) { continue; /* linha incompleta ou não JSON */ }
+        // OpenRouter pode enviar um erro no meio do streaming (ex.: falha do provedor).
+        if (j.error) throw new HttpError(j.error.code || 500, j.error.message || 'erro no streaming');
+        onData(j);
+      }
+    }
+  }
+
+  async function failIfBad(res) {
+    if (res.ok) return;
+    let msg = res.statusText;
+    try { const j = await res.json(); msg = (j.error && (j.error.message || j.error.status)) || msg; } catch (e) { /* ignora */ }
+    throw new HttpError(res.status, msg);
+  }
+
+  function geminiRequest() {
+    return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(state.model)}:streamGenerateContent?alt=sse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': state.key },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM }] },
+        contents: state.chat.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.text }] })),
+        generationConfig: { maxOutputTokens: 8192 },
+      }),
+    });
+  }
+  function geminiDelta(j) {
+    const c = j.candidates && j.candidates[0];
+    if (!c) return { text: '', blocked: !!(j.promptFeedback && j.promptFeedback.blockReason) };
+    const text = ((c.content && c.content.parts) || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
+    return { text, cut: c.finishReason === 'MAX_TOKENS', blocked: ['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST'].includes(c.finishReason) };
+  }
+
+  function openaiRequest() {
+    const cfg = PROVIDERS[state.provider];
+    return fetch(cfg.url, {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json', Authorization: `Bearer ${state.key}` }, cfg.headers),
+      body: JSON.stringify({
+        model: state.model,
+        stream: true,
+        messages: [{ role: 'system', content: SYSTEM }].concat(state.chat.map((m) => ({ role: m.role, content: m.text }))),
+      }),
+    });
+  }
+  function openaiDelta(j) {
+    const c = j.choices && j.choices[0];
+    if (!c) return { text: '' };
+    return { text: (c.delta && c.delta.content) || '', cut: c.finish_reason === 'length', blocked: c.finish_reason === 'content_filter' };
+  }
+
+  async function restReply(text) {
+    const api = state.provider === 'gemini' ? [geminiRequest, geminiDelta] : [openaiRequest, openaiDelta];
+    state.chat.push({ role: 'user', text });
+    const div = addMsg('bot', '');
+    div.classList.add('typing');
+    let acc = '', cut = false, blocked = false;
+    try {
+      const res = await api[0]();
+      await failIfBad(res);
+      await readSse(res, (j) => {
+        const d = api[1](j);
+        if (d.cut) cut = true;
+        if (d.blocked) blocked = true;
+        if (!d.text) return;
+        acc += d.text;
+        div.innerHTML = md(acc);
+        $('#ai-log').scrollTop = $('#ai-log').scrollHeight;
+      });
+    } catch (err) {
+      div.remove();
+      state.chat.pop();
+      throw err;
+    }
+    div.classList.remove('typing');
+    if (blocked && !acc.trim()) {
+      state.chat.pop();
+      div.innerHTML = md('Não posso ajudar com essa solicitação. Reformule a pergunta com foco no uso das calculadoras ou no material educativo.');
+      return;
+    }
+    state.chat.push({ role: 'assistant', text: acc || '…' });
+    if (cut) acc += '\n\n_(resposta interrompida por limite de tamanho)_';
+    div.innerHTML = md(acc.trim() ? acc : '…');
+  }
+
+  function explainHttp(err) {
+    const s = err.status;
+    if (s === 401 || (s === 400 && /api key|api_key/i.test(err.message))) return 'Chave de API inválida. Confira em Configurações.';
+    if (s === 403) return 'Sua chave não tem permissão para este modelo (ou a API não está ativada na conta). Tente outro modelo em Configurações.';
+    if (s === 404) return 'Modelo não encontrado para esta conta. Escolha outro modelo em Configurações.';
+    if (s === 402) return 'Créditos insuficientes na conta. Confira o saldo na plataforma.';
+    if (s === 429) return 'Limite de uso ou de créditos atingido. Aguarde alguns instantes ou confira o saldo da conta.';
+    return `Erro da API (${s}): ${err.message}`;
+  }
+
   function explainError(err, Anthropic) {
+    if (err instanceof HttpError) return explainHttp(err);
+    if (state.provider !== 'anthropic') {
+      return `Sem conexão com a API do ${PROVIDERS[state.provider].name}. Verifique sua internet.`;
+    }
     if (Anthropic) {
       if (err instanceof Anthropic.AuthenticationError) return 'Chave de API inválida. Confira em Configurações.';
       if (err instanceof Anthropic.PermissionDeniedError) return 'Sua chave não tem permissão para este modelo. Tente outro modelo em Configurações.';
@@ -302,12 +494,13 @@ ${eduCatalog}`;
     addMsg('user', text);
     $('#ai-input').value = '';
     try {
-      if (state.key) await claudeReply(text);
-      else addMsg('bot', offlineReply(text));
+      if (!state.key) addMsg('bot', offlineReply(text));
+      else if (state.provider === 'anthropic') await claudeReply(text);
+      else await restReply(text);
     } catch (err) {
       console.error(err);
       addMsg('bot err', explainError(err, state.sdk));
-      if (!state.sdk) addMsg('bot', offlineReply(text));
+      if (state.provider === 'anthropic' && !state.sdk) addMsg('bot', offlineReply(text));
     } finally {
       state.busy = false;
     }
@@ -321,6 +514,7 @@ ${eduCatalog}`;
     'Mulher de 65 anos: risco de fratura',
     'Idoso frágil: avaliação geriátrica',
     'Orientar paciente hipertenso',
+    'Orientar paciente com diabetes',
   ];
 
   function renderSuggestions() {
@@ -348,10 +542,35 @@ ${eduCatalog}`;
 
   function reset() {
     state.history = [];
+    state.chat = [];
     $('#ai-log').innerHTML = '';
-    addMsg('bot', 'Olá! Sou o assistente do MedCalc. Descreva o paciente ou a dúvida e eu indico **quais calculadoras usar**, ' +
+    addMsg('bot', 'Olá! Sou o assistente do CalcMed. Descreva o paciente ou a dúvida e eu indico **quais calculadoras usar**, ' +
       'como **interpretar** os resultados e qual **material educativo** entregar. Não informe dados que identifiquem o paciente.');
     renderSuggestions();
+  }
+
+  function toggleCustom() {
+    const custom = $('#ai-model').value === CUSTOM;
+    $('#ai-custom-wrap').hidden = !custom;
+    if (custom) $('#ai-custom-model').focus();
+  }
+
+  // Preenche chave, modelos e link de ajuda da plataforma escolhida (sem salvar).
+  function fillSettings(p) {
+    const cfg = PROVIDERS[p];
+    const model = p === state.provider ? state.model : savedModel(p);
+    $('#ai-key-label').textContent = `Chave da API ${cfg.keyName}`;
+    $('#ai-key').placeholder = cfg.placeholder;
+    $('#ai-key').value = p === state.provider ? state.key : savedKey(p);
+    $('#ai-key-link').href = cfg.keyUrl;
+    $('#ai-key-link').textContent = `Criar ou ver sua chave do ${cfg.name}`;
+    const opts = cfg.models.concat(p === 'anthropic' ? [] : [[CUSTOM, 'Outro modelo (digitar o ID)']]);
+    $('#ai-model').innerHTML = opts.map(([id, label]) => `<option value="${esc(id)}">${esc(label)}</option>`).join('');
+    const known = cfg.models.some((m) => m[0] === model);
+    $('#ai-model').value = known ? model : (p === 'anthropic' ? cfg.models[0][0] : CUSTOM);
+    $('#ai-custom-model').value = known ? '' : model;
+    $('#ai-custom-model').placeholder = { gemini: 'ex.: gemini-3.7-flash', openai: 'ex.: gpt-5.6-luna', openrouter: 'ex.: deepseek/…' }[p] || '';
+    $('#ai-custom-wrap').hidden = $('#ai-model').value !== CUSTOM;
   }
 
   function bind() {
@@ -361,20 +580,30 @@ ${eduCatalog}`;
     $('#ai-close').addEventListener('click', close);
     $('#ai-clear').addEventListener('click', reset);
     $('#ai-settings-btn').addEventListener('click', () => { $('#ai-settings').hidden = !$('#ai-settings').hidden; });
-    $('#ai-key').value = state.key;
-    $('#ai-model').value = state.model;
+    $('#ai-provider').value = state.provider;
+    fillSettings(state.provider);
+    $('#ai-provider').addEventListener('change', () => fillSettings($('#ai-provider').value));
+    $('#ai-model').addEventListener('change', toggleCustom);
     $('#ai-save').addEventListener('click', () => {
-      state.key = $('#ai-key').value.trim();
-      state.model = $('#ai-model').value;
-      if (state.key) store.set('anthropic_key', state.key); else store.del('anthropic_key');
-      store.set('anthropic_model', state.model);
+      const p = $('#ai-provider').value;
+      const key = $('#ai-key').value.trim();
+      const model = $('#ai-model').value === CUSTOM ? $('#ai-custom-model').value.trim() : $('#ai-model').value;
+      if (!model) { $('#ai-custom-model').focus(); return; }
+      if (p !== state.provider) { state.history = []; state.chat = []; }
+      state.provider = p; state.key = key; state.model = model;
+      store.set('ai_provider', p);
+      if (key) store.set(p + '_key', key); else store.del(p + '_key');
+      store.set(p + '_model', model);
       $('#ai-settings').hidden = true;
       updateMode();
-      addMsg('bot', state.key ? 'Pronto! Respostas agora geradas pelo Claude.' : 'Sem chave: usando o modo guia (offline).');
+      addMsg('bot', key ? `Pronto! Respostas agora geradas pelo ${PROVIDERS[p].name}.` : 'Sem chave: usando o modo guia (offline).');
     });
     $('#ai-forget').addEventListener('click', () => {
-      state.key = ''; $('#ai-key').value = ''; store.del('anthropic_key'); updateMode();
-      addMsg('bot', 'Chave removida deste navegador. Usando o modo guia (offline).');
+      const p = $('#ai-provider').value;
+      store.del(p + '_key'); $('#ai-key').value = '';
+      if (p === state.provider) state.key = '';
+      updateMode();
+      addMsg('bot', `Chave do ${PROVIDERS[p].name} removida deste navegador.` + (state.key ? '' : ' Usando o modo guia (offline).'));
     });
     $('#ai-form').addEventListener('submit', (e) => { e.preventDefault(); send($('#ai-input').value); });
     $('#ai-input').addEventListener('keydown', (e) => {

@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MedCalc — Calculadoras Médicas</title>
-  <meta name="description" content="Calculadoras médicas para estratificação de risco em clínica, cirurgia, ginecologia e obstetrícia, material educativo sobre hipertensão e assistente com IA.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f766e'/><path d='M42 20h16v22h22v16H58v22H42V58H20V42h22z' fill='white'/></svg>">
+  <title>CalcMed — Calculadoras Médicas</title>
+  <meta name="description" content="Calculadoras médicas para estratificação de risco em clínica, cirurgia, ginecologia e obstetrícia, material educativo para pacientes (doenças crônicas, quedas, dor crônica e saúde mental), cuidados paliativos e assistente com IA.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96' ><rect width='96' height='96' rx='22' fill='%230E8F80'/><g fill='%23FFFFFF'><rect x='38' y='12' width='20' height='20' rx='6'/><rect x='12' y='38' width='20' height='20' rx='6'/><rect x='38' y='38' width='20' height='20' rx='6'/><rect x='64' y='38' width='20' height='20' rx='6'/><rect x='38' y='64' width='20' height='20' rx='6'/></g><g fill='%23FFFFFF' opacity='0.4'><rect x='12' y='12' width='20' height='20' rx='6'/><rect x='64' y='12' width='20' height='20' rx='6'/><rect x='12' y='64' width='20' height='20' rx='6'/><rect x='64' y='64' width='20' height='20' rx='6'/></g></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -16,12 +16,13 @@
 
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="#clinica" aria-label="MedCalc — início">
-        <span class="brand-mark" aria-hidden="true">+</span>
-        <span class="brand-text">MedCalc<small>Calculadoras e educação em saúde</small></span>
+      <a class="brand" href="#clinica" aria-label="CalcMed — início">
+        <svg class="logo-icon" viewBox="0 0 96 96" width="40" height="40" aria-hidden="true"><rect width="96" height="96" rx="22" class="logo-bg"/><g class="logo-fg"><rect x="38" y="12" width="20" height="20" rx="6"/><rect x="12" y="38" width="20" height="20" rx="6"/><rect x="38" y="38" width="20" height="20" rx="6"/><rect x="64" y="38" width="20" height="20" rx="6"/><rect x="38" y="64" width="20" height="20" rx="6"/></g><g class="logo-fg logo-fg-soft"><rect x="12" y="12" width="20" height="20" rx="6"/><rect x="64" y="12" width="20" height="20" rx="6"/><rect x="12" y="64" width="20" height="20" rx="6"/><rect x="64" y="64" width="20" height="20" rx="6"/></g></svg>
+        <span class="brand-text"><span class="wordmark">Calc<span>Med</span></span><small>Calculadoras médicas</small></span>
       </a>
       <div class="search">
-        <input id="search" type="search" placeholder="Buscar calculadora (ex.: fratura, TEV, gestação)…" aria-label="Buscar calculadora" autocomplete="off">
+        <span class="search-icon" data-icon="search"></span>
+        <input id="search" type="search" placeholder="Buscar (ex.: fratura, TEV, gestação)…" aria-label="Buscar calculadora" autocomplete="off">
       </div>
       <button id="theme-toggle" class="icon-btn" type="button" aria-label="Alternar tema claro/escuro" title="Alternar tema"><span data-icon="contrast"></span></button>
     </div>
@@ -31,22 +32,26 @@
         <a class="tab" href="#cirurgia" data-tab="cirurgia"><span data-icon="bandage"></span>Cirúrgica</a>
         <a class="tab" href="#gineco" data-tab="gineco"><span data-icon="female"></span>Gineco &amp; Obstetrícia</a>
         <a class="tab" href="#geriatria" data-tab="geriatria"><span data-icon="elder"></span>Geriatria</a>
+        <a class="tab" href="#paliativos" data-tab="paliativos"><span data-icon="care"></span>Paliativos</a>
         <a class="tab" href="#favoritos" data-tab="favoritos"><span data-icon="star"></span>Favoritos<span id="fav-count" class="count" hidden></span></a>
         <a class="tab" href="#rastreio" data-tab="rastreio"><span data-icon="activity"></span>Rastreio</a>
-        <a class="tab" href="#educacao" data-tab="educacao"><span data-icon="book"></span>Paciente: Hipertensão</a>
+        <a class="tab" href="#educacao" data-tab="educacao"><span data-icon="book"></span>Paciente</a>
       </nav>
     </div>
   </header>
 
   <main id="main" class="container">
     <section id="view-calcs" class="view">
-      <div class="view-head">
-        <div>
+      <div class="hero">
+        <div id="calc-art" class="hero-art"></div>
+        <div class="hero-text">
+          <p class="eyebrow">Calculadoras clínicas</p>
           <h1 id="calc-title">Clínica médica</h1>
-          <p id="calc-subtitle" class="muted"></p>
+          <p id="calc-subtitle" class="hero-sub"></p>
         </div>
-        <div id="chips" class="chips" role="group" aria-label="Filtrar por categoria"></div>
+        <div class="hero-stat" aria-live="polite"><strong id="calc-count">0</strong><span id="calc-count-label">ferramentas</span></div>
       </div>
+      <div id="chips" class="chips cat-chips" role="group" aria-label="Filtrar por categoria"></div>
       <div id="grid" class="grid"></div>
       <p id="empty" class="empty" hidden>Nenhuma calculadora encontrada. Tente outro termo ou pergunte ao <button class="link" data-open-ai type="button">Assistente IA</button>.</p>
       <div id="fav-empty" class="empty-state" hidden>
@@ -57,10 +62,12 @@
     </section>
 
     <section id="view-edu" class="view" hidden>
-      <div class="view-head">
-        <div>
-          <h1>Hipertensão arterial — guia para o paciente</h1>
-          <p class="muted">Informações em linguagem simples para ler, imprimir ou enviar ao paciente.</p>
+      <div class="hero view-head">
+        <div id="edu-art" class="hero-art"></div>
+        <div class="hero-text">
+          <p class="eyebrow">Educação em saúde</p>
+          <h1 id="edu-heading">Guia para o paciente</h1>
+          <p class="hero-sub">Informações em linguagem simples para ler, imprimir ou enviar ao paciente.</p>
         </div>
         <div class="edu-tools">
           <div class="textsize" role="group" aria-label="Tamanho do texto">
@@ -68,9 +75,10 @@
             <output id="font-label" for="font-dec font-inc" aria-live="polite">Texto ampliado</output>
             <button id="font-inc" class="btn btn-ghost" type="button" aria-label="Aumentar o texto"><span class="a-big" aria-hidden="true">A+</span></button>
           </div>
-          <button id="print-edu" class="btn btn-ghost" type="button"><span data-icon="printer"></span>Imprimir / salvar PDF</button>
+          <button id="print-edu" class="btn btn-ghost" type="button"><span data-icon="printer"></span>Imprimir guia / salvar PDF</button>
         </div>
       </div>
+      <div id="edu-guides" class="chips edu-guides" role="group" aria-label="Escolha o tema"></div>
       <div class="edu-layout">
         <nav id="edu-nav" class="edu-nav" aria-label="Tópicos"></nav>
         <article id="edu-content" class="edu-content card"></article>
@@ -78,10 +86,12 @@
     </section>
 
     <section id="view-rastreio" class="view" hidden>
-      <div class="view-head">
-        <div>
+      <div class="hero view-head">
+        <div id="ras-art" class="hero-art"></div>
+        <div class="hero-text">
+          <p class="eyebrow">Prevenção</p>
           <h1>MedScreening — rastreamentos e vacinas</h1>
-          <p class="muted">O que está indicado, em dia ou vale discutir, para a idade, o sexo e os fatores de risco do paciente.</p>
+          <p class="hero-sub">O que está indicado, em dia ou vale discutir, para a idade, o sexo e os fatores de risco do paciente.</p>
         </div>
       </div>
       <p class="ms-notice"><strong>Apoio à decisão para profissionais de saúde.</strong> Não substitui o julgamento clínico nem o protocolo local. Nenhum dado é enviado ou guardado: o cálculo roda neste navegador, e cada regra mostra a fonte e a data de conferência.</p>
@@ -102,17 +112,25 @@
     </section>
 
 
-    <p class="disclaimer">
-      Ferramenta de apoio à decisão para profissionais de saúde e de educação para pacientes. Não substitui a avaliação
-      clínica individual. Confira sempre as fontes e as diretrizes vigentes.
-    </p>
   </main>
+
+  <footer class="site-foot">
+    <div class="foot-inner">
+      <div class="foot-brand">
+        <svg class="logo-icon" viewBox="0 0 96 96" width="30" height="30" aria-hidden="true"><rect width="96" height="96" rx="22" class="logo-bg"/><g class="logo-fg"><rect x="38" y="12" width="20" height="20" rx="6"/><rect x="12" y="38" width="20" height="20" rx="6"/><rect x="38" y="38" width="20" height="20" rx="6"/><rect x="64" y="38" width="20" height="20" rx="6"/><rect x="38" y="64" width="20" height="20" rx="6"/></g><g class="logo-fg logo-fg-soft"><rect x="12" y="12" width="20" height="20" rx="6"/><rect x="64" y="12" width="20" height="20" rx="6"/><rect x="12" y="64" width="20" height="20" rx="6"/><rect x="64" y="64" width="20" height="20" rx="6"/></g></svg>
+        <span class="wordmark">Calc<span>Med</span></span>
+      </div>
+      <p class="disclaimer">Ferramenta de apoio à decisão para profissionais de saúde e de educação para pacientes. Não substitui a avaliação
+        clínica individual. Confira sempre as fontes e as diretrizes vigentes.</p>
+    </div>
+  </footer>
 
   <!-- Calculadora -->
   <dialog id="calc-dialog" class="calc-dialog" aria-labelledby="dlg-title">
     <div class="dlg-body">
       <div class="dlg-head">
-        <div>
+        <span id="dlg-icon" class="cat-icon cat-icon-lg" aria-hidden="true"></span>
+        <div class="dlg-titles">
           <span id="dlg-cat" class="pill"></span>
           <h2 id="dlg-title"></h2>
           <p id="dlg-short" class="muted"></p>
@@ -146,20 +164,30 @@
       </div>
     </div>
     <div id="ai-settings" class="ai-settings" hidden>
-      <p class="small">O guia funciona sem configuração (modo offline, por palavras-chave). Para respostas com IA generativa
-        (Claude, da Anthropic), informe sua chave de API. A chave fica salva <strong>apenas neste navegador</strong> e é
-        enviada diretamente à API da Anthropic.</p>
+      <p class="small">O guia funciona sem configuração (modo offline, por palavras-chave). Para respostas com IA generativa,
+        escolha a plataforma e informe sua chave de API. A chave fica salva <strong>apenas neste navegador</strong> e é
+        enviada diretamente à plataforma escolhida.</p>
       <label class="field">
-        <span>Chave da API Anthropic</span>
-        <input id="ai-key" type="password" placeholder="sk-ant-…" autocomplete="off">
+        <span>Plataforma</span>
+        <select id="ai-provider">
+          <option value="anthropic">Claude (Anthropic)</option>
+          <option value="gemini">Gemini (Google)</option>
+          <option value="openai">ChatGPT (OpenAI)</option>
+          <option value="openrouter">OpenRouter (vários modelos)</option>
+        </select>
       </label>
       <label class="field">
+        <span id="ai-key-label">Chave da API</span>
+        <input id="ai-key" type="password" placeholder="" autocomplete="off">
+      </label>
+      <p class="small"><a id="ai-key-link" href="#" target="_blank" rel="noopener">Como obter a chave</a></p>
+      <label class="field">
         <span>Modelo</span>
-        <select id="ai-model">
-          <option value="claude-opus-5-5">Claude Opus 5.5 (recomendado)</option>
-          <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (mais rápido)</option>
-          <option value="claude-haiku-4-5">Claude Haiku 4.5 (mais econômico)</option>
-        </select>
+        <select id="ai-model"></select>
+      </label>
+      <label class="field" id="ai-custom-wrap" hidden>
+        <span>ID do modelo</span>
+        <input id="ai-custom-model" type="text" placeholder="" autocomplete="off" spellcheck="false">
       </label>
       <div class="row">
         <button id="ai-save" class="btn" type="button">Salvar</button>
@@ -176,6 +204,7 @@
   </aside>
 
   <script src="js/icons.js"></script>
+  <script src="js/art.js"></script>
   <script src="js/calculators.js"></script>
   <script src="js/education.js"></script>
   <script src="js/medscreening.js"></script>
