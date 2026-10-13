@@ -86,6 +86,15 @@
       heart(184, 120, 16, C.coral) +
       spark(46, 40, 9, C.mint) + spark(194, 36, 7, '#fff') + dot(52, 132, 5, C.yellow),
 
+    leitura: halo +
+      `<rect x="58" y="30" width="96" height="112" rx="12" fill="#fff"/>` +
+      `<g stroke="#C9D6DC" stroke-width="5" stroke-linecap="round"><path d="M74 54h44M74 72h64M74 90h52"/></g>` +
+      `<g stroke="#3FBF8F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M74 114l8 8 14-16"/></g>` +
+      `<circle cx="164" cy="106" r="26" fill="${C.sky}" fill-opacity=".35" stroke="${C.yellow}" stroke-width="8"/>` +
+      `<path d="M182 124l18 18" stroke="${C.yellow}" stroke-width="10" stroke-linecap="round"/>` +
+      `<g stroke="#fff" stroke-width="4" stroke-linecap="round"><path d="M152 112l8-12 8 8 8-12"/></g>` +
+      spark(40, 42, 9, C.mint) + plus(196, 36, 8, '#fff') + dot(44, 130, 5, C.yellow),
+
     educacao: halo +
       `<path d="M120 50C100 38 70 38 46 46v80c24-8 54-8 74 4z" fill="#fff"/>` +
       `<path d="M120 50c20-12 50-12 74-4v80c-24-8-54-8-74 4z" fill="#E6FFF6"/>` +

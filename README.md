@@ -15,6 +15,11 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
     (+ PA, CHA₂DS₂-VASc, HAS-BLED, TFG, Cockcroft-Gault, osteoporose/FRAX, Pádua, STOP-BANG, IMC).
 - **Rastreio (MedScreening)**: rastreamentos e vacinas indicados por idade, sexo e fatores de risco, com fonte e data de
   conferência em cada regra (INCA/MS, SBD, SBC, SBIm, PNI, USPSTF). Roda inteiramente no navegador.
+- **Leitura crítica de artigos**: risco de viés de ensaios randomizados de grupos paralelos pelo **RoB 2** (algoritmo oficial,
+  5 domínios, efeito da designação ou de aderir), com perguntas em português e o original em inglês, e calculadora de efeito
+  (RAR, RRR, RR, OR, NNT/NNH com IC 95%, NNT para o risco basal do paciente, diferença de médias). Conferido no guia oficial
+  de 22/08/2019; os testes reproduzem as tabelas 4, 6, 8, 10, 12 e 14 do guia. Coortes, revisões sistemáticas e acurácia
+  diagnóstica serão as próximas fases.
 - **Cuidados paliativos**: SPICT-BR, PPS, Índice Prognóstico Paliativo (PPI), ECOG/Karnofsky, ESAS-r (+ CFS).
 - **Material para o paciente** (aba Paciente), em guias por tema, cada um impresso ou salvo em PDF separadamente:
   - **Hipertensão**: o que é, importância do tratamento, alimentação, atividade física, como medir a pressão em casa, hábitos e sinais de alerta.
@@ -44,9 +49,11 @@ python3 -m http.server 8000
 # http://localhost:8000
 ```
 
+Testes dos motores da aba Leitura crítica (sem dependências): `node --test tests/*.test.js`.
+
 Para publicar no **GitHub Pages**: Settings → Pages → *Deploy from a branch* → selecione a branch e a pasta `/ (root)`.
 
-Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#paliativos`, `#rastreio`, `#educacao/has-nutricao`, `#educacao/dm` (abre o primeiro tópico do guia), `#calc/framingham`.
+Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#paliativos`, `#rastreio`, `#mental`, `#leitura`, `#educacao/has-nutricao`, `#educacao/dm` (abre o primeiro tópico do guia), `#calc/framingham`.
 
 ## Estrutura
 
