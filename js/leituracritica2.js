@@ -104,22 +104,23 @@ function renderRbi() {
 }
 
 /* ---------------- AMSTAR 2 ---------------- */
-const A = { parcialFalha: false, desenho: '', ma: null, marcas: {}, marcasRct: {}, marcasNrsi: {}, tocado: {} };
-const resetA = () => { A.parcialFalha = false; A.desenho = ''; A.ma = null; A.marcas = {}; A.marcasRct = {}; A.marcasNrsi = {}; A.tocado = {}; };
-const critHtml = (nome, c, marcado, extra) => `<label class="lc-opt lc-wide"${extra || ''}><input type="checkbox" ${nome} value="${c.id}"${marcado ? ' checked' : ''}><span>${esc(c.pt)}</span></label>`
-  + `<details class="lc-dica lc-orig"><summary>Original (inglês)</summary><p lang="en">${esc(c.en)}</p></details>`;
+const A = { ia: { artigo: '', sug: {}, origem: {}, ocupado: false, msg: '', apl: null }, parcialFalha: false, desenho: '', ma: null, marcas: {}, marcasRct: {}, marcasNrsi: {}, tocado: {} };
+const resetA = () => { A.ia = { artigo: '', sug: {}, origem: {}, ocupado: false, msg: '', apl: null }; A.parcialFalha = false; A.desenho = ''; A.ma = null; A.marcas = {}; A.marcasRct = {}; A.marcasNrsi = {}; A.tocado = {}; };
+const critHtml = (nome, c, marcado, extra, key) => `<label class="lc-opt lc-wide"${extra || ''}><input type="checkbox" ${nome} value="${c.id}"${marcado ? ' checked' : ''}><span>${esc(c.pt)}</span></label>`
+  + `<details class="lc-dica lc-orig"><summary>Original (inglês)</summary><p lang="en">${esc(c.en)}</p></details><div class="lc-sug" data-asug="${key}"></div>`;
 function blocoHtml(it, spec, escopo, store) {
   const m = store[it.n] || {};
   const nome = (c) => `data-a="${it.n}" data-e="${escopo}" name="a-${it.n}-${escopo}-${c.id}"`;
+  const key = (c) => `${it.n}.${escopo}.${c.id}`;
   const por = (ids) => spec.criterios.filter((c) => ids.includes(c.id));
   let h = '';
   const alts = spec.yes;
   const usados = new Set([].concat(spec.py || [], ...alts));
-  if (spec.py) h += `<p class="lc-sub">Para "Sim parcial" (todos):</p>` + por(spec.py).map((c) => critHtml(nome(c), c, m[c.id])).join('');
-  if (alts.length === 1) h += `<p class="lc-sub">${spec.py ? 'Para "Sim", além dos anteriores (todos):' : 'Para "Sim" (todos):'}</p>` + por(alts[0]).map((c) => critHtml(nome(c), c, m[c.id], c.id === 'sp' && it.n === 11 ? ' data-so-ambos' : '')).join('');
-  else h += `<p class="lc-sub">Para "Sim" basta uma das opções:</p>` + spec.criterios.filter((c) => usados.has(c.id)).map((c) => critHtml(nome(c), c, m[c.id])).join('');
+  if (spec.py) h += `<p class="lc-sub">Para "Sim parcial" (todos):</p>` + por(spec.py).map((c) => critHtml(nome(c), c, m[c.id], '', key(c))).join('');
+  if (alts.length === 1) h += `<p class="lc-sub">${spec.py ? 'Para "Sim", além dos anteriores (todos):' : 'Para "Sim" (todos):'}</p>` + por(alts[0]).map((c) => critHtml(nome(c), c, m[c.id], c.id === 'sp' && it.n === 11 ? ' data-so-ambos' : '', key(c))).join('');
+  else h += `<p class="lc-sub">Para "Sim" basta uma das opções:</p>` + spec.criterios.filter((c) => usados.has(c.id)).map((c) => critHtml(nome(c), c, m[c.id], '', key(c))).join('');
   const extras = spec.criterios.filter((c) => !usados.has(c.id));
-  if (extras.length) h += `<p class="lc-sub">Opcional (não muda o resultado):</p>` + extras.map((c) => critHtml(nome(c), c, m[c.id])).join('');
+  if (extras.length) h += `<p class="lc-sub">Opcional (não muda o resultado):</p>` + extras.map((c) => critHtml(nome(c), c, m[c.id], '', key(c))).join('');
   return h;
 }
 function itemHtml(it) {
@@ -134,6 +135,12 @@ function itemHtml(it) {
 function buildAms() {
   $('#lc-ams-form').innerHTML =
     `<p class="lc-intro">Para revisões sistemáticas de intervenções (com ensaios randomizados, estudos não randomizados ou ambos). O instrumento não gera pontuação: o resultado de cada item vem dos critérios que você marcar.</p>
+     <details class="lc-grp lc-ia" open><summary><span>Pré-preencher com IA (opcional)</span></summary>
+      <p class="lc-intro">Cole o texto da revisão (resumo e métodos bastam) ou envie o PDF. A IA sugere, para cada critério, se o texto indica que foi cumprido e cita o trecho; você aceita ou corrige. O resultado de cada item continua vindo dos critérios oficiais.</p>
+      <label class="lc-field"><span>Texto da revisão</span><textarea id="ams-art" rows="6" spellcheck="false" placeholder="Cole aqui o texto da revisão…">${esc(A.ia.artigo)}</textarea></label>
+      <div class="lc-ia-row"><button id="ams-ia-pdf" class="btn btn-ghost" type="button">Enviar PDF ou TXT</button><input id="ams-ia-file" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden><button id="ams-ia-run" class="btn" type="button">Sugerir respostas</button><button id="ams-ia-todas" class="btn btn-ghost" type="button">Aceitar sugestões confirmadas</button></div>
+      <p id="ams-ia-st" class="lc-note" role="status">${esc(A.ia.msg)}</p>
+      <p class="lc-note">Textos longos (como revisões Cochrane completas): se passar do limite, a ferramenta remove automaticamente as referências, apêndices e tabelas de estudos e avisa o que foi cortado. Os métodos precisam estar no texto: sem eles a IA responde "sem informação". Privacidade: o texto é enviado ao provedor de IA configurado no Assistente, com a sua chave.</p></details>
      <fieldset class="lc-q lc-efeito"><legend>Desenhos incluídos na revisão</legend>
       ${[['rct', 'Só ensaios randomizados'], ['nrsi', 'Só estudos não randomizados'], ['ambos', 'Ambos']].map(([v, t]) => `<label class="lc-opt lc-wide"><input type="radio" name="a-des" value="${v}"${A.desenho === v ? ' checked' : ''}><span>${t}</span></label>`).join('')}</fieldset>
      <fieldset class="lc-q lc-efeito"><legend>A revisão fez meta-análise?</legend>
@@ -169,6 +176,7 @@ function renderAms() {
     b.className = 'lc-bd lc-' + RES_COR[key];
     return { it, res, txt, key, tocou: tocou && !needDes };
   });
+  renderSugAms();
   const feitos = rows.filter((x) => x.tocou);
   const el = $('#lc-ams-res');
   if (!feitos.length) { el.innerHTML = '<div class="lc-card lc-empty">Marque os critérios cumpridos em cada item. O AMSTAR 2 não gera pontuação: o resultado aparece item a item.</div>'; ultimo.ams = ''; return; }
@@ -183,6 +191,7 @@ function renderAms() {
   const L = ['Avaliação de revisão sistemática (AMSTAR 2): apoio à decisão; confirme na leitura do artigo', 'Desenhos incluídos: ' + ({ rct: 'ensaios randomizados', nrsi: 'estudos não randomizados', ambos: 'ambos' }[des] || 'não informado'), 'Meta-análise: ' + (A.ma === false ? 'não' : A.ma === true ? 'sim' : 'não informado')];
   rows.forEach((x) => L.push(`${x.it.n}. ${x.it.pt} ${x.tocou ? x.txt : 'sem resposta'}`));
   L.push('Confiança nos resultados (Caixa 2, consultiva)' + (conf.provisorio ? ' provisória' : '') + ': ' + Amstar2.NIVEL_GERAL[conf.nivel] + ` (falhas críticas ${conf.criticas}; fraquezas não críticas ${conf.naoCriticas})`);
+  const nIa = Object.keys(A.ia.origem).length; if (nIa) L.push(nIa + ' critério(s) aceito(s) a partir de sugestão da IA, conferidos pelo avaliador.');
   L.push('Itens não são somados em nota. Fonte: ' + META.amstar.nome);
   ultimo.ams = L.join('\n');
 }
@@ -241,6 +250,67 @@ function renderQd() {
   ultimo.qd = L.join('\n');
 }
 
+
+/* ---------------- Pré-preenchimento por IA (AMSTAR 2) ---------------- */
+function criteriosIA() {
+  const l = [];
+  Amstar2.ITENS.forEach((it) => {
+    const esc_ = it.porDesenho ? ['rct', 'nrsi'] : ['x'];
+    esc_.forEach((e) => { const spec = it.porDesenho ? it[e] : it; spec.criterios.forEach((c) => l.push({ key: `${it.n}.${e}.${c.id}`, n: it.n, e, id: c.id, item: it.en, en: c.en })); });
+  });
+  return l;
+}
+const statusAms = (m) => { A.ia.msg = m || ''; const el = $('#ams-ia-st'); if (el) el.textContent = A.ia.msg; };
+function storeDe(n, e) { return e === 'rct' ? A.marcasRct : e === 'nrsi' ? A.marcasNrsi : A.marcas; }
+function aceitarCrit(key) {
+  const sg = A.ia.sug[key]; if (!sg || sg.resp === 'NI') return false;
+  const [n, e, id] = key.split('.'); const st_ = storeDe(n, e);
+  st_[n] = st_[n] || {}; st_[n][id] = sg.resp === 'Y'; A.tocado[n] = true; A.ia.origem[key] = true;
+  const cb = document.querySelector(`#lc-ams-form input[type=checkbox][data-a="${n}"][data-e="${e}"][value="${id}"]`); if (cb) cb.checked = sg.resp === 'Y';
+  return true;
+}
+function renderSugAms() {
+  document.querySelectorAll('#lc-ams-form .lc-sug').forEach((box) => {
+    const key = box.dataset.asug, sg = A.ia.sug[key];
+    if (!sg || box.closest('[hidden]') || (box.previousElementSibling && box.previousElementSibling.previousElementSibling && box.previousElementSibling.previousElementSibling.hidden)) { box.innerHTML = ''; return; }
+    const [n, e, id] = key.split('.'); const cur = (storeDe(n, e)[n] || {})[id];
+    const rot = { Y: 'cumprido', N: 'não cumprido', NI: 'sem informação no texto' }[sg.resp];
+    const vf = sg.verif === null ? '' : sg.verif ? '<span class="lc-vf lc-ok">citação encontrada no texto</span>' : '<span class="lc-vf lc-bad">citação NÃO encontrada no texto: confira</span>';
+    let acao = '';
+    if (sg.resp !== 'NI') {
+      const quer = sg.resp === 'Y';
+      if (A.ia.origem[key] && cur === quer) acao = '<span class="lc-tag">✔ aceita (da IA)</span>';
+      else if (A.tocado[n] && cur !== undefined && cur !== quer) acao = '<span class="lc-tag">você marcou diferente</span>';
+      else acao = `<button type="button" class="btn btn-ghost lc-acc" data-aacc="${esc(key)}">Aceitar</button>`;
+    }
+    box.innerHTML = `<div class="lc-sug-in"><p><b>Sugestão da IA:</b> ${esc(rot)} ${vf}</p>${sg.trecho ? `<blockquote lang="en">${esc(sg.trecho)}</blockquote>` : ''}${sg.just ? `<p class="lc-note">${esc(sg.just)}</p>` : ''}<div>${acao}</div></div>`;
+  });
+}
+async function rodarAms() {
+  if (A.ia.ocupado) return;
+  let artigo = A.ia.artigo.trim();
+  if (artigo.length < 500) { statusAms('Cole o texto da revisão (ou envie o PDF) antes de pedir sugestões.'); return; }
+  let avRed = '';
+  if (artigo.length > RoB2IA.MAX_CHARS) { const rd = RoB2IA.reduzirTexto(artigo); artigo = rd.texto; avRed = 'Texto longo (' + window.LCUtil.nf(rd.original, 0) + ' caracteres): ' + rd.cortes.join('; ') + '. '; }
+  if (!window.AI || !window.AI.temChave()) { statusAms('Configure uma chave de API no Assistente IA (botão ✨, depois ⚙️) e tente de novo.'); if (window.AI) window.AI.open(); return; }
+  const crit = criteriosIA();
+  const { system, user } = RoB2IA.montarPromptAmstar(crit, artigo);
+  A.ia.ocupado = true; $('#ams-ia-run').disabled = true; statusAms('Analisando a revisão… pode levar até um minuto.');
+  try {
+    const r = await window.AI.complete(system, user, { maxTokens: 12000 });
+    const tr = RoB2IA.tratarAmstar(RoB2IA.extrairJson(r.text), crit, artigo);
+    if (tr.outroTipo) statusAms(avRed + 'Este texto não parece ser de uma revisão sistemática (' + tr.outroTipo + '). Para ensaios use a aba RoB 2; para coortes, ROBINS-I.');
+    else {
+      A.ia.sug = tr.sugestoes; A.ia.apl = { desenhos: tr.desenhos, ma: tr.ma };
+      const n = Object.keys(tr.sugestoes).length, av = tr.avisos.slice(); if (avRed) av.unshift(avRed.trim()); if (r.cut) av.push('A resposta da IA foi cortada por limite de tamanho; alguns critérios podem estar sem sugestão.');
+      const ex = (tr.desenhos || tr.ma !== null) ? ' A IA também sugere: desenhos ' + ({ rct: 'só ensaios randomizados', nrsi: 'só não randomizados', ambos: 'ambos' }[tr.desenhos] || 'não identificado') + '; meta-análise ' + (tr.ma === true ? 'sim' : tr.ma === false ? 'não' : 'não identificada') + ' (confira e marque abaixo).' : '';
+      statusAms(n ? n + ' sugestão(ões) recebida(s). ' + av.join(' ') + ex + ' Revise cada uma nos itens.' : av.join(' '));
+    }
+  } catch (er) { statusAms(er.userMessage || ('Falha ao consultar a IA: ' + er.message)); }
+  finally { A.ia.ocupado = false; const b = $('#ams-ia-run'); if (b) b.disabled = false; }
+  renderAms();
+}
+
 /* ---------------- subabas e eventos ---------------- */
 function mostrar(sub) {
   $('#lc-pane-rob').hidden = true; $('#lc-pane-ef').hidden = true;
@@ -258,6 +328,10 @@ function init() {
     if (b) { mostrar(b.dataset.sub); return; }
     if (e.target.closest('.lc-seg button')) { $('#lc-pend2').innerHTML = ''; $('#lc-rodape2').textContent = ''; return; }
     if (e.target.closest('#rbi-limpar')) { resetR(); buildRbi(); renderRbi(); return; }
+    const aa = e.target.closest('[data-aacc]'); if (aa) { aceitarCrit(aa.dataset.aacc); renderAms(); return; }
+    if (e.target.closest('#ams-ia-run')) { rodarAms(); return; }
+    if (e.target.closest('#ams-ia-pdf')) { $('#ams-ia-file').click(); return; }
+    if (e.target.closest('#ams-ia-todas')) { let k = 0; Object.keys(A.ia.sug).forEach((key) => { const sg = A.ia.sug[key]; if (sg.resp === 'N' || (sg.resp === 'Y' && sg.verif)) { const [n, e2, id] = key.split('.'); const cur = (storeDe(n, e2)[n] || {})[id]; if (cur === undefined && aceitarCrit(key)) k++; } }); statusAms(k ? k + ' sugestão(ões) aceita(s). Revise cada critério antes de usar o resultado.' : 'Nenhuma sugestão nova confirmada para aceitar.'); renderAms(); return; }
     if (e.target.closest('#ams-limpar')) { resetA(); buildAms(); renderAms(); return; }
     if (e.target.closest('#qd-limpar')) { resetQ(); buildQd(); renderQd(); return; }
     const c = e.target.closest('#rbi-copiar, #ams-copiar, #qd-copiar');
@@ -271,6 +345,11 @@ function init() {
     if (t.matches('input[data-rq]')) { R.resp[t.dataset.rq] = t.value; renderRbi(); return; }
     if (t.matches('input[data-rj]')) { R.jul[t.dataset.rj] = t.value; renderRbi(); return; }
     if (t.name === 'rbi-aim') { R.aim = t.value; renderRbi(); return; }
+    if (t.id === 'ams-ia-file') {
+      const f = t.files && t.files[0]; t.value = '';
+      if (f) { statusAms('Lendo ' + f.name + '…'); window.LCUtil.lerArquivo(f).then((txt) => { A.ia.artigo = txt; $('#ams-art').value = txt; statusAms(window.LCUtil.nf(txt.length, 0) + ' caracteres lidos de ' + f.name + '. Confira o texto e clique em Sugerir respostas.'); }, (er) => statusAms(er.message)); }
+      return;
+    }
     if (t.name === 'a-des') { A.desenho = t.value; renderAms(); return; }
     if (t.id === 'a-pf') { A.parcialFalha = t.checked; renderAms(); return; }
     if (t.name === 'a-ma') { A.ma = t.value === 'sim'; renderAms(); return; }
@@ -282,6 +361,7 @@ function init() {
   root.addEventListener('input', (e) => {
     if (e.target.id === 'rbi-estudo') { R.estudo = e.target.value; renderRbi(); }
     else if (e.target.id === 'rbi-desfecho') { R.desfecho = e.target.value; renderRbi(); }
+    else if (e.target.id === 'ams-art') { A.ia.artigo = e.target.value; }
     else if (e.target.id === 'qd-estudo') { QD.estudo = e.target.value; renderQd(); }
     else if (e.target.id === 'qd-paciente') { QD.paciente = e.target.value; renderQd(); }
     else if (e.target.id === 'qd-indice') { QD.indice = e.target.value; renderQd(); }
