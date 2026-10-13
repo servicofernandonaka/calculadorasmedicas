@@ -19,7 +19,9 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
   5 domínios, efeito da designação ou de aderir), com perguntas em português e o original em inglês, e calculadora de efeito
   (RAR, RRR, RR, OR, NNT/NNH com IC 95%, NNT para o risco basal do paciente, diferença de médias). Conferido no guia oficial
   de 22/08/2019; os testes reproduzem as tabelas 4, 6, 8, 10, 12 e 14 do guia. Coortes, revisões sistemáticas e acurácia
-  diagnóstica serão as próximas fases.
+  diagnóstica serão as próximas fases. Opcional: **pré-preenchimento por IA** (cole o texto do artigo ou envie o PDF/TXT; usa a
+  chave configurada no Assistente IA): a IA sugere cada resposta com a citação do trecho, o site verifica que a citação existe no
+  texto e o médico aceita ou corrige; o julgamento continua sendo do algoritmo determinístico.
 - **Cuidados paliativos**: SPICT-BR, PPS, Índice Prognóstico Paliativo (PPI), ECOG/Karnofsky, ESAS-r (+ CFS).
 - **Material para o paciente** (aba Paciente), em guias por tema, cada um impresso ou salvo em PDF separadamente:
   - **Hipertensão**: o que é, importância do tratamento, alimentação, atividade física, como medir a pressão em casa, hábitos e sinais de alerta.

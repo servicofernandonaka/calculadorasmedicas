@@ -621,7 +621,55 @@ ${eduCatalog}`;
     });
   }
 
-  window.AI = { open, close, send, offlineReply };
+  /* Chamada única (sem conversa nem streaming) para outras abas do site, com a chave e o modelo configurados no painel.
+     Devolve { text, cut }. Em erro, lança Error com .userMessage em português; sem chave, .code === 'SEM_CHAVE'. */
+  async function complete(system, user, opts) {
+    const max = (opts && opts.maxTokens) || 8000;
+    if (!state.key) { const e = new Error('Sem chave de API'); e.code = 'SEM_CHAVE'; e.userMessage = 'Configure uma chave de API no Assistente IA (botão ✨, depois ⚙️) para usar esta função.'; throw e; }
+    try {
+      if (state.provider === 'anthropic') {
+        const Anthropic = await loadSdk();
+        const client = new Anthropic({ apiKey: state.key, dangerouslyAllowBrowser: true });
+        const cfg = MODELS[state.model] || {};
+        const params = { model: state.model, max_tokens: max, system, messages: [{ role: 'user', content: user }] };
+        if (cfg.effort) params.output_config = { effort: 'medium' };
+        const stream = cfg.fallbacks
+          ? client.beta.messages.stream({ ...params, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' })
+          : client.messages.stream(params);
+        const fin = await stream.finalMessage();
+        if (fin.stop_reason === 'refusal') throw new HttpError(400, 'A IA recusou a solicitação.');
+        return { text: fin.content.filter((b) => b.type === 'text').map((b) => b.text).join(''), cut: fin.stop_reason === 'max_tokens' };
+      }
+      if (state.provider === 'gemini') {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(state.model)}:generateContent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': state.key },
+          body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: user }] }], generationConfig: { maxOutputTokens: max } }),
+        });
+        await failIfBad(res);
+        const j = await res.json();
+        const c = j.candidates && j.candidates[0];
+        if (!c) throw new HttpError(400, 'A IA não devolveu resposta.');
+        return { text: ((c.content && c.content.parts) || []).filter((x) => !x.thought).map((x) => x.text || '').join(''), cut: c.finishReason === 'MAX_TOKENS' };
+      }
+      const cfg = PROVIDERS[state.provider];
+      const res = await fetch(cfg.url, {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json', Authorization: `Bearer ${state.key}` }, cfg.headers),
+        body: JSON.stringify({ model: state.model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+      });
+      await failIfBad(res);
+      const j = await res.json();
+      const c = j.choices && j.choices[0];
+      if (!c) throw new HttpError(400, 'A IA não devolveu resposta.');
+      return { text: (c.message && c.message.content) || '', cut: c.finish_reason === 'length' };
+    } catch (err) {
+      if (!err.userMessage) err.userMessage = explainError(err, state.sdk);
+      throw err;
+    }
+  }
+
+  window.AI = { open, close, send, offlineReply, complete, temChave: () => !!state.key };
   bind();
   updateMode();
   reset();
