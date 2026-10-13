@@ -43,3 +43,28 @@ test('Contínuo', () => {
   close(r.d, -1, 1e-12); assert.ok(Math.abs(r.g) < Math.abs(r.d));
   assert.ok(E.continuo({ m1: 1, sd1: 1, n1: 1, m0: 1, sd0: 1, n0: 5 }).erro);
 });
+
+test('Acurácia diagnóstica 2x2 (231/27/32/54): conferido à mão', () => {
+  const r = E.acuracia({ tp: 231, fp: 27, fn: 32, tn: 54 });
+  assert.ok(Math.abs(r.sens - 231 / 263) < 1e-12 && Math.abs(r.esp - 54 / 81) < 1e-12);
+  assert.ok(Math.abs(r.sens_ic[0] - 0.8333) < 0.001 && Math.abs(r.sens_ic[1] - 0.9125) < 0.001); // Wilson 231/263
+  assert.ok(Math.abs(r.lrp - 2.6354) < 0.001 && Math.abs(r.lrn - 0.1825) < 0.001);
+  assert.ok(Math.abs(r.lrp_ic[0] - 1.930) < 0.01 && Math.abs(r.lrp_ic[1] - 3.597) < 0.01); // ln SE = 0,1588
+  assert.ok(Math.abs(r.vpp - 231 / 258) < 1e-9 && Math.abs(r.vpn - 54 / 86) < 1e-9);       // prevalência do estudo = VPP/VPN diretos
+  assert.ok(r.prevDoEstudo && r.vpp_ic);
+});
+test('Acurácia: probabilidade pós-teste pelo Bayes e prevalência informada', () => {
+  const r = E.acuracia({ tp: 231, fp: 27, fn: 32, tn: 54, prevalencia: 0.3 });
+  const o = (0.3 / 0.7) * r.lrp; // odds pós-teste = odds pré × RV+
+  assert.ok(Math.abs(r.vpp - o / (1 + o)) < 1e-9);
+  const o2 = (0.3 / 0.7) * r.lrn;
+  assert.ok(Math.abs(r.prob_neg - o2 / (1 + o2)) < 1e-9);
+  assert.ok(!r.prevDoEstudo && !r.vpp_ic);
+});
+test('Acurácia: célula zerada e entradas inválidas', () => {
+  const r = E.acuracia({ tp: 20, fp: 0, fn: 5, tn: 75 });
+  assert.ok(r.avisos.length && isFinite(r.lrp) && r.lrp > 1);
+  assert.ok(E.acuracia({ tp: -1, fp: 0, fn: 5, tn: 75 }).erro);
+  assert.ok(E.acuracia({ tp: 5, fp: 0, fn: 0, tn: 0 }).erro);
+  assert.ok(E.acuracia({ tp: 5, fp: 1, fn: 1, tn: 5, prevalencia: 1.2 }).erro);
+});

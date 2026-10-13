@@ -102,5 +102,33 @@
     }
     return out;
   }
-  return { wilson, newcombe, dicotomico, nnt, nntIndividual, continuo };
+  /* Acurácia diagnóstica a partir da tabela 2x2 (tp, fp, fn, tn). prevalencia (0 a 1, opcional): prevalência de referência
+     para os valores preditivos; se ausente, usa a do estudo (válida só em coorte transversal/consecutiva, não em caso-controle).
+     IC: Wilson para proporções; razões de verossimilhança pelo método do log (Simel 1991 / Altman), com 0,5 em cada célula se alguma for zero. */
+  function acuracia(i) {
+    const { tp, fp, fn, tn } = i;
+    if (![tp, fp, fn, tn].every(inteiro)) return { erro: 'Informe inteiros não negativos nas quatro células.' };
+    const doentes = tp + fn, sadios = fp + tn, n = doentes + sadios;
+    if (doentes === 0 || sadios === 0) return { erro: 'É preciso haver pacientes com e sem a condição (por padrão de referência).' };
+    const sens = tp / doentes, esp = tn / sadios;
+    const out = { n, doentes, sadios, sens, sens_ic: wilson(tp, doentes), esp, esp_ic: wilson(tn, sadios), avisos: [], prevEstudo: doentes / n };
+    const z = [tp, fp, fn, tn].some((x) => x === 0), c = z ? 0.5 : 0;
+    const a = tp + c, b = fp + c, d = fn + c, e = tn + c, D = a + d, S = b + e;
+    if (z) out.avisos.push('Há célula zerada: razões de verossimilhança calculadas com 0,5 somado a cada célula.');
+    const lrp = (a / D) / (b / S), lrn = (d / D) / (e / S);
+    const sep = Math.sqrt(1 / a - 1 / D + 1 / b - 1 / S), sen = Math.sqrt(1 / d - 1 / D + 1 / e - 1 / S);
+    out.lrp = lrp; out.lrp_ic = [lrp * Math.exp(-Z * sep), lrp * Math.exp(Z * sep)];
+    out.lrn = lrn; out.lrn_ic = [lrn * Math.exp(-Z * sen), lrn * Math.exp(Z * sen)];
+    out.dor = (lrp / lrn);
+    const usarEstudo = !(typeof i.prevalencia === 'number' && isFinite(i.prevalencia));
+    if (!usarEstudo && !(i.prevalencia > 0 && i.prevalencia < 1)) return Object.assign(out, { erro: 'A prevalência deve estar entre 0% e 100% (exclusive).' });
+    const p = usarEstudo ? out.prevEstudo : i.prevalencia;
+    out.prev = p; out.prevDoEstudo = usarEstudo;
+    out.vpp = sens * p / (sens * p + (1 - esp) * (1 - p));
+    out.vpn = esp * (1 - p) / (esp * (1 - p) + (1 - sens) * p);
+    if (usarEstudo && tp + fp > 0 && fn + tn > 0) { out.vpp_ic = wilson(tp, tp + fp); out.vpn_ic = wilson(tn, fn + tn); }
+    out.prob_pos = out.vpp; out.prob_neg = 1 - out.vpn;
+    return out;
+  }
+  return { wilson, newcombe, dicotomico, nnt, nntIndividual, continuo, acuracia };
 });

@@ -265,7 +265,7 @@ const OPT_CURTO = { Y: 'Sim', PY: 'Prov. sim', PN: 'Prov. não', N: 'Não', NI: 
 
 const st = { sub: 'rob', rob: { efeito: 'assignment', estudo: '', desfecho: '', resp: { D1: {}, D2: {}, D2b: {}, D3: {}, D4: {}, D5: {} } },
   ia: { artigo: '', sug: {}, origem: {}, desfecho: '', ocupado: false, msg: '', avisos: [], arquivo: '' },
-  ef: { tipo: 'dic', favoravel: false, ev1: '', n1: '', ev0: '', n0: '', m1: '', sd1: '', n1c: '', m0: '', sd0: '', n0c: '', basal: '' } };
+  ef: { tipo: 'dic', favoravel: false, ev1: '', n1: '', ev0: '', n0: '', m1: '', sd1: '', n1c: '', m0: '', sd0: '', n0c: '', basal: '', tp: '', fp: '', fn: '', tn: '', prev: '' } };
 let ultimo = '';
 
 /* ---------- RoB 2 ---------- */
@@ -460,7 +460,7 @@ function buildEfeito() {
   const e = st.ef;
   const f = (id, rot, v, extra) => `<label class="lc-field"><span>${rot}</span><input id="${id}" type="text" inputmode="decimal" autocomplete="off" value="${esc(v)}" ${extra || ''}></label>`;
   $('#lc-ef-form').innerHTML =
-    `<label class="lc-field"><span>Tipo de desfecho</span><select id="lc-ef-tipo"><option value="dic"${e.tipo === 'dic' ? ' selected' : ''}>Dicotômico (evento sim ou não)</option><option value="con"${e.tipo === 'con' ? ' selected' : ''}>Contínuo (média e desvio padrão)</option></select></label>
+    `<label class="lc-field"><span>Tipo de desfecho</span><select id="lc-ef-tipo"><option value="dic"${e.tipo === 'dic' ? ' selected' : ''}>Dicotômico (evento sim ou não)</option><option value="con"${e.tipo === 'con' ? ' selected' : ''}>Contínuo (média e desvio padrão)</option><option value="diag"${e.tipo === 'diag' ? ' selected' : ''}>Acurácia de teste diagnóstico (tabela 2x2)</option></select></label>
      <div id="lc-ef-dic"${e.tipo === 'dic' ? '' : ' hidden'}>
       <p class="lc-intro">Informe os números do artigo. O padrão considera evento desfavorável (morte, infarto, internação).</p>
       <label class="lc-check"><input type="checkbox" id="lc-fav"${e.favoravel ? ' checked' : ''}><span>O evento é favorável (ex.: cura)<small>Os cálculos passam a ser feitos sobre quem não teve o evento, para manter a leitura de risco.</small></span></label>
@@ -472,6 +472,12 @@ function buildEfeito() {
       <p class="lc-sub">Grupo intervenção</p><div class="lc-row3">${f('lc-m1', 'Média', e.m1)}${f('lc-sd1', 'Desvio padrão', e.sd1)}${f('lc-n1c', 'n', e.n1c)}</div>
       <p class="lc-sub">Grupo controle</p><div class="lc-row3">${f('lc-m0', 'Média', e.m0)}${f('lc-sd0', 'Desvio padrão', e.sd0)}${f('lc-n0c', 'n', e.n0c)}</div>
      </div>
+     <div id="lc-ef-diag"${e.tipo === 'diag' ? '' : ' hidden'}>
+      <p class="lc-intro">Informe a tabela 2x2 do artigo: teste índice positivo ou negativo, contra o padrão de referência.</p>
+      <p class="lc-sub">Com a condição (padrão de referência positivo)</p><div class="lc-row2">${f('lc-tp', 'Teste positivo (VP)', e.tp)}${f('lc-fn', 'Teste negativo (FN)', e.fn)}</div>
+      <p class="lc-sub">Sem a condição (padrão de referência negativo)</p><div class="lc-row2">${f('lc-fp', 'Teste positivo (FP)', e.fp)}${f('lc-tn', 'Teste negativo (VN)', e.tn)}</div>
+      <p class="lc-sub">Seu cenário (opcional)</p>${f('lc-prev', 'Probabilidade pré-teste (prevalência) no seu cenário, em %', e.prev)}
+     </div>
      <div class="lc-actions"><button id="lc-ef-limpar" class="btn btn-ghost" type="button">Limpar</button><button id="lc-ef-copiar" class="btn" type="button">Copiar resumo</button></div>`;
 }
 const ic = (a, d, fmt) => '(' + (fmt || nf)(a[0], d) + ' a ' + (fmt || nf)(a[1], d) + ')';
@@ -479,7 +485,26 @@ function tile(n, v, sub) { return `<div class="lc-tile"><span class="lc-t-n">${n
 function renderEfeito() {
   const e = st.ef, el = $('#lc-ef-res');
   const L = ['Cálculo de efeito (apoio à decisão; confira com o artigo)'];
-  if (e.tipo === 'dic') {
+  if (e.tipo === 'diag') {
+    const v = [e.tp, e.fp, e.fn, e.tn].map(num);
+    if (v.some((x) => isNaN(x))) { el.innerHTML = '<div class="lc-card lc-empty">Informe as quatro células da tabela 2x2.</div>'; ultimo = ''; return; }
+    const pv = e.prev === '' ? null : num(e.prev) / 100;
+    const r = Efeito.acuracia({ tp: v[0], fp: v[1], fn: v[2], tn: v[3], prevalencia: pv == null ? undefined : pv });
+    if (r.erro) { el.innerHTML = `<div class="lc-card lc-warn"><b>Entrada inválida</b> ${esc(r.erro)}</div>`; ultimo = ''; return; }
+    const pc = (a) => ic(a.map((x) => x * 100), 1, (x, d) => nf(x, d) + '%');
+    const t = [tile('Sensibilidade', pct(r.sens), 'IC 95% ' + pc(r.sens_ic) + ' · Wilson'), tile('Especificidade', pct(r.esp), 'IC 95% ' + pc(r.esp_ic) + ' · Wilson'),
+      tile('Razão de verossimilhança positiva (RV+)', nf(r.lrp, 2), 'IC 95% ' + ic(r.lrp_ic, 2)), tile('Razão de verossimilhança negativa (RV−)', nf(r.lrn, 2), 'IC 95% ' + ic(r.lrn_ic, 2)),
+      tile('Valor preditivo positivo', pct(r.vpp), r.vpp_ic ? 'IC 95% ' + pc(r.vpp_ic) + ' · prevalência do estudo ' + pct(r.prev) : 'prevalência ' + pct(r.prev, 1)),
+      tile('Valor preditivo negativo', pct(r.vpn), r.vpn_ic ? 'IC 95% ' + pc(r.vpn_ic) + ' · prevalência do estudo ' + pct(r.prev) : 'prevalência ' + pct(r.prev, 1))];
+    const pos = `<div class="lc-card"><h3 class="lc-h">Probabilidade da condição depois do teste (pré-teste ${pct(r.prev, 1)}${r.prevDoEstudo ? ', a do estudo' : ''})</h3><p>Teste positivo: <b>${pct(r.prob_pos)}</b>. Teste negativo: <b>${pct(r.prob_neg)}</b>.</p></div>`;
+    el.innerHTML = `<div class="lc-tiles">${t.join('')}</div>${r.avisos.map((a) => `<p class="lc-warn"><b>Atenção</b> ${esc(a)}</p>`).join('')}${pos}
+      <p class="lc-note">${r.prevDoEstudo ? 'Os valores preditivos usam a prevalência do estudo, que só é confiável se os pacientes foram incluídos de forma consecutiva ou aleatória (não em caso-controle). Para o seu cenário, informe a probabilidade pré-teste. ' : 'Valores preditivos recalculados para a prevalência informada (teorema de Bayes). '}Sensibilidade e especificidade variam com o ponto de corte e com o espectro de pacientes do estudo. Avalie também o risco de viés (QUADAS-2).</p>`;
+    L.push(`Tabela 2x2: VP ${v[0]}, FP ${v[1]}, FN ${v[2]}, VN ${v[3]}`);
+    L.push(`Sensibilidade ${pct(r.sens)} IC95% ${pc(r.sens_ic)}; especificidade ${pct(r.esp)} IC95% ${pc(r.esp_ic)}`);
+    L.push(`RV+ ${nf(r.lrp, 2)} IC95% ${ic(r.lrp_ic, 2)}; RV− ${nf(r.lrn, 2)} IC95% ${ic(r.lrn_ic, 2)}`);
+    L.push(`Pré-teste ${pct(r.prev, 1)}${r.prevDoEstudo ? ' (do estudo)' : ''}: probabilidade pós-teste positivo ${pct(r.prob_pos)}, negativo ${pct(r.prob_neg)}`);
+    r.avisos.forEach((a) => L.push('Atenção: ' + a));
+  } else if (e.tipo === 'dic') {
     const v = [e.ev1, e.n1, e.ev0, e.n0].map(num);
     if (v.some((x) => isNaN(x))) { el.innerHTML = '<div class="lc-card lc-empty">Informe eventos e totais dos dois grupos.</div>'; ultimo = ''; return; }
     let [ev1, n1, ev0, n0] = v;
@@ -549,7 +574,7 @@ function init() {
     const b = e.target.closest('.lc-seg button:not([data-ext])');
     if (b) { st.sub = b.dataset.sub; mostrarSub(); return; }
     if (e.target.closest('#lc-rob-limpar')) { st.rob.resp = { D1: {}, D2: {}, D2b: {}, D3: {}, D4: {}, D5: {} }; st.rob.estudo = ''; st.rob.desfecho = ''; st.ia = { artigo: '', sug: {}, origem: {}, desfecho: '', ocupado: false, msg: '', avisos: [], arquivo: '' }; buildRob(); renderRob(); return; }
-    if (e.target.closest('#lc-ef-limpar')) { Object.assign(st.ef, { ev1: '', n1: '', ev0: '', n0: '', m1: '', sd1: '', n1c: '', m0: '', sd0: '', n0c: '', basal: '' }); buildEfeito(); renderEfeito(); return; }
+    if (e.target.closest('#lc-ef-limpar')) { Object.assign(st.ef, { ev1: '', n1: '', ev0: '', n0: '', m1: '', sd1: '', n1c: '', m0: '', sd0: '', n0c: '', basal: '', tp: '', fp: '', fn: '', tn: '', prev: '' }); buildEfeito(); renderEfeito(); return; }
     const acc = e.target.closest('.lc-acc'); if (acc) { aplicarSug(acc.dataset.acc); renderRob(); return; }
     if (e.target.closest('#lc-ia-run')) { rodarIA(); return; }
     if (e.target.closest('#lc-ia-todas')) { const n = aceitarCaminho(); statusIa(n ? n + ' sugestão(ões) aceita(s). Revise cada resposta antes de usar o julgamento.' : 'Nenhuma sugestão nova para o caminho atual.'); renderRob(); return; }
@@ -573,10 +598,10 @@ function init() {
       if (f) { statusIa('Lendo ' + f.name + '…'); lerArquivo(f).then((txt) => { st.ia.artigo = txt; $('#lc-art').value = txt; statusIa(nf(txt.length, 0) + ' caracteres lidos de ' + f.name + '. Confira o texto e clique em Sugerir respostas.'); }, (er) => statusIa(er.message)); }
       return;
     }
-    if (t.id === 'lc-ef-tipo') { st.ef.tipo = t.value; $('#lc-ef-dic').hidden = t.value !== 'dic'; $('#lc-ef-con').hidden = t.value !== 'con'; renderEfeito(); }
+    if (t.id === 'lc-ef-tipo') { st.ef.tipo = t.value; $('#lc-ef-dic').hidden = t.value !== 'dic'; $('#lc-ef-con').hidden = t.value !== 'con'; $('#lc-ef-diag').hidden = t.value !== 'diag'; renderEfeito(); }
     else if (t.id === 'lc-fav') { st.ef.favoravel = t.checked; renderEfeito(); }
   });
-  const mapa = { 'lc-ev1': 'ev1', 'lc-n1': 'n1', 'lc-ev0': 'ev0', 'lc-n0': 'n0', 'lc-basal': 'basal', 'lc-m1': 'm1', 'lc-sd1': 'sd1', 'lc-n1c': 'n1c', 'lc-m0': 'm0', 'lc-sd0': 'sd0', 'lc-n0c': 'n0c' };
+  const mapa = { 'lc-ev1': 'ev1', 'lc-n1': 'n1', 'lc-ev0': 'ev0', 'lc-n0': 'n0', 'lc-basal': 'basal', 'lc-m1': 'm1', 'lc-sd1': 'sd1', 'lc-n1c': 'n1c', 'lc-m0': 'm0', 'lc-sd0': 'sd0', 'lc-n0c': 'n0c', 'lc-tp': 'tp', 'lc-fp': 'fp', 'lc-fn': 'fn', 'lc-tn': 'tn', 'lc-prev': 'prev' };
   root.addEventListener('input', (e) => {
     const t = e.target;
     if (mapa[t.id]) { st.ef[mapa[t.id]] = t.value; renderEfeito(); }
