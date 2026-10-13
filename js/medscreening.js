@@ -1017,7 +1017,7 @@ const GRUPOS=[
  {t:'Doenças e condições',f:[
   ['dm','Diabetes mellitus'],['has','Hipertensão arterial'],['dcv','Doença cardiovascular (infarto, AVC, DAP)'],
   ['sobrepeso_obesidade','Sobrepeso ou obesidade','IMC ≥25 kg/m²'],['obesidade','Obesidade','IMC ≥30 kg/m²; marca também sobrepeso'],
-  ['cardiopatia','Cardiopatia crônica'],['pneumopatia','Pneumopatia crônica'],['nefropatia','Nefropatia crônica'],['hepatopatia','Hepatopatia crônica'],
+  ['cardiopatia','Cardiopatia crônica','ex.: insuficiência cardíaca, doença coronariana, valvopatia, cardiomiopatia, arritmia crônica'],['pneumopatia','Pneumopatia crônica','ex.: DPOC, asma, bronquiectasia, fibrose pulmonar, doença pulmonar intersticial'],['nefropatia','Nefropatia crônica','ex.: doença renal crônica, nefropatia diabética ou hipertensiva, glomerulopatias, doença renal policística'],['hepatopatia','Hepatopatia crônica','ex.: cirrose, hepatite B ou C crônica, hepatopatia alcoólica, hepatite autoimune'],
   ['imunossupressao','Imunossupressão ou HIV'],['fragilidade','Fragilidade'],['tabagismo','Tabagismo']]},
  {t:'Risco metabólico (diabetes e lípides)',f:[
   ['prediabetes','Pré-diabetes'],['um_exame_alterado','Apenas um exame com critério de diabetes','aguardando confirmação'],
@@ -1052,12 +1052,20 @@ function intervaloTxt(i){
 }
 const fmtData=(iso)=>iso.split('-').reverse().join('/');
 
+const FAMILIAR=new Set(['dm_familiar_1grau','hist_fam_hipercolesterolemia_ou_dcv_precoce','hist_fam_prostata']);
+const OUTROS=new Set(['raca_negra']);
+function itemHtml([id,rot,a,b]){const sx=(a==='F'||a==='M')?a:null;const dica=sx?b:a;
+  return `<label class="ms-check" data-sx="${sx||''}"><input type="checkbox" value="${id}"><span>${esc(rot)}${dica?`<small>${esc(dica)}</small>`:''}</span></label>`;}
+function grupoHtml(g){
+  const fam=g.f.filter(x=>FAMILIAR.has(x[0])),out=g.f.filter(x=>OUTROS.has(x[0])),pes=g.f.filter(x=>!FAMILIAR.has(x[0])&&!OUTROS.has(x[0]));
+  if(!fam.length&&!out.length)return pes.map(itemHtml).join('');
+  const sub=(t,l)=>l.length?`<div data-sub><p class="ms-sub-h">${t}</p><div class="ms-checks">${l.map(itemHtml).join('')}</div></div>`:'';
+  return sub('Histórico pessoal',pes)+sub('Histórico familiar',fam)+sub('Outros fatores de risco',out);
+}
 function montarForm(){
   const el=$('#ms-grupos');
   el.innerHTML=GRUPOS.map((g,gi)=>`<details class="ms-grp" data-g="${gi}"${gi===0?' open':''}><summary><span>${esc(g.t)}</span><span class="ms-cnt" data-cnt="${gi}"></span></summary><div class="ms-checks">`+
-   g.f.map(([id,rot,a,b])=>{const sx=(a==='F'||a==='M')?a:null;const dica=sx?b:a;
-    return `<label class="ms-check" data-sx="${sx||''}"><input type="checkbox" value="${id}"><span>${esc(rot)}${dica?`<small>${esc(dica)}</small>`:''}</span></label>`;}).join('')+
-   `</div></details>`).join('');
+   grupoHtml(g)+`</div></details>`).join('');
   el.addEventListener('change',(ev)=>{
     const c=ev.target.closest('input[type=checkbox]');if(!c)return;
     c.checked?estado.fatores.add(c.value):estado.fatores.delete(c.value);
@@ -1071,6 +1079,7 @@ function sync(){
     if(!vis&&estado.fatores.has(inp.value))estado.fatores.delete(inp.value);
     inp.checked=estado.fatores.has(inp.value);
   });
+  document.querySelectorAll('#ms-grupos [data-sub]').forEach(b=>{b.hidden=![...b.querySelectorAll('.ms-check')].some(l=>!l.hidden);});
   document.querySelectorAll('#ms-grupos .ms-grp').forEach(f=>{
     f.hidden=![...f.querySelectorAll('.ms-check')].some(l=>!l.hidden);
     const n=[...f.querySelectorAll('input:checked')].length;
