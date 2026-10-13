@@ -7,12 +7,12 @@ const $ = (s, r) => (r || document).querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const META = {
-  quadas: { versao: '0.1.0', atualizado: '2026-10-13', doc: 'formulário oficial do QUADAS-2 (3 p., fases 1 a 3)', doi: '10.7326/0003-4819-155-8-201110180-00009', nome: 'Whiting et al., Ann Intern Med 2011;155:529-536',
-    pend: ['O formulário conferido traz as perguntas de sinalização e as categorias de julgamento (baixo, alto, incerto), mas não traz a regra que transforma as respostas em julgamento de domínio. Por isso a ferramenta não calcula o julgamento: você decide a partir das respostas. Pendente: conferir no artigo original (Whiting 2011) a orientação para esse passo.',
-      'A referência do artigo (Whiting 2011) é a citação padrão do instrumento e não consta no formulário conferido; confira antes de citar.',
-      'O QUADAS-2 não tem julgamento global por estudo: o resultado é por domínio, como no formulário oficial.',
+  quadas: { versao: '0.1.0', atualizado: '2026-10-13', doc: 'formulário oficial do QUADAS-2 (3 p.) e artigo original (10 p.)', doi: '10.7326/0003-4819-155-8-201110180-00009', nome: 'Whiting et al., Ann Intern Med 2011;155:529-536',
+    pend: ['Regras do artigo (fase 4): se todas as perguntas de sinalização de um domínio forem "sim", o risco de viés pode ser julgado baixo; se alguma for "não", há potencial de viés e o julgamento deve seguir as orientações específicas da sua revisão (fase 2, "tailoring"), que a ferramenta não conhece. Por isso a ferramenta apenas sugere e quem julga é você. "Incerto" é só para quando faltam dados.',
+      'O artigo permite o julgamento global do estudo (baixo em todos os domínios = baixo risco; alto ou incerto em um ou mais = "em risco de viés"), mas desaconselha escores numéricos. A tela mostra apenas isso, sem nota.',
+      'O artigo não diz como julgar quando as respostas misturam "sim" e "incerto" sem nenhum "não": a ferramenta não faz sugestão nesse caso.',
       'Perguntas em português são tradução própria, ainda não revisada. O original em inglês está disponível em cada pergunta.',
-      'Se houver mais de um teste índice, preencha uma avaliação para cada teste (orientação do formulário). Ainda não há calculadora de sensibilidade, especificidade e razões de verossimilhança nesta aba.'] },
+      'Se houver mais de um teste índice, preencha uma avaliação para cada teste. Ainda não há calculadora de sensibilidade, especificidade e razões de verossimilhança nesta aba.'] },
   robinsi: { versao: '0.1.0', atualizado: '2026-10-13', doc: 'ROBINS-I detailed guidance, atualizado em 20 de outubro de 2016 (PDF oficial, 53 p.)', doi: '10.1136/bmj.i4919', nome: 'Sterne et al., BMJ 2016;355:i4919',
     pend: ['Julgamentos por domínio: o guia oficial os define por critérios descritivos (Tabelas 5 a 11), não por algoritmo das respostas. Por isso a ferramenta mostra o caminho de perguntas e os critérios, e quem decide é o avaliador. Só o julgamento global (Tabela 2) é calculado.',
       'Perguntas e critérios em português são tradução própria, ainda não revisada por tradutor oficial. O texto original em inglês está disponível em cada pergunta e em cada critério.',
@@ -197,7 +197,7 @@ function domQd(d, i) {
   const rad = (nome, attr, vals, rot, cur) => vals.map((v) => `<label class="lc-opt"><input type="radio" name="${nome}" ${attr} value="${v}"${cur === v ? ' checked' : ''}><span>${esc(rot[v])}</span></label>`).join('');
   const perg = d.perguntas.map((q) => `<fieldset class="lc-q"><legend><span class="lc-n">${q.id}</span> ${esc(q.pt)}</legend><div class="lc-opts" role="radiogroup">${rad('qd-' + q.id, 'data-qq="' + q.id + '"', Quadas2.RESP, Quadas2.RESP_ROTULO, QD.resp[q.id])}</div><details class="lc-dica"><summary>Pergunta original (inglês)</summary><p lang="en">${esc(q.en)}</p></details></fieldset>`).join('');
   const nivs = ['baixo', 'alto', 'incerto'];
-  const jr = `<fieldset class="lc-q lc-efeito"><legend>Risco de viés: ${esc(d.risco)}</legend><div class="lc-opts" role="radiogroup">${rad('qd-jr-' + d.id, 'data-qjr="' + d.id + '"', nivs, Quadas2.NIVEL_ROTULO, QD.jr[d.id])}</div><details class="lc-dica"><summary>Original (inglês)</summary><p lang="en">${esc(d.riscoEn)}</p></details></fieldset>`;
+  const jr = `<fieldset class="lc-q lc-efeito"><legend>Risco de viés: ${esc(d.risco)}</legend><div class="lc-opts" role="radiogroup">${rad('qd-jr-' + d.id, 'data-qjr="' + d.id + '"', nivs, Quadas2.NIVEL_ROTULO, QD.jr[d.id])}</div><p class="lc-cond" data-qsug="${d.id}" hidden></p><details class="lc-dica"><summary>Original (inglês)</summary><p lang="en">${esc(d.riscoEn)}</p></details></fieldset>`;
   const ja = d.aplic ? `<fieldset class="lc-q lc-efeito"><legend>Preocupação com a aplicabilidade: ${esc(d.aplic)}</legend><div class="lc-opts" role="radiogroup">${rad('qd-ja-' + d.id, 'data-qja="' + d.id + '"', nivs, Quadas2.NIVEL_ROTULO, QD.ja[d.id])}</div><details class="lc-dica"><summary>Original (inglês)</summary><p lang="en">${esc(d.aplicEn)}</p></details></fieldset>` : '';
   return `<details class="lc-grp"${i === 0 ? ' open' : ''}><summary><span>${i + 1}. ${esc(d.titulo)}</span><span class="lc-bd" data-qbd="${d.id}"></span></summary><p class="lc-cond">${esc(d.descR)} (anote no artigo ou nas suas anotações).</p>${perg}${jr}${ja}</details>`;
 }
@@ -217,14 +217,19 @@ function renderQd() {
   ds.forEach((d) => {
     const j = QD.jr[d.id], b = document.querySelector(`#lc-qd-form [data-qbd="${d.id}"]`);
     b.textContent = j ? QICON[j] + ' ' + Quadas2.NIVEL_ROTULO[j] : ''; b.className = 'lc-bd' + (j ? ' lc-' + QCOR[j] : '');
+    const sg = Quadas2.sugestaoRisco(d.id, QD.resp), se = document.querySelector(`#lc-qd-form [data-qsug="${d.id}"]`);
+    se.hidden = !sg; se.textContent = sg === 'baixo' ? 'Segundo o artigo: todas as respostas são "sim", então o risco de viés pode ser julgado baixo.' : sg === 'potencial' ? 'Segundo o artigo: há resposta "não", então existe potencial de viés. Julgue com as orientações específicas da sua revisão.' : '';
   });
   const el = $('#lc-qd-res');
   const feitos = ds.filter((d) => QD.jr[d.id] || QD.ja[d.id]).length;
-  if (!feitos) { el.innerHTML = '<div class="lc-card lc-empty">Escolha o risco de viés e a aplicabilidade de cada domínio. O formulário oficial não tem julgamento global: o resultado é por domínio.</div>'; ultimo.qd = ''; return; }
+  if (!feitos) { el.innerHTML = '<div class="lc-card lc-empty">Escolha o risco de viés e a aplicabilidade de cada domínio. O julgamento global segue a regra do artigo.</div>'; ultimo.qd = ''; return; }
   const cel = (v) => v ? `<span class="lc-dom lc-${QCOR[v]}" style="display:inline-block;padding:2px 8px"><span class="lc-di">${QICON[v]}</span> ${esc(Quadas2.NIVEL_ROTULO[v])}</span>` : '<span class="lc-note">…</span>';
   const linhas = ds.map((d, i) => `<tr><th scope="row" style="text-align:left;padding:6px 8px 6px 0">${i + 1}. ${esc(d.titulo)}</th><td style="padding:6px 8px">${cel(QD.jr[d.id])}</td><td style="padding:6px 0">${d.aplic ? cel(QD.ja[d.id]) : '<span class="lc-note">não se aplica</span>'}</td></tr>`).join('');
   const s = Quadas2.resumo(QD.jr, QD.ja);
-  el.innerHTML = `<div class="lc-card lc-glob"><p class="lc-gl">Resultado por domínio (sem julgamento global)</p><h3>Risco de viés: ${s.risco.baixo} baixo · ${s.risco.alto} alto · ${s.risco.incerto} incerto${s.risco.faltam ? ' · ' + s.risco.faltam + ' sem julgamento' : ''}</h3><p>Aplicabilidade: ${s.aplic.baixo} baixa preocupação · ${s.aplic.alto} alta · ${s.aplic.incerto} incerta${s.aplic.faltam ? ' · ' + s.aplic.faltam + ' sem julgamento' : ''}.</p></div>`
+  const gr = Quadas2.globalEstudo(QD.jr), ga = Quadas2.globalEstudo(QD.ja, 'aplic');
+  const gtxt = (g, b, r) => g === 'baixo' ? b : g === 'em_risco' ? r : 'incompleto';
+  const GR = gtxt(gr, 'Baixo risco de viés', 'Em risco de viés'), GA = gtxt(ga, 'Baixa preocupação de aplicabilidade', 'Com preocupação de aplicabilidade');
+  el.innerHTML = `<div class="lc-card lc-glob lc-${gr === 'baixo' ? 'baixo' : gr === 'em_risco' ? 'alto' : 'pend'}"><p class="lc-gl">Julgamento global do estudo (artigo, sem escore)</p><h3>${esc(GR)}</h3><p>${esc(GA)}.</p><p class="lc-note">Regra do artigo: baixo em todos os domínios = baixo; alto ou incerto em um ou mais = em risco / com preocupação.</p><p class="lc-note">Risco de viés: ${s.risco.baixo} baixo · ${s.risco.alto} alto · ${s.risco.incerto} incerto${s.risco.faltam ? ' · ' + s.risco.faltam + ' sem julgamento' : ''}. Aplicabilidade: ${s.aplic.baixo} baixa · ${s.aplic.alto} alta · ${s.aplic.incerto} incerta${s.aplic.faltam ? ' · ' + s.aplic.faltam + ' sem julgamento' : ''}.</p></div>`
     + `<div class="lc-card"><h3 class="lc-h">Por domínio</h3><table style="border-collapse:collapse;width:100%"><thead><tr><th></th><th scope="col" style="text-align:left;padding:4px 8px">Risco de viés</th><th scope="col" style="text-align:left;padding:4px 0">Aplicabilidade (preocupação)</th></tr></thead><tbody>${linhas}</tbody></table><p class="lc-note">Julgamentos escolhidos pelo avaliador a partir das respostas às perguntas de sinalização.</p></div>`;
   const L = ['Avaliação de estudo de acurácia diagnóstica (QUADAS-2): apoio à decisão; confirme na leitura do artigo'];
   if (QD.estudo) L.push('Estudo: ' + QD.estudo);
@@ -232,7 +237,7 @@ function renderQd() {
   if (QD.indice) L.push('Teste índice: ' + QD.indice);
   if (QD.ref) L.push('Padrão de referência: ' + QD.ref);
   ds.forEach((d, i) => L.push(`${i + 1}. ${d.titulo}: risco de viés ${QD.jr[d.id] ? Quadas2.NIVEL_ROTULO[QD.jr[d.id]].toLowerCase() : 'sem julgamento'}` + (d.aplic ? `; aplicabilidade ${QD.ja[d.id] ? Quadas2.NIVEL_ROTULO[QD.ja[d.id]].toLowerCase() : 'sem julgamento'}` : '')));
-  L.push('Sem julgamento global (formulário oficial). Fonte: ' + META.quadas.nome);
+  L.push('Global: ' + GR + '; ' + GA.toLowerCase() + ' (regra do artigo, sem escore). Fonte: ' + META.quadas.nome);
   ultimo.qd = L.join('\n');
 }
 
@@ -260,7 +265,7 @@ function init() {
   });
   root.addEventListener('change', (e) => {
     const t = e.target;
-    if (t.matches('input[data-qq]')) { QD.resp[t.dataset.qq] = t.value; return; }
+    if (t.matches('input[data-qq]')) { QD.resp[t.dataset.qq] = t.value; renderQd(); return; }
     if (t.matches('input[data-qjr]')) { QD.jr[t.dataset.qjr] = t.value; renderQd(); return; }
     if (t.matches('input[data-qja]')) { QD.ja[t.dataset.qja] = t.value; renderQd(); return; }
     if (t.matches('input[data-rq]')) { R.resp[t.dataset.rq] = t.value; renderRbi(); return; }

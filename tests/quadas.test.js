@@ -14,3 +14,20 @@ test('Resumo apenas conta julgamentos', () => {
   assert.deepEqual(s.risco, { baixo: 1, alto: 1, incerto: 1, faltam: 1 });
   assert.deepEqual(s.aplic, { baixo: 1, alto: 0, incerto: 0, faltam: 2 });
 });
+
+test('Sugestão por domínio (artigo, fase 4)', () => {
+  assert.equal(Q.sugestaoRisco('D1', { '1.1': 'Y', '1.2': 'Y', '1.3': 'Y' }), 'baixo');
+  assert.equal(Q.sugestaoRisco('D1', { '1.1': 'Y', '1.2': 'N', '1.3': 'Y' }), 'potencial');
+  assert.equal(Q.sugestaoRisco('D1', { '1.1': 'Y', '1.2': 'U', '1.3': 'Y' }), null);
+  assert.equal(Q.sugestaoRisco('D1', { '1.1': 'Y', '1.2': 'Y' }), null);
+  assert.equal(Q.sugestaoRisco('D4', { '4.1': 'Y', '4.2': 'Y', '4.3': 'Y', '4.4': 'Y' }), 'baixo');
+  assert.equal(Q.sugestaoRisco('D4', { '4.1': 'Y', '4.2': 'Y', '4.3': 'Y', '4.4': 'N' }), 'potencial');
+});
+test('Global do estudo: baixo em todos = baixo; alto ou incerto em 1 ou mais = em risco', () => {
+  assert.equal(Q.globalEstudo({ D1: 'baixo', D2: 'baixo', D3: 'baixo', D4: 'baixo' }), 'baixo');
+  assert.equal(Q.globalEstudo({ D1: 'baixo', D2: 'alto', D3: 'baixo', D4: 'baixo' }), 'em_risco');
+  assert.equal(Q.globalEstudo({ D1: 'baixo', D2: 'baixo', D3: 'baixo', D4: 'incerto' }), 'em_risco');
+  assert.equal(Q.globalEstudo({ D1: 'baixo', D2: 'baixo', D3: 'baixo' }), null);
+  assert.equal(Q.globalEstudo({ D1: 'baixo', D2: 'baixo', D3: 'baixo' }, 'aplic'), 'baixo');
+  assert.equal(Q.globalEstudo({ D1: 'baixo', D2: 'alto', D3: 'baixo' }, 'aplic'), 'em_risco');
+});
