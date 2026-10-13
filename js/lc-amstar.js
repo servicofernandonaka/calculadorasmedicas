@@ -1,7 +1,7 @@
 /* AMSTAR 2 (Shea et al., BMJ 2017;358:j4008) para revisões sistemáticas de intervenções.
-   Fonte conferida: checklist oficial "AMSTAR 2: a critical appraisal tool for systematic reviews..." (4 p.) e resumo do NCCMT (5 p.).
-   O instrumento "não se destina a ser pontuado". Os documentos anexados NÃO trazem a regra de confiança geral
-   (domínios críticos); por isso ela não está implementada (ver pendências). Cada item é derivado dos critérios marcados. */
+   Fontes conferidas: checklist oficial (4 p.), resumo do NCCMT (5 p.) e o artigo original (BMJ 2017;358:j4008, Caixas 1 e 2).
+   O instrumento não deve ser pontuado ("strongly recommend that individual item ratings are not combined to create an overall score").
+   A Caixa 2 propõe, em caráter consultivo, uma classificação de confiança a partir de falhas em itens críticos (2, 4, 7, 9, 11, 13, 15). */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.Amstar2 = factory();
@@ -101,5 +101,30 @@
       return { n: it.n, resultado: nivel(it, m) };
     });
   }
-  return { ITENS, ROTULO, avaliar, nivel };
+  /* Caixas 1 e 2 do artigo. Itens críticos: 2, 4, 7, 9, 11, 13, 15.
+     O artigo não define o que conta como "falha"/"fraqueza": aqui "Não" conta; "Sim parcial" só conta se opts.parcialFalha.
+     Itens "Sem meta-análise" ou sem resposta não contam. Em itens por desenho (9 e 11), basta uma parte com falha. */
+  const CRITICOS = [2, 4, 7, 9, 11, 13, 15];
+  const NIVEL_GERAL = { alta: 'Alta', moderada: 'Moderada', baixa: 'Baixa', criticamente_baixa: 'Criticamente baixa' };
+  function confianca(out, opts) {
+    const pf = !!(opts && opts.parcialFalha);
+    const falha = (r) => {
+      const vs = r.partes ? Object.values(r.partes) : [r.resultado];
+      return vs.some((v) => v === 'no' || (pf && v === 'partial'));
+    };
+    let crit = 0, nao = 0, pend = 0;
+    out.forEach((r) => {
+      if (r.resultado === 'incompleto') { pend++; return; }
+      if (r.resultado === 'nma') return;
+      if (falha(r)) { if (CRITICOS.includes(r.n)) crit++; else nao++; }
+    });
+    const notas = [];
+    let nivel;
+    if (crit > 1) nivel = 'criticamente_baixa';
+    else if (crit === 1) nivel = 'baixa';
+    else if (nao > 1) { nivel = 'moderada'; notas.push('Várias fraquezas não críticas podem diminuir a confiança; o artigo admite rebaixar de moderada para baixa. Decisão do avaliador.'); }
+    else nivel = 'alta';
+    return { nivel, criticas: crit, naoCriticas: nao, pendentes: pend, provisorio: pend > 0, notas };
+  }
+  return { ITENS, ROTULO, avaliar, nivel, CRITICOS, NIVEL_GERAL, confianca };
 });

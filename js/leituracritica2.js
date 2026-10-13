@@ -14,7 +14,8 @@ const META = {
       'Não foram incluídos nesta versão o estágio de protocolo (domínios de confusão e co-intervenções) nem a direção prevista do viés, que são opcionais ou específicos da revisão.',
       'Versão do guia: 2016 (ROBINS-I original). Existe uma versão mais recente da ferramenta que não foi conferida aqui.'] },
   amstar: { versao: '0.1.0', atualizado: '2026-10-13', doc: 'checklist oficial do AMSTAR 2 (4 p.) e resumo do NCCMT (5 p.)', doi: '10.1136/bmj.j4008', nome: 'Shea et al., BMJ 2017;358:j4008',
-    pend: ['O AMSTAR 2 não se destina a ser pontuado. Os documentos conferidos não trazem a regra de classificação geral de confiança (alta, moderada, baixa, criticamente baixa, que depende de domínios críticos do artigo original); por isso ela não está implementada. Pendente: conferir o artigo original.',
+    pend: ['O artigo recomenda fortemente não somar os itens em uma nota. A classificação de confiança (alta, moderada, baixa, criticamente baixa) segue a Caixa 2 do artigo, que é consultiva: itens críticos são 2, 4, 7, 9, 11, 13 e 15, e o avaliador pode acrescentar ou trocar itens críticos conforme o contexto.',
+      'O artigo não define o que conta como "falha" ou "fraqueza". A ferramenta conta o "Não"; o "Sim parcial" só conta se você marcar a opção correspondente. Em itens por desenho (9 e 11), basta uma parte com "Não" para contar. Estas são escolhas desta ferramenta, não do artigo.',
       'Cada item é derivado dos critérios que o avaliador marca, conforme o checklist oficial. Para os itens 9 e 11 a avaliação é feita separadamente para ensaios randomizados e estudos não randomizados; o checklist não diz como unir os dois resultados, e a ferramenta não os une.',
       'Critérios em português são tradução própria, ainda não revisada. O original em inglês está disponível em cada item.',
       'Alguns critérios dependem de contexto ("quando relevante", "se apropriado"): marque se o critério foi cumprido ou não se aplicava, conforme seu julgamento.'] }
@@ -97,8 +98,8 @@ function renderRbi() {
 }
 
 /* ---------------- AMSTAR 2 ---------------- */
-const A = { desenho: '', ma: null, marcas: {}, marcasRct: {}, marcasNrsi: {}, tocado: {} };
-const resetA = () => { A.desenho = ''; A.ma = null; A.marcas = {}; A.marcasRct = {}; A.marcasNrsi = {}; A.tocado = {}; };
+const A = { parcialFalha: false, desenho: '', ma: null, marcas: {}, marcasRct: {}, marcasNrsi: {}, tocado: {} };
+const resetA = () => { A.parcialFalha = false; A.desenho = ''; A.ma = null; A.marcas = {}; A.marcasRct = {}; A.marcasNrsi = {}; A.tocado = {}; };
 const critHtml = (nome, c, marcado, extra) => `<label class="lc-opt lc-wide"${extra || ''}><input type="checkbox" ${nome} value="${c.id}"${marcado ? ' checked' : ''}><span>${esc(c.pt)}</span></label>`
   + `<details class="lc-dica lc-orig"><summary>Original (inglês)</summary><p lang="en">${esc(c.en)}</p></details>`;
 function blocoHtml(it, spec, escopo, store) {
@@ -131,6 +132,7 @@ function buildAms() {
       ${[['rct', 'Só ensaios randomizados'], ['nrsi', 'Só estudos não randomizados'], ['ambos', 'Ambos']].map(([v, t]) => `<label class="lc-opt lc-wide"><input type="radio" name="a-des" value="${v}"${A.desenho === v ? ' checked' : ''}><span>${t}</span></label>`).join('')}</fieldset>
      <fieldset class="lc-q lc-efeito"><legend>A revisão fez meta-análise?</legend>
       <label class="lc-opt"><input type="radio" name="a-ma" value="sim"${A.ma === true ? ' checked' : ''}><span>Sim</span></label><label class="lc-opt"><input type="radio" name="a-ma" value="nao"${A.ma === false ? ' checked' : ''}><span>Não</span></label></fieldset>
+     <label class="lc-opt lc-wide"><input type="checkbox" id="a-pf"${A.parcialFalha ? ' checked' : ''}><span>Contar "Sim parcial" como falha na classificação de confiança (o artigo não define; padrão: não contar)</span></label>
      ${Amstar2.ITENS.map(itemHtml).join('')}
      <div class="lc-actions"><button id="ams-limpar" class="btn btn-ghost" type="button">Limpar</button><button id="ams-copiar" class="btn" type="button">Copiar resumo</button></div>`;
 }
@@ -165,14 +167,17 @@ function renderAms() {
   const el = $('#lc-ams-res');
   if (!feitos.length) { el.innerHTML = '<div class="lc-card lc-empty">Marque os critérios cumpridos em cada item. O AMSTAR 2 não gera pontuação: o resultado aparece item a item.</div>'; ultimo.ams = ''; return; }
   const n = (k) => feitos.filter((x) => x.key === k).length;
-  const nao = feitos.filter((x) => x.key === 'no' || (x.res.partes && x.key !== 'yes'));
+  const conf = Amstar2.confianca(rows.map((x) => (x.tocou ? x.res : { n: x.it.n, resultado: 'incompleto' })), { parcialFalha: A.parcialFalha });
+  const CCOR = { alta: 'baixo', moderada: 'algumas', baixa: 'alto', criticamente_baixa: 'alto' };
   const linhas = rows.map((x) => `<li class="lc-dom ${x.tocou ? 'lc-' + RES_COR[x.key] : 'lc-pend'}"><span class="lc-di">${x.tocou ? RES_ICON[x.key] : '…'}</span><span><b>${x.it.n}.</b> ${esc(x.it.pt)}<br>${x.tocou ? esc(x.txt) : 'Sem resposta'}</span></li>`).join('');
   el.innerHTML = `<div class="lc-card lc-glob"><p class="lc-gl">Resumo por item (sem pontuação)</p><h3>${feitos.length} de 16 itens respondidos</h3><p>Sim: ${n('yes')} · Sim parcial: ${n('partial')} · Não: ${n('no')} · Sem meta-análise: ${n('nma')}</p>`
-    + `<p class="lc-warn"><b>Atenção</b> A classificação geral de confiança nos resultados (alta a criticamente baixa) depende de itens críticos do artigo original e ainda não está implementada. Não some itens para chegar a uma nota.</p></div>`
+    + `</div>`
+    + `<div class="lc-card lc-glob lc-${CCOR[conf.nivel]}"><p class="lc-gl">Confiança nos resultados da revisão (Caixa 2 do artigo)${conf.provisorio ? ', provisória' : ''}</p><h3>${esc(Amstar2.NIVEL_GERAL[conf.nivel])}</h3><p>Falhas em itens críticos: ${conf.criticas} · fraquezas em itens não críticos: ${conf.naoCriticas}${conf.provisorio ? ' · itens sem resposta: ' + conf.pendentes + ' (a classificação pode mudar)' : ''}.</p>${conf.notas.map((n) => `<p class="lc-warn"><b>Atenção</b> ${esc(n)}</p>`).join('')}<p class="lc-note">Classificação consultiva: não é uma pontuação. Itens críticos: 2, 4, 7, 9, 11, 13, 15.</p></div>`
     + `<div class="lc-card"><h3 class="lc-h">Por item</h3><ul class="lc-doms">${linhas}</ul></div>`;
   const L = ['Avaliação de revisão sistemática (AMSTAR 2): apoio à decisão; confirme na leitura do artigo', 'Desenhos incluídos: ' + ({ rct: 'ensaios randomizados', nrsi: 'estudos não randomizados', ambos: 'ambos' }[des] || 'não informado'), 'Meta-análise: ' + (A.ma === false ? 'não' : A.ma === true ? 'sim' : 'não informado')];
   rows.forEach((x) => L.push(`${x.it.n}. ${x.it.pt} ${x.tocou ? x.txt : 'sem resposta'}`));
-  L.push('Instrumento sem pontuação. Fonte: ' + META.amstar.nome);
+  L.push('Confiança nos resultados (Caixa 2, consultiva)' + (conf.provisorio ? ' provisória' : '') + ': ' + Amstar2.NIVEL_GERAL[conf.nivel] + ` (falhas críticas ${conf.criticas}; fraquezas não críticas ${conf.naoCriticas})`);
+  L.push('Itens não são somados em nota. Fonte: ' + META.amstar.nome);
   ultimo.ams = L.join('\n');
 }
 
@@ -203,6 +208,7 @@ function init() {
     if (t.matches('input[data-rj]')) { R.jul[t.dataset.rj] = t.value; renderRbi(); return; }
     if (t.name === 'rbi-aim') { R.aim = t.value; renderRbi(); return; }
     if (t.name === 'a-des') { A.desenho = t.value; renderAms(); return; }
+    if (t.id === 'a-pf') { A.parcialFalha = t.checked; renderAms(); return; }
     if (t.name === 'a-ma') { A.ma = t.value === 'sim'; renderAms(); return; }
     if (t.matches('input[type=checkbox][data-a]')) {
       const n = Number(t.dataset.a), esc_ = t.dataset.e, store = esc_ === 'rct' ? A.marcasRct : esc_ === 'nrsi' ? A.marcasNrsi : A.marcas;

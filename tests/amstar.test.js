@@ -69,3 +69,21 @@ test('Itens 10, 12 a 16 (Sim/Não)', () => {
   assert.equal(A.nivel(item(15), mk(['t'])), 'yes');
   assert.equal(A.nivel(item(16), mk(['nc'])), 'yes'); assert.equal(A.nivel(item(16), mk(['fm'])), 'yes');
 });
+
+test('Confiança geral (Caixa 2 do artigo)', () => {
+  const todos = (v) => A.ITENS.map((it) => ({ n: it.n, resultado: v }));
+  const com = (base, mud) => base.map((r) => (mud[r.n] ? { n: r.n, resultado: mud[r.n] } : r));
+  assert.deepEqual(A.CRITICOS, [2, 4, 7, 9, 11, 13, 15]);
+  assert.equal(A.confianca(todos('yes')).nivel, 'alta');
+  assert.equal(A.confianca(com(todos('yes'), { 1: 'no' })).nivel, 'alta');            // uma fraqueza não crítica
+  assert.equal(A.confianca(com(todos('yes'), { 1: 'no', 3: 'no' })).nivel, 'moderada'); // mais de uma não crítica
+  assert.equal(A.confianca(com(todos('yes'), { 4: 'no' })).nivel, 'baixa');             // uma falha crítica
+  assert.equal(A.confianca(com(todos('yes'), { 4: 'no', 1: 'no', 3: 'no' })).nivel, 'baixa');
+  assert.equal(A.confianca(com(todos('yes'), { 2: 'no', 7: 'no' })).nivel, 'criticamente_baixa');
+  assert.equal(A.confianca(com(todos('yes'), { 4: 'partial' })).nivel, 'alta');          // parcial não conta por padrão
+  assert.equal(A.confianca(com(todos('yes'), { 4: 'partial' }), { parcialFalha: true }).nivel, 'baixa');
+  assert.equal(A.confianca(com(todos('yes'), { 11: 'nma', 15: 'nma' })).nivel, 'alta');  // sem meta-análise não conta
+  const por = com(todos('yes'), {}); por.find((r) => r.n === 9).resultado = null; por.find((r) => r.n === 9).partes = { rct: 'yes', nrsi: 'no' };
+  assert.equal(A.confianca(por).nivel, 'baixa');                                          // item por desenho: uma parte com falha
+  assert.equal(A.confianca(com(todos('yes'), { 5: 'incompleto' })).provisorio, true);
+});
