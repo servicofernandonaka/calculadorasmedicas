@@ -36,6 +36,7 @@
         <a class="tab" href="#favoritos" data-tab="favoritos"><span data-icon="star"></span>Favoritos<span id="fav-count" class="count" hidden></span></a>
         <a class="tab" href="#rastreio" data-tab="rastreio"><span data-icon="activity"></span>Rastreio</a>
         <a class="tab" href="#mental" data-tab="mental"><span data-icon="brain"></span>Saúde mental</a>
+        <a class="tab" href="#leitura" data-tab="leitura"><span data-icon="clipboard"></span>Leitura crítica</a>
         <a class="tab" href="#educacao" data-tab="educacao"><span data-icon="book"></span>Paciente</a>
       </nav>
     </div>
@@ -110,6 +111,28 @@
           <p class="ms-foot" id="ms-rodape"></p>
         </section>
       </div>
+    </section>
+
+    <section id="view-leitura" class="view" hidden>
+      <div class="hero view-head">
+        <div id="lei-art" class="hero-art"></div>
+        <div class="hero-text">
+          <p class="eyebrow">Medicina baseada em evidências</p>
+          <h1>Leitura crítica de artigos</h1>
+          <p class="hero-sub">Risco de viés de ensaios randomizados (RoB 2) pelo algoritmo oficial e cálculo de RAR, RRR, RR, OR e NNT com intervalo de confiança.</p>
+        </div>
+      </div>
+      <p class="lc-notice"><strong>Apoio ao julgamento crítico (em evolução).</strong> A ferramenta organiza a avaliação, mas não substitui a leitura do artigo nem o julgamento do avaliador. Nenhum dado é enviado ou guardado: tudo é calculado neste navegador. Por ora cobre ensaios randomizados de grupos paralelos; as demais ferramentas (coortes, revisões sistemáticas, acurácia diagnóstica) virão em seguida.</p>
+      <div class="lc-seg" role="group" aria-label="Ferramenta"><button type="button" data-sub="rob" aria-pressed="true">Risco de viés (RoB 2)</button><button type="button" data-sub="ef" aria-pressed="false">Efeito: RAR, RR, NNT</button></div>
+      <div id="lc-pane-rob" class="lc-layout">
+        <section class="lc-panel lc-form-panel" aria-labelledby="lc-t-rob"><h2 id="lc-t-rob">Perguntas do RoB 2</h2><div id="lc-rob-form"></div></section>
+        <section class="lc-results" aria-live="polite" aria-label="Resultado do RoB 2"><div id="lc-rob-res"></div></section>
+      </div>
+      <div id="lc-pane-ef" class="lc-layout" hidden>
+        <section class="lc-panel lc-form-panel" aria-labelledby="lc-t-ef"><h2 id="lc-t-ef">Dados do estudo</h2><div id="lc-ef-form"></div></section>
+        <section class="lc-results" aria-live="polite" aria-label="Resultado do cálculo de efeito"><div id="lc-ef-res"></div></section>
+      </div>
+      <section class="lc-panel lc-fontes"><h2>Fontes e pendências</h2><p>Fonte do RoB 2: <span id="lc-fonte"></span></p><ul id="lc-pend"></ul><p class="lc-foot" id="lc-rodape"></p></section>
     </section>
 
     <section id="view-mental" class="view" hidden>
@@ -231,6 +254,9 @@
   <script src="js/education.js"></script>
   <script src="js/medscreening.js"></script>
   <script src="js/mentalhealth.js"></script>
+  <script src="js/lc-rob2.js"></script>
+  <script src="js/lc-efeito.js"></script>
+  <script src="js/leituracritica.js"></script>
   <script src="js/app.js"></script>
   <script src="js/ai.js"></script>
 </body>
