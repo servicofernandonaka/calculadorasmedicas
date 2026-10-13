@@ -429,9 +429,10 @@ async function lerArquivo(file) {
 }
 async function rodarIA() {
   if (st.ia.ocupado) return;
-  const artigo = st.ia.artigo.trim();
+  let artigo = st.ia.artigo.trim();
   if (artigo.length < 500) { statusIa('Cole o texto do artigo (ou envie o PDF) antes de pedir sugestões.'); return; }
-  if (artigo.length > RoB2IA.MAX_CHARS) { statusIa('Texto muito longo (' + nf(artigo.length, 0) + ' caracteres; o limite é ' + nf(RoB2IA.MAX_CHARS, 0) + '). Cole só métodos e resultados.'); return; }
+  let avRed = '';
+  if (artigo.length > RoB2IA.MAX_CHARS) { const rd = RoB2IA.reduzirTexto(artigo); artigo = rd.texto; avRed = 'Texto longo (' + nf(rd.original, 0) + ' caracteres): ' + rd.cortes.join('; ') + '. '; }
   if (!window.AI || !window.AI.temChave()) { statusIa('Configure uma chave de API no Assistente IA (botão ✨, depois ⚙️) e tente de novo.'); if (window.AI) window.AI.open(); return; }
   const ef = st.rob.efeito, qs = todasPerguntas(ef);
   const { system, user } = RoB2IA.montarPrompt(qs, { artigo, desfecho: st.rob.desfecho, efeito: REGRAS.dominios[1].variantes[ef].rotulo });
@@ -446,8 +447,9 @@ async function rodarIA() {
       st.ia.sug[rk + '|' + q.id] = sg;
       if (q.dom === 'D2' && (q.id === '2.1' || q.id === '2.2')) st.ia.sug[(rk === 'D2' ? 'D2b' : 'D2') + '|' + q.id] = sg;
     });
+    if (tr.outroTipo) { statusIa(avRed + 'Este texto não parece ser de um ensaio randomizado (' + tr.outroTipo + '). Para revisões sistemáticas use a aba AMSTAR 2; para coortes, a aba ROBINS-I.'); st.ia.ocupado = false; const b0 = $('#lc-ia-run'); if (b0) b0.disabled = false; renderRob(); return; }
     st.ia.desfecho = tr.desfecho;
-    const av = tr.avisos.slice(); if (r.cut) av.push('A resposta da IA foi cortada por limite de tamanho; algumas perguntas podem estar sem sugestão.');
+    const av = tr.avisos.slice(); if (avRed) av.unshift(avRed.trim()); if (r.cut) av.push('A resposta da IA foi cortada por limite de tamanho; algumas perguntas podem estar sem sugestão.');
     statusIa(n ? `${n} sugestão(ões) recebida(s)` + (tr.desfecho ? ` para o desfecho: ${tr.desfecho}.` : '.') + (av.length ? ' ' + av.join(' ') : '') + ' Revise cada uma abaixo.' : av.join(' '));
   } catch (e) {
     statusIa(e.userMessage || ('Falha ao consultar a IA: ' + e.message));
@@ -611,5 +613,6 @@ function init() {
   });
   mostrarSub();
 }
+window.LCUtil = { lerArquivo, nf };
 init();
 })();
