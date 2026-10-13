@@ -960,3 +960,11 @@ th { background: var(--surface-2); }
   .edu-content { border-top: 0; }
   .edu-content h3, .edu-content .edu-title .icon { color: #000; background: none; }
 }
+
+/* Leitura crítica: ROBINS-I e AMSTAR 2 */
+#view-leitura .lc-crit { margin:8px 0 0; padding-left:18px; } #view-leitura .lc-crit li { margin:0 0 10px; font-size:.9rem; }
+#view-leitura .lc-orig { margin:-2px 0 8px 30px; }
+#view-leitura .lc-sub { margin:10px 0 4px; font-size:.875rem; color:var(--muted); }
+#view-leitura .lc-bd.lc-pend { color:var(--muted); }
+#view-leitura .lc-glob.lc-pend { border-color:var(--border); }
+#view-leitura .lc-dom.lc-pend { color:var(--muted); }

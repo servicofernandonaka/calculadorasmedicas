@@ -534,6 +534,7 @@ function copiar(btn) {
 function mostrarSub() {
   $('#lc-pane-rob').hidden = st.sub !== 'rob';
   $('#lc-pane-ef').hidden = st.sub !== 'ef';
+  document.querySelectorAll('#view-leitura .lc-ext').forEach((p) => { p.hidden = true; });
   document.querySelectorAll('#view-leitura .lc-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sub === st.sub)));
   if (st.sub === 'rob') renderRob(); else renderEfeito();
 }
@@ -545,7 +546,7 @@ function init() {
   $('#lc-pend').innerHTML = REGRAS.pendencias.map((p) => `<li>${esc(p)}</li>`).join('');
   const root = $('#view-leitura');
   root.addEventListener('click', (e) => {
-    const b = e.target.closest('.lc-seg button');
+    const b = e.target.closest('.lc-seg button:not([data-ext])');
     if (b) { st.sub = b.dataset.sub; mostrarSub(); return; }
     if (e.target.closest('#lc-rob-limpar')) { st.rob.resp = { D1: {}, D2: {}, D2b: {}, D3: {}, D4: {}, D5: {} }; st.rob.estudo = ''; st.rob.desfecho = ''; st.ia = { artigo: '', sug: {}, origem: {}, desfecho: '', ocupado: false, msg: '', avisos: [], arquivo: '' }; buildRob(); renderRob(); return; }
     if (e.target.closest('#lc-ef-limpar')) { Object.assign(st.ef, { ev1: '', n1: '', ev0: '', n0: '', m1: '', sd1: '', n1c: '', m0: '', sd0: '', n0c: '', basal: '' }); buildEfeito(); renderEfeito(); return; }

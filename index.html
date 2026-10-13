@@ -119,11 +119,11 @@
         <div class="hero-text">
           <p class="eyebrow">Medicina baseada em evidências</p>
           <h1>Leitura crítica de artigos</h1>
-          <p class="hero-sub">Risco de viés de ensaios randomizados (RoB 2) pelo algoritmo oficial e cálculo de RAR, RRR, RR, OR e NNT com intervalo de confiança.</p>
+          <p class="hero-sub">Risco de viés de ensaios (RoB 2) e de estudos não randomizados (ROBINS-I), avaliação de revisões sistemáticas (AMSTAR 2) e cálculo de RAR, RRR, RR, OR e NNT com intervalo de confiança.</p>
         </div>
       </div>
-      <p class="lc-notice"><strong>Apoio ao julgamento crítico (em evolução).</strong> A ferramenta organiza a avaliação, mas não substitui a leitura do artigo nem o julgamento do avaliador. Nenhum dado é enviado ou guardado: tudo é calculado neste navegador. Por ora cobre ensaios randomizados de grupos paralelos; as demais ferramentas (coortes, revisões sistemáticas, acurácia diagnóstica) virão em seguida.</p>
-      <div class="lc-seg" role="group" aria-label="Ferramenta"><button type="button" data-sub="rob" aria-pressed="true">Risco de viés (RoB 2)</button><button type="button" data-sub="ef" aria-pressed="false">Efeito: RAR, RR, NNT</button></div>
+      <p class="lc-notice"><strong>Apoio ao julgamento crítico (em evolução).</strong> A ferramenta organiza a avaliação, mas não substitui a leitura do artigo nem o julgamento do avaliador. Nenhum dado é enviado ou guardado: tudo é calculado neste navegador. Cobre ensaios randomizados de grupos paralelos (RoB 2), coortes e outros estudos não randomizados (ROBINS-I) e revisões sistemáticas (AMSTAR 2); acurácia diagnóstica virá em seguida.</p>
+      <div class="lc-seg" role="group" aria-label="Ferramenta"><button type="button" data-sub="rob" aria-pressed="true">Risco de viés (RoB 2)</button><button type="button" data-sub="ef" aria-pressed="false">Efeito: RAR, RR, NNT</button><button type="button" data-sub="robins" data-ext aria-pressed="false">Risco de viés (ROBINS-I)</button><button type="button" data-sub="amstar" data-ext aria-pressed="false">Revisão sistemática (AMSTAR 2)</button></div>
       <div id="lc-pane-rob" class="lc-layout">
         <section class="lc-panel lc-form-panel" aria-labelledby="lc-t-rob"><h2 id="lc-t-rob">Perguntas do RoB 2</h2><div id="lc-rob-form"></div></section>
         <section class="lc-results" aria-live="polite" aria-label="Resultado do RoB 2"><div id="lc-rob-res"></div></section>
@@ -132,7 +132,15 @@
         <section class="lc-panel lc-form-panel" aria-labelledby="lc-t-ef"><h2 id="lc-t-ef">Dados do estudo</h2><div id="lc-ef-form"></div></section>
         <section class="lc-results" aria-live="polite" aria-label="Resultado do cálculo de efeito"><div id="lc-ef-res"></div></section>
       </div>
-      <section class="lc-panel lc-fontes"><h2>Fontes e pendências</h2><p>Fonte do RoB 2: <span id="lc-fonte"></span></p><ul id="lc-pend"></ul><p class="lc-foot" id="lc-rodape"></p></section>
+      <div id="lc-pane-robins" class="lc-layout lc-ext" hidden>
+        <section class="lc-panel lc-form-panel" aria-labelledby="lc-t-rbi"><h2 id="lc-t-rbi">Perguntas do ROBINS-I (coortes e outros estudos não randomizados)</h2><div id="lc-rbi-form"></div></section>
+        <section class="lc-results" aria-live="polite" aria-label="Resultado do ROBINS-I"><div id="lc-rbi-res"></div></section>
+      </div>
+      <div id="lc-pane-amstar" class="lc-layout lc-ext" hidden>
+        <section class="lc-panel lc-form-panel" aria-labelledby="lc-t-ams"><h2 id="lc-t-ams">Itens do AMSTAR 2 (revisões sistemáticas)</h2><div id="lc-ams-form"></div></section>
+        <section class="lc-results" aria-live="polite" aria-label="Resultado do AMSTAR 2"><div id="lc-ams-res"></div></section>
+      </div>
+      <section class="lc-panel lc-fontes"><h2>Fontes e pendências</h2><p>Fonte do RoB 2: <span id="lc-fonte"></span></p><ul id="lc-pend"></ul><p class="lc-foot" id="lc-rodape"></p><ul id="lc-pend2"></ul><p class="lc-foot" id="lc-rodape2"></p></section>
     </section>
 
     <section id="view-mental" class="view" hidden>
@@ -256,8 +264,11 @@
   <script src="js/mentalhealth.js"></script>
   <script src="js/lc-rob2.js"></script>
   <script src="js/lc-efeito.js"></script>
+  <script src="js/lc-robinsi.js"></script>
+  <script src="js/lc-amstar.js"></script>
   <script src="js/lc-ia.js"></script>
   <script src="js/leituracritica.js"></script>
+  <script src="js/leituracritica2.js"></script>
   <script src="js/app.js"></script>
   <script src="js/ai.js"></script>
 </body>
