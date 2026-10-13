@@ -248,6 +248,7 @@ const REGRAS = {
  "pendencias": [
   "Texto em português das perguntas é tradução própria, sem versão oficial conferida.",
   "Variantes de ensaio por conglomerados e cruzado (documentos separados) não implementadas.",
+  "As sugestões da IA não são verificadas além da checagem de que a citação existe no texto; a IA tende a errar em itens subjetivos (ex.: 2.3, 3.3, 4.5) e não vê o protocolo do ensaio. Sempre confirme no artigo.",
   "O guia remete as 'considerações preliminares' (desfecho, resultado, efeito de interesse) a cada avaliação; a ferramenta pede só o efeito de interesse e o desfecho."
  ]
 };
@@ -263,6 +264,7 @@ const OPT_ORDER = ['Y', 'PY', 'PN', 'N', 'NI', 'NA'];
 const OPT_CURTO = { Y: 'Sim', PY: 'Prov. sim', PN: 'Prov. não', N: 'Não', NI: 'Sem info.', NA: 'Não se aplica' };
 
 const st = { sub: 'rob', rob: { efeito: 'assignment', estudo: '', desfecho: '', resp: { D1: {}, D2: {}, D2b: {}, D3: {}, D4: {}, D5: {} } },
+  ia: { artigo: '', sug: {}, origem: {}, desfecho: '', ocupado: false, msg: '', avisos: [], arquivo: '' },
   ef: { tipo: 'dic', favoravel: false, ev1: '', n1: '', ev0: '', n0: '', m1: '', sd1: '', n1c: '', m0: '', sd0: '', n0c: '', basal: '' } };
 let ultimo = '';
 
@@ -284,7 +286,7 @@ function qHtml(dom, efeito, q) {
     `<label class="lc-opt"><input type="radio" name="${nome}" data-d="${dom}" data-q="${q.id}" value="${o}"${cur === o ? ' checked' : ''}><span>${esc(OPT_CURTO[o])}</span></label>`).join('');
   return `<fieldset class="lc-q" data-fq="${rk}|${q.id}"><legend><span class="lc-n">${q.id}</span> ${esc(q.pt)}</legend>`
     + (q.condicao ? `<p class="lc-cond">${esc(q.condicao)}</p>` : '')
-    + `<div class="lc-opts" role="radiogroup">${radios}</div>`
+    + `<div class="lc-opts" role="radiogroup">${radios}</div><div class="lc-sug" data-sug="${rk}|${q.id}"></div>`
     + (q.dica ? `<details class="lc-dica"><summary>Como responder</summary><p>${esc(q.dica)}</p></details>` : '')
     + `<details class="lc-dica"><summary>Pergunta original (inglês)</summary><p lang="en">${esc(q.en)}</p></details></fieldset>`;
 }
@@ -304,6 +306,12 @@ function buildRob() {
      <fieldset class="lc-q lc-efeito"><legend>Efeito de interesse</legend>
       <label class="lc-opt lc-wide"><input type="radio" name="lc-efeito" value="assignment"${ef === 'assignment' ? ' checked' : ''}><span>Efeito da designação (intenção de tratar). Padrão para decidir se vale oferecer a intervenção.</span></label>
       <label class="lc-opt lc-wide"><input type="radio" name="lc-efeito" value="adhering"${ef === 'adhering' ? ' checked' : ''}><span>Efeito de aderir à intervenção (por protocolo).</span></label></fieldset>
+     <details class="lc-grp lc-ia" open><summary><span>Pré-preencher com IA (opcional)</span></summary>
+      <p class="lc-intro">Cole o texto do artigo (métodos e resultados bastam) ou envie o PDF. A IA sugere a resposta de cada pergunta e cita o trecho em que se baseou; você confirma ou corrige. O julgamento por domínio continua vindo do algoritmo oficial, nunca da IA.</p>
+      <label class="lc-field"><span>Texto do artigo</span><textarea id="lc-art" rows="6" spellcheck="false" placeholder="Cole aqui o texto do artigo…">${esc(st.ia.artigo)}</textarea></label>
+      <div class="lc-ia-row"><button id="lc-ia-pdf" class="btn btn-ghost" type="button">Enviar PDF ou TXT</button><input id="lc-ia-file" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden><button id="lc-ia-run" class="btn" type="button">Sugerir respostas</button><button id="lc-ia-todas" class="btn btn-ghost" type="button">Aceitar as sugestões do caminho</button></div>
+      <p id="lc-ia-st" class="lc-note" role="status"></p>
+      <p class="lc-note">Privacidade: o texto do artigo é enviado ao provedor de IA que você configurou no Assistente (Claude, Gemini, ChatGPT ou OpenRouter), com a sua chave. Não cole dados de pacientes. Em PDFs de duas colunas a extração pode misturar a ordem das frases: confira o texto.</p></details>
      <p class="lc-intro">Responda apenas as perguntas que aparecem: o caminho do algoritmo oficial define quais são necessárias.</p>${doms}
      <div class="lc-actions"><button id="lc-rob-limpar" class="btn btn-ghost" type="button">Limpar</button><button id="lc-rob-copiar" class="btn" type="button">Copiar resumo</button></div>`;
 }
@@ -324,6 +332,7 @@ function renderRob() {
     b.textContent = d.julgamento ? ICON[d.julgamento] + ' ' + JUL[d.julgamento] : (d.visitadas.length && Object.keys(st.rob.resp[rk]).length ? 'em andamento' : '');
     b.className = 'lc-bd' + (d.julgamento ? ' lc-' + d.julgamento : '');
   });
+  renderSug(out);
   const totalResp = out.dominios.reduce((n, d) => n + d.visitadas.filter((q) => st.rob.resp[respKey(d.id, ef)][q]).length, 0);
   const el = $('#lc-rob-res');
   if (!totalResp) {
@@ -347,9 +356,103 @@ function renderRob() {
   L.push('Efeito de interesse: ' + REGRAS.dominios[1].variantes[ef].rotulo);
   out.dominios.forEach((d, i) => L.push(`${i + 1}. ${d.titulo}: ${d.julgamento ? JUL[d.julgamento] : 'incompleto'}`));
   L.push('Global: ' + (out.global ? JUL[out.global] : 'incompleto'));
+  const nIa = Object.keys(st.ia.origem).length;
+  if (nIa) L.push(nIa + ' resposta(s) aceita(s) a partir de sugestão da IA, conferidas pelo avaliador.');
   out.alertas.forEach((a) => L.push('Atenção: ' + a));
   L.push('Fonte: ' + REGRAS.fonte.nome);
   ultimo = L.join('\n');
+}
+
+/* ---------- Pré-preenchimento por IA ---------- */
+const OPT_LONGO = { Y: 'Sim', PY: 'Provavelmente sim', PN: 'Provavelmente não', N: 'Não', NI: 'Sem informação' };
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+function todasPerguntas(efeito) {
+  const l = [];
+  REGRAS.dominios.forEach((d) => perguntasDe(d.id, efeito).forEach((q) => l.push(Object.assign({ dom: d.id }, q))));
+  return l;
+}
+function statusIa(msg) { st.ia.msg = msg || ''; const el = $('#lc-ia-st'); if (el) el.textContent = st.ia.msg; }
+function renderSug(out) {
+  const ef = st.rob.efeito;
+  document.querySelectorAll('#lc-rob-form .lc-sug').forEach((box) => {
+    const [rk, q] = box.dataset.sug.split('|');
+    const sg = st.ia.sug[box.dataset.sug];
+    if (!sg || box.closest('[data-fq]').hidden) { box.innerHTML = ''; return; }
+    const cur = st.rob.resp[rk][q];
+    const vf = sg.verif === null ? '<span class="lc-vf">sem citação (o artigo não informa)</span>' : sg.verif ? '<span class="lc-vf lc-ok">citação encontrada no texto</span>' : '<span class="lc-vf lc-bad">citação NÃO encontrada no texto: confira</span>';
+    let acao;
+    if (cur === sg.resp && st.ia.origem[box.dataset.sug]) acao = '<span class="lc-tag">✔ aceita (da IA)</span>';
+    else if (cur && cur !== sg.resp) acao = '<span class="lc-tag">você respondeu diferente</span>';
+    else acao = `<button type="button" class="btn btn-ghost lc-acc" data-acc="${esc(box.dataset.sug)}">Aceitar</button>`;
+    box.innerHTML = `<div class="lc-sug-in"><p><b>Sugestão da IA:</b> ${esc(OPT_LONGO[sg.resp])} ${vf}</p>${sg.trecho ? `<blockquote lang="en">${esc(sg.trecho)}</blockquote>` : ''}${sg.just ? `<p class="lc-note">${esc(sg.just)}</p>` : ''}<div>${acao}</div></div>`;
+  });
+}
+function aplicarSug(chave) {
+  const sg = st.ia.sug[chave]; if (!sg) return false;
+  const [rk, q] = chave.split('|');
+  const ops = RoB2._opcoes(rk === 'D2b' ? 'D2b' : rk === 'D2' ? 'D2a' : rk)[q];
+  if (!ops || !ops.includes(sg.resp)) return false;
+  const alvos = [rk]; if (rk.startsWith('D2') && (q === '2.1' || q === '2.2')) alvos.push(rk === 'D2' ? 'D2b' : 'D2');
+  alvos.forEach((k) => {
+    st.rob.resp[k][q] = sg.resp; st.ia.origem[k + '|' + q] = 'ia';
+    const r = document.querySelector(`#lc-rob-form input[name="lc-${k}-${q}"][value="${sg.resp}"]`); if (r) r.checked = true;
+  });
+  return true;
+}
+function aceitarCaminho() {
+  let n = 0;
+  for (let i = 0; i < 12; i++) { // o caminho do algoritmo muda a cada resposta aceita
+    const out = RoB2.avaliarRob2(engineInput(), st.rob.efeito);
+    let mudou = false;
+    out.dominios.forEach((d) => {
+      const rk = respKey(d.id, st.rob.efeito);
+      d.visitadas.forEach((q) => { const k = rk + '|' + q; if (!st.rob.resp[rk][q] && st.ia.sug[k] && aplicarSug(k)) { mudou = true; n++; } });
+    });
+    if (!mudou) break;
+  }
+  return n;
+}
+async function lerArquivo(file) {
+  if (/\.txt$/i.test(file.name) || file.type === 'text/plain') return file.text();
+  if (!(/\.pdf$/i.test(file.name) || file.type === 'application/pdf')) throw new Error('Envie um arquivo PDF ou TXT.');
+  if (!window.pdfjsLib) await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = PDFJS; sc.onload = res; sc.onerror = () => rej(new Error('Não foi possível carregar o leitor de PDF (verifique a conexão). Cole o texto do artigo.')); document.head.appendChild(sc); });
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+  const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  let txt = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const c = await (await pdf.getPage(i)).getTextContent();
+    txt += c.items.map((it) => it.str + (it.hasEOL ? '\n' : ' ')).join('') + '\n';
+  }
+  if (txt.replace(/\s/g, '').length < 500) throw new Error('Não consegui extrair texto deste PDF (pode ser um escaneado). Cole o texto do artigo.');
+  return txt;
+}
+async function rodarIA() {
+  if (st.ia.ocupado) return;
+  const artigo = st.ia.artigo.trim();
+  if (artigo.length < 500) { statusIa('Cole o texto do artigo (ou envie o PDF) antes de pedir sugestões.'); return; }
+  if (artigo.length > RoB2IA.MAX_CHARS) { statusIa('Texto muito longo (' + nf(artigo.length, 0) + ' caracteres; o limite é ' + nf(RoB2IA.MAX_CHARS, 0) + '). Cole só métodos e resultados.'); return; }
+  if (!window.AI || !window.AI.temChave()) { statusIa('Configure uma chave de API no Assistente IA (botão ✨, depois ⚙️) e tente de novo.'); if (window.AI) window.AI.open(); return; }
+  const ef = st.rob.efeito, qs = todasPerguntas(ef);
+  const { system, user } = RoB2IA.montarPrompt(qs, { artigo, desfecho: st.rob.desfecho, efeito: REGRAS.dominios[1].variantes[ef].rotulo });
+  st.ia.ocupado = true; $('#lc-ia-run').disabled = true; statusIa('Analisando o artigo… pode levar até um minuto.');
+  try {
+    const r = await window.AI.complete(system, user, { maxTokens: 8000 });
+    const tr = RoB2IA.tratarResposta(RoB2IA.extrairJson(r.text), qs, artigo);
+    const n = Object.keys(tr.sugestoes).length;
+    qs.forEach((q) => {
+      const sg = tr.sugestoes[q.id]; const rk = respKey(q.dom, ef);
+      if (!sg) return;
+      st.ia.sug[rk + '|' + q.id] = sg;
+      if (q.dom === 'D2' && (q.id === '2.1' || q.id === '2.2')) st.ia.sug[(rk === 'D2' ? 'D2b' : 'D2') + '|' + q.id] = sg;
+    });
+    st.ia.desfecho = tr.desfecho;
+    const av = tr.avisos.slice(); if (r.cut) av.push('A resposta da IA foi cortada por limite de tamanho; algumas perguntas podem estar sem sugestão.');
+    statusIa(n ? `${n} sugestão(ões) recebida(s)` + (tr.desfecho ? ` para o desfecho: ${tr.desfecho}.` : '.') + (av.length ? ' ' + av.join(' ') : '') + ' Revise cada uma abaixo.' : av.join(' '));
+  } catch (e) {
+    statusIa(e.userMessage || ('Falha ao consultar a IA: ' + e.message));
+  } finally { st.ia.ocupado = false; const b = $('#lc-ia-run'); if (b) b.disabled = false; }
+  renderRob();
 }
 
 /* ---------- Efeito ---------- */
@@ -444,8 +547,12 @@ function init() {
   root.addEventListener('click', (e) => {
     const b = e.target.closest('.lc-seg button');
     if (b) { st.sub = b.dataset.sub; mostrarSub(); return; }
-    if (e.target.closest('#lc-rob-limpar')) { st.rob.resp = { D1: {}, D2: {}, D2b: {}, D3: {}, D4: {}, D5: {} }; st.rob.estudo = ''; st.rob.desfecho = ''; buildRob(); renderRob(); return; }
+    if (e.target.closest('#lc-rob-limpar')) { st.rob.resp = { D1: {}, D2: {}, D2b: {}, D3: {}, D4: {}, D5: {} }; st.rob.estudo = ''; st.rob.desfecho = ''; st.ia = { artigo: '', sug: {}, origem: {}, desfecho: '', ocupado: false, msg: '', avisos: [], arquivo: '' }; buildRob(); renderRob(); return; }
     if (e.target.closest('#lc-ef-limpar')) { Object.assign(st.ef, { ev1: '', n1: '', ev0: '', n0: '', m1: '', sd1: '', n1c: '', m0: '', sd0: '', n0c: '', basal: '' }); buildEfeito(); renderEfeito(); return; }
+    const acc = e.target.closest('.lc-acc'); if (acc) { aplicarSug(acc.dataset.acc); renderRob(); return; }
+    if (e.target.closest('#lc-ia-run')) { rodarIA(); return; }
+    if (e.target.closest('#lc-ia-todas')) { const n = aceitarCaminho(); statusIa(n ? n + ' sugestão(ões) aceita(s). Revise cada resposta antes de usar o julgamento.' : 'Nenhuma sugestão nova para o caminho atual.'); renderRob(); return; }
+    if (e.target.closest('#lc-ia-pdf')) { $('#lc-ia-file').click(); return; }
     const c = e.target.closest('#lc-rob-copiar, #lc-ef-copiar'); if (c) copiar(c);
   });
   root.addEventListener('change', (e) => {
@@ -453,12 +560,17 @@ function init() {
     if (t.name === 'lc-efeito') { st.rob.efeito = t.value; renderRob(); return; }
     if (t.matches('input[type=radio][data-q]')) {
       const dom = t.dataset.d, rk = respKey(dom, st.rob.efeito), q = t.dataset.q;
-      st.rob.resp[rk][q] = t.value;
+      st.rob.resp[rk][q] = t.value; delete st.ia.origem[rk + '|' + q];
       if (dom === 'D2' && (q === '2.1' || q === '2.2')) { // as duas primeiras perguntas são as mesmas nas duas variantes
-        const outro = rk === 'D2' ? 'D2b' : 'D2'; st.rob.resp[outro][q] = t.value;
+        const outro = rk === 'D2' ? 'D2b' : 'D2'; st.rob.resp[outro][q] = t.value; delete st.ia.origem[outro + '|' + q];
         const irm = document.querySelector(`#lc-rob-form input[name="lc-${outro}-${q}"][value="${t.value}"]`); if (irm) irm.checked = true;
       }
       renderRob(); return;
+    }
+    if (t.id === 'lc-ia-file') {
+      const f = t.files && t.files[0]; t.value = '';
+      if (f) { statusIa('Lendo ' + f.name + '…'); lerArquivo(f).then((txt) => { st.ia.artigo = txt; $('#lc-art').value = txt; statusIa(nf(txt.length, 0) + ' caracteres lidos de ' + f.name + '. Confira o texto e clique em Sugerir respostas.'); }, (er) => statusIa(er.message)); }
+      return;
     }
     if (t.id === 'lc-ef-tipo') { st.ef.tipo = t.value; $('#lc-ef-dic').hidden = t.value !== 'dic'; $('#lc-ef-con').hidden = t.value !== 'con'; renderEfeito(); }
     else if (t.id === 'lc-fav') { st.ef.favoravel = t.checked; renderEfeito(); }
@@ -467,6 +579,7 @@ function init() {
   root.addEventListener('input', (e) => {
     const t = e.target;
     if (mapa[t.id]) { st.ef[mapa[t.id]] = t.value; renderEfeito(); }
+    else if (t.id === 'lc-art') { st.ia.artigo = t.value; }
     else if (t.id === 'lc-estudo') { st.rob.estudo = t.value; renderRob(); }
     else if (t.id === 'lc-desfecho') { st.rob.desfecho = t.value; renderRob(); }
   });
