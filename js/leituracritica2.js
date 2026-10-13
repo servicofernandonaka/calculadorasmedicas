@@ -2,11 +2,17 @@
 (function () {
 'use strict';
 const root = document.getElementById('view-leitura');
-if (!root || typeof RobinsI === 'undefined' || typeof Amstar2 === 'undefined') return;
+if (!root || typeof RobinsI === 'undefined' || typeof Amstar2 === 'undefined' || typeof Quadas2 === 'undefined') return;
 const $ = (s, r) => (r || document).querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const META = {
+  quadas: { versao: '0.1.0', atualizado: '2026-10-13', doc: 'formulário oficial do QUADAS-2 (3 p., fases 1 a 3)', doi: '10.7326/0003-4819-155-8-201110180-00009', nome: 'Whiting et al., Ann Intern Med 2011;155:529-536',
+    pend: ['O formulário conferido traz as perguntas de sinalização e as categorias de julgamento (baixo, alto, incerto), mas não traz a regra que transforma as respostas em julgamento de domínio. Por isso a ferramenta não calcula o julgamento: você decide a partir das respostas. Pendente: conferir no artigo original (Whiting 2011) a orientação para esse passo.',
+      'A referência do artigo (Whiting 2011) é a citação padrão do instrumento e não consta no formulário conferido; confira antes de citar.',
+      'O QUADAS-2 não tem julgamento global por estudo: o resultado é por domínio, como no formulário oficial.',
+      'Perguntas em português são tradução própria, ainda não revisada. O original em inglês está disponível em cada pergunta.',
+      'Se houver mais de um teste índice, preencha uma avaliação para cada teste (orientação do formulário). Ainda não há calculadora de sensibilidade, especificidade e razões de verossimilhança nesta aba.'] },
   robinsi: { versao: '0.1.0', atualizado: '2026-10-13', doc: 'ROBINS-I detailed guidance, atualizado em 20 de outubro de 2016 (PDF oficial, 53 p.)', doi: '10.1136/bmj.i4919', nome: 'Sterne et al., BMJ 2016;355:i4919',
     pend: ['Julgamentos por domínio: o guia oficial os define por critérios descritivos (Tabelas 5 a 11), não por algoritmo das respostas. Por isso a ferramenta mostra o caminho de perguntas e os critérios, e quem decide é o avaliador. Só o julgamento global (Tabela 2) é calculado.',
       'Perguntas e critérios em português são tradução própria, ainda não revisada por tradutor oficial. O texto original em inglês está disponível em cada pergunta e em cada critério.',
@@ -21,7 +27,7 @@ const META = {
       'Alguns critérios dependem de contexto ("quando relevante", "se apropriado"): marque se o critério foi cumprido ou não se aplicava, conforme seu julgamento.'] }
 };
 
-let ultimo = { rbi: '', ams: '' };
+let ultimo = { rbi: '', ams: '', qd: '' };
 const copiar = (btn, txt) => {
   const ok = () => { const t = btn.textContent; btn.textContent = 'Copiado'; setTimeout(() => { btn.textContent = t; }, 1800); };
   const fb = () => { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) { btn.textContent = 'Copie manualmente'; } ta.remove(); };
@@ -181,29 +187,82 @@ function renderAms() {
   ultimo.ams = L.join('\n');
 }
 
+
+/* ---------------- QUADAS-2 ---------------- */
+const QD = { estudo: '', paciente: '', indice: '', ref: '', resp: {}, jr: {}, ja: {} };
+const resetQ = () => { QD.estudo = ''; QD.paciente = ''; QD.indice = ''; QD.ref = ''; QD.resp = {}; QD.jr = {}; QD.ja = {}; };
+const QCOR = { baixo: 'baixo', incerto: 'algumas', alto: 'alto' };
+const QICON = { baixo: '✔', incerto: '?', alto: '✖' };
+function domQd(d, i) {
+  const rad = (nome, attr, vals, rot, cur) => vals.map((v) => `<label class="lc-opt"><input type="radio" name="${nome}" ${attr} value="${v}"${cur === v ? ' checked' : ''}><span>${esc(rot[v])}</span></label>`).join('');
+  const perg = d.perguntas.map((q) => `<fieldset class="lc-q"><legend><span class="lc-n">${q.id}</span> ${esc(q.pt)}</legend><div class="lc-opts" role="radiogroup">${rad('qd-' + q.id, 'data-qq="' + q.id + '"', Quadas2.RESP, Quadas2.RESP_ROTULO, QD.resp[q.id])}</div><details class="lc-dica"><summary>Pergunta original (inglês)</summary><p lang="en">${esc(q.en)}</p></details></fieldset>`).join('');
+  const nivs = ['baixo', 'alto', 'incerto'];
+  const jr = `<fieldset class="lc-q lc-efeito"><legend>Risco de viés: ${esc(d.risco)}</legend><div class="lc-opts" role="radiogroup">${rad('qd-jr-' + d.id, 'data-qjr="' + d.id + '"', nivs, Quadas2.NIVEL_ROTULO, QD.jr[d.id])}</div><details class="lc-dica"><summary>Original (inglês)</summary><p lang="en">${esc(d.riscoEn)}</p></details></fieldset>`;
+  const ja = d.aplic ? `<fieldset class="lc-q lc-efeito"><legend>Preocupação com a aplicabilidade: ${esc(d.aplic)}</legend><div class="lc-opts" role="radiogroup">${rad('qd-ja-' + d.id, 'data-qja="' + d.id + '"', nivs, Quadas2.NIVEL_ROTULO, QD.ja[d.id])}</div><details class="lc-dica"><summary>Original (inglês)</summary><p lang="en">${esc(d.aplicEn)}</p></details></fieldset>` : '';
+  return `<details class="lc-grp"${i === 0 ? ' open' : ''}><summary><span>${i + 1}. ${esc(d.titulo)}</span><span class="lc-bd" data-qbd="${d.id}"></span></summary><p class="lc-cond">${esc(d.descR)} (anote no artigo ou nas suas anotações).</p>${perg}${jr}${ja}</details>`;
+}
+function buildQd() {
+  $('#lc-qd-form').innerHTML =
+    `<p class="lc-intro">Para estudos primários que avaliam a acurácia de um teste diagnóstico (teste índice) contra um padrão de referência. Primeiro defina a pergunta; depois avalie cada domínio.</p>
+     <label class="lc-field"><span>Estudo (opcional)</span><input id="qd-estudo" type="text" autocomplete="off" placeholder="ex.: autor, ano" value="${esc(QD.estudo)}"></label>
+     <label class="lc-field"><span>Pacientes (cenário, uso pretendido do teste, apresentação, testes prévios)</span><input id="qd-paciente" type="text" autocomplete="off" value="${esc(QD.paciente)}"></label>
+     <label class="lc-field"><span>Teste(s) índice</span><input id="qd-indice" type="text" autocomplete="off" value="${esc(QD.indice)}"></label>
+     <label class="lc-field"><span>Padrão de referência e condição-alvo</span><input id="qd-ref" type="text" autocomplete="off" value="${esc(QD.ref)}"></label>
+     <p class="lc-intro">Responda as perguntas de cada domínio e escolha os julgamentos. "Incerto" é para quando não há informação suficiente no artigo.</p>
+     ${Quadas2.DOMINIOS.map(domQd).join('')}
+     <div class="lc-actions"><button id="qd-limpar" class="btn btn-ghost" type="button">Limpar</button><button id="qd-copiar" class="btn" type="button">Copiar resumo</button></div>`;
+}
+function renderQd() {
+  const ds = Quadas2.DOMINIOS;
+  ds.forEach((d) => {
+    const j = QD.jr[d.id], b = document.querySelector(`#lc-qd-form [data-qbd="${d.id}"]`);
+    b.textContent = j ? QICON[j] + ' ' + Quadas2.NIVEL_ROTULO[j] : ''; b.className = 'lc-bd' + (j ? ' lc-' + QCOR[j] : '');
+  });
+  const el = $('#lc-qd-res');
+  const feitos = ds.filter((d) => QD.jr[d.id] || QD.ja[d.id]).length;
+  if (!feitos) { el.innerHTML = '<div class="lc-card lc-empty">Escolha o risco de viés e a aplicabilidade de cada domínio. O formulário oficial não tem julgamento global: o resultado é por domínio.</div>'; ultimo.qd = ''; return; }
+  const cel = (v) => v ? `<span class="lc-dom lc-${QCOR[v]}" style="display:inline-block;padding:2px 8px"><span class="lc-di">${QICON[v]}</span> ${esc(Quadas2.NIVEL_ROTULO[v])}</span>` : '<span class="lc-note">…</span>';
+  const linhas = ds.map((d, i) => `<tr><th scope="row" style="text-align:left;padding:6px 8px 6px 0">${i + 1}. ${esc(d.titulo)}</th><td style="padding:6px 8px">${cel(QD.jr[d.id])}</td><td style="padding:6px 0">${d.aplic ? cel(QD.ja[d.id]) : '<span class="lc-note">não se aplica</span>'}</td></tr>`).join('');
+  const s = Quadas2.resumo(QD.jr, QD.ja);
+  el.innerHTML = `<div class="lc-card lc-glob"><p class="lc-gl">Resultado por domínio (sem julgamento global)</p><h3>Risco de viés: ${s.risco.baixo} baixo · ${s.risco.alto} alto · ${s.risco.incerto} incerto${s.risco.faltam ? ' · ' + s.risco.faltam + ' sem julgamento' : ''}</h3><p>Aplicabilidade: ${s.aplic.baixo} baixa preocupação · ${s.aplic.alto} alta · ${s.aplic.incerto} incerta${s.aplic.faltam ? ' · ' + s.aplic.faltam + ' sem julgamento' : ''}.</p></div>`
+    + `<div class="lc-card"><h3 class="lc-h">Por domínio</h3><table style="border-collapse:collapse;width:100%"><thead><tr><th></th><th scope="col" style="text-align:left;padding:4px 8px">Risco de viés</th><th scope="col" style="text-align:left;padding:4px 0">Aplicabilidade (preocupação)</th></tr></thead><tbody>${linhas}</tbody></table><p class="lc-note">Julgamentos escolhidos pelo avaliador a partir das respostas às perguntas de sinalização.</p></div>`;
+  const L = ['Avaliação de estudo de acurácia diagnóstica (QUADAS-2): apoio à decisão; confirme na leitura do artigo'];
+  if (QD.estudo) L.push('Estudo: ' + QD.estudo);
+  if (QD.paciente) L.push('Pacientes: ' + QD.paciente);
+  if (QD.indice) L.push('Teste índice: ' + QD.indice);
+  if (QD.ref) L.push('Padrão de referência: ' + QD.ref);
+  ds.forEach((d, i) => L.push(`${i + 1}. ${d.titulo}: risco de viés ${QD.jr[d.id] ? Quadas2.NIVEL_ROTULO[QD.jr[d.id]].toLowerCase() : 'sem julgamento'}` + (d.aplic ? `; aplicabilidade ${QD.ja[d.id] ? Quadas2.NIVEL_ROTULO[QD.ja[d.id]].toLowerCase() : 'sem julgamento'}` : '')));
+  L.push('Sem julgamento global (formulário oficial). Fonte: ' + META.quadas.nome);
+  ultimo.qd = L.join('\n');
+}
+
 /* ---------------- subabas e eventos ---------------- */
 function mostrar(sub) {
   $('#lc-pane-rob').hidden = true; $('#lc-pane-ef').hidden = true;
   root.querySelectorAll('.lc-ext').forEach((p) => { p.hidden = p.id !== 'lc-pane-' + sub; });
   root.querySelectorAll('.lc-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sub === sub)));
-  const m = META[sub === 'robins' ? 'robinsi' : 'amstar'];
+  const m = META[sub === 'robins' ? 'robinsi' : sub === 'amstar' ? 'amstar' : 'quadas'];
   $('#lc-pend2').innerHTML = m.pend.map((p) => `<li>${esc(p)}</li>`).join('');
-  $('#lc-rodape2').textContent = (sub === 'robins' ? 'ROBINS-I' : 'AMSTAR 2') + ' v' + m.versao + ' (' + m.doc + '), conferido em ' + m.atualizado.split('-').reverse().join('/') + '. Fonte: ' + m.nome + ' (doi ' + m.doi + ').';
-  if (sub === 'robins') renderRbi(); else renderAms();
+  $('#lc-rodape2').textContent = (sub === 'robins' ? 'ROBINS-I' : sub === 'amstar' ? 'AMSTAR 2' : 'QUADAS-2') + ' v' + m.versao + ' (' + m.doc + '), conferido em ' + m.atualizado.split('-').reverse().join('/') + '. Fonte: ' + m.nome + ' (doi ' + m.doi + ').';
+  if (sub === 'robins') renderRbi(); else if (sub === 'amstar') renderAms(); else renderQd();
 }
 function init() {
-  buildRbi(); buildAms();
+  buildRbi(); buildAms(); buildQd();
   root.addEventListener('click', (e) => {
     const b = e.target.closest('.lc-seg button[data-ext]');
     if (b) { mostrar(b.dataset.sub); return; }
     if (e.target.closest('.lc-seg button')) { $('#lc-pend2').innerHTML = ''; $('#lc-rodape2').textContent = ''; return; }
     if (e.target.closest('#rbi-limpar')) { resetR(); buildRbi(); renderRbi(); return; }
     if (e.target.closest('#ams-limpar')) { resetA(); buildAms(); renderAms(); return; }
-    const c = e.target.closest('#rbi-copiar, #ams-copiar');
-    if (c) copiar(c, c.id === 'rbi-copiar' ? ultimo.rbi : ultimo.ams);
+    if (e.target.closest('#qd-limpar')) { resetQ(); buildQd(); renderQd(); return; }
+    const c = e.target.closest('#rbi-copiar, #ams-copiar, #qd-copiar');
+    if (c) copiar(c, c.id === 'rbi-copiar' ? ultimo.rbi : c.id === 'ams-copiar' ? ultimo.ams : ultimo.qd);
   });
   root.addEventListener('change', (e) => {
     const t = e.target;
+    if (t.matches('input[data-qq]')) { QD.resp[t.dataset.qq] = t.value; return; }
+    if (t.matches('input[data-qjr]')) { QD.jr[t.dataset.qjr] = t.value; renderQd(); return; }
+    if (t.matches('input[data-qja]')) { QD.ja[t.dataset.qja] = t.value; renderQd(); return; }
     if (t.matches('input[data-rq]')) { R.resp[t.dataset.rq] = t.value; renderRbi(); return; }
     if (t.matches('input[data-rj]')) { R.jul[t.dataset.rj] = t.value; renderRbi(); return; }
     if (t.name === 'rbi-aim') { R.aim = t.value; renderRbi(); return; }
@@ -218,6 +277,10 @@ function init() {
   root.addEventListener('input', (e) => {
     if (e.target.id === 'rbi-estudo') { R.estudo = e.target.value; renderRbi(); }
     else if (e.target.id === 'rbi-desfecho') { R.desfecho = e.target.value; renderRbi(); }
+    else if (e.target.id === 'qd-estudo') { QD.estudo = e.target.value; renderQd(); }
+    else if (e.target.id === 'qd-paciente') { QD.paciente = e.target.value; renderQd(); }
+    else if (e.target.id === 'qd-indice') { QD.indice = e.target.value; renderQd(); }
+    else if (e.target.id === 'qd-ref') { QD.ref = e.target.value; renderQd(); }
   });
 }
 init();
