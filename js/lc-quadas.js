@@ -1,8 +1,9 @@
 /* QUADAS-2 (Whiting et al., Ann Intern Med 2011;155:529-536) para estudos primários de acurácia diagnóstica.
-   Fonte conferida: formulário oficial "QUADAS-2" (3 p.), fases 1 a 3: 4 domínios, 11 perguntas de sinalização,
-   julgamento de risco de viés (baixo/alto/incerto) e de preocupação de aplicabilidade nos domínios 1 a 3.
-   O formulário conferido NÃO traz regra que transforme as respostas em julgamento; por isso a ferramenta não calcula
-   o julgamento de domínio: mostra as perguntas e o avaliador decide. */
+   Fontes conferidas: formulário oficial "QUADAS-2" (3 p.) e o artigo original (10 p., fase 4 "Judgments on Bias and Applicability" e a
+   seção sobre o julgamento global). Regras do artigo: se todas as perguntas de sinalização do domínio são "sim", o risco de viés
+   pode ser julgado baixo; se alguma é "não", há potencial de viés e o julgamento segue as orientações específicas da revisão (fase 2);
+   "incerto" só quando faltam dados. Global: baixo em todos os domínios = baixo risco / baixa preocupação; alto ou incerto em 1 ou
+   mais = "em risco de viés" / "com preocupação de aplicabilidade". O artigo desaconselha escores numéricos. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.Quadas2 = factory();
@@ -33,11 +34,26 @@
   const RESP = ['Y', 'N', 'U'];
   const RESP_ROTULO = { Y: 'Sim', N: 'Não', U: 'Incerto' };
   const NIVEL_ROTULO = { baixo: 'Baixo', alto: 'Alto', incerto: 'Incerto' };
-  /* Resumo por estudo: nada é calculado além da contagem; o formulário oficial não tem julgamento global. */
+  /* Sugestão (não é julgamento) a partir das respostas às perguntas de sinalização de um domínio. r: {id: 'Y'|'N'|'U'}. */
+  function sugestaoRisco(dom, r) {
+    const d = DOMINIOS.find((x) => x.id === dom);
+    const v = d.perguntas.map((q) => (r || {})[q.id]);
+    if (v.some((x) => x === 'N')) return 'potencial';
+    if (v.every((x) => x === 'Y')) return 'baixo';
+    return null;
+  }
+  /* Julgamento global do estudo (artigo, seção de resumo): baixo em todos = baixo; alto ou incerto em 1 ou mais = em risco. */
+  function globalEstudo(j, usarDominios) {
+    const v = DOMINIOS.filter((d) => (usarDominios === 'aplic' ? d.aplic : true)).map((d) => (j || {})[d.id]);
+    if (v.some((x) => x === 'alto' || x === 'incerto')) return 'em_risco';
+    if (v.every((x) => x === 'baixo')) return 'baixo';
+    return null;
+  }
+  /* Resumo por estudo: contagem dos julgamentos. */
   function resumo(jr, ja) {
     const r = DOMINIOS.map((d) => (jr || {})[d.id]), a = DOMINIOS.filter((d) => d.aplic).map((d) => (ja || {})[d.id]);
     const cont = (v, k) => v.filter((x) => x === k).length;
     return { risco: { baixo: cont(r, 'baixo'), alto: cont(r, 'alto'), incerto: cont(r, 'incerto'), faltam: cont(r, undefined) }, aplic: { baixo: cont(a, 'baixo'), alto: cont(a, 'alto'), incerto: cont(a, 'incerto'), faltam: cont(a, undefined) } };
   }
-  return { DOMINIOS, RESP, RESP_ROTULO, NIVEL_ROTULO, resumo };
+  return { DOMINIOS, RESP, RESP_ROTULO, NIVEL_ROTULO, resumo, sugestaoRisco, globalEstudo };
 });
