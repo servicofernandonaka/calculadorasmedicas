@@ -15,6 +15,12 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
     (+ PA, CHA₂DS₂-VASc, HAS-BLED, TFG, Cockcroft-Gault, osteoporose/FRAX, Pádua, STOP-BANG, IMC).
 - **Rastreio (MedScreening)**: rastreamentos e vacinas indicados por idade, sexo e fatores de risco, com fonte e data de
   conferência em cada regra (INCA/MS, SBD, SBC, SBIm, PNI, USPSTF). Roda inteiramente no navegador.
+- **LabCore APS** (aba `#labcore`): interpretação de exames laboratoriais na APS. *Bancada Rápida* com TFGe CKD-EPI 2021 sem raça e matriz KDIGO,
+  FIB-4 por faixa etária e De Ritis, LDL por Friedewald/Sampson, Mentzer, saturação de transferrina, Na e Ca corrigidos, HOMA-IR e ânion gap, filtros
+  pré-analíticos (hemólise, lipemia, icterícia, biotina) e texto SOAP/e-SUS; *Colar do Prontuário* (parser local por regex); *Governança* com o
+  `GUIDELINES_REGISTRY` (`js/labcore-registry.js`), 12 sociedades monitoradas, relógio de 30 dias, sincronização por Gemini com busca na web ou por prompt
+  externo (sempre com diff e aprovação humana), editor de cutoffs locais e changelog. Os Módulos 2 (fluxogramas sindrômicos) e 3 (enciclopédia) ainda não existem.
+  Parâmetros marcados "a verificar" ou "lab. local" no Registry ainda não têm fonte primária conferida.
 - **Leitura crítica de artigos**: risco de viés de ensaios randomizados de grupos paralelos pelo **RoB 2** (algoritmo oficial,
   5 domínios, efeito da designação ou de aderir), com perguntas em português e o original em inglês, e calculadora de efeito
   (RAR, RRR, RR, OR, NNT/NNH com IC 95%, NNT para o risco basal do paciente, diferença de médias) e de acurácia diagnóstica (sensibilidade, especificidade, razões de verossimilhança, valores preditivos e probabilidade pós-teste a partir da tabela 2x2). Conferido no guia oficial
@@ -52,11 +58,11 @@ python3 -m http.server 8000
 # http://localhost:8000
 ```
 
-Testes dos motores da aba Leitura crítica (sem dependências): `node --test tests/*.test.js`.
+Testes dos motores da Leitura crítica e do LabCore (sem dependências): `node --test tests/*.test.js`.
 
 Para publicar no **GitHub Pages**: Settings → Pages → *Deploy from a branch* → selecione a branch e a pasta `/ (root)`.
 
-Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#paliativos`, `#rastreio`, `#mental`, `#leitura`, `#educacao/has-nutricao`, `#educacao/dm` (abre o primeiro tópico do guia), `#calc/framingham`.
+Links diretos: `#clinica`, `#cirurgia`, `#gineco`, `#geriatria`, `#paliativos`, `#rastreio`, `#mental`, `#leitura`, `#labcore`, `#educacao/has-nutricao`, `#educacao/dm` (abre o primeiro tópico do guia), `#calc/framingham`.
 
 ## Estrutura
 
