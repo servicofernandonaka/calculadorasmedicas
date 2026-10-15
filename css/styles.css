@@ -1021,3 +1021,7 @@ th { background: var(--surface-2); }
   .tab { min-height: 38px; padding: 6px 10px; font-size: .85rem; }
   .tab::after { left: 8px; right: 8px; }
 }
+#view-labcore dialog#lab-dlg { width:min(680px, 94vw); max-height:90vh; overflow:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); color:var(--text); padding:18px; box-shadow:var(--shadow-lg); }
+#view-labcore dialog#lab-dlg::backdrop { background:rgba(10, 20, 28, .55); }
+#view-labcore dialog#lab-dlg h2 { margin:0 0 8px; font-size:1.15rem; }
+#view-labcore dialog#lab-dlg .field { margin:8px 0; }

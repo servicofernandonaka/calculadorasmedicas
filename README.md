@@ -18,11 +18,14 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
 - **LabCore APS** (aba `#labcore`): interpretação de exames laboratoriais na APS. *Bancada Rápida* com TFGe CKD-EPI 2021 sem raça e matriz KDIGO,
   FIB-4 por faixa etária e De Ritis, LDL por Friedewald/Sampson, Mentzer, saturação de transferrina, Na e Ca corrigidos, HOMA-IR e ânion gap, filtros
   pré-analíticos (hemólise, lipemia, icterícia, biotina) e texto SOAP/e-SUS; *Colar do Prontuário* (parser local por regex); *Governança* com o
-  `GUIDELINES_REGISTRY` (`js/labcore-registry.js`), 12 sociedades monitoradas, relógio de 30 dias, sincronização por Gemini com busca na web ou por prompt
+  `GUIDELINES_REGISTRY` (`js/labcore-registry.js`), 12 sociedades monitoradas, relógio de 30 dias, sincronização por OpenRouter com busca na web ou por prompt
   externo (sempre com diff e aprovação humana), editor de cutoffs locais e changelog. *Fluxogramas* (`js/labcore-fluxos.js`): 8 árvores de decisão interativas, com cortes lidos do Registry: eixo tireoidiano (adulto, subclínico, gestação, biotina),
   sífilis (matriz treponêmico × VDRL, prozona, resposta ao tratamento), toxoplasmose gestacional (avidez), hepatite B, hipertransaminasemia/colestase (fator R, Gilbert),
   FAN/ICAP (AC-2 × padrões de LES, esclerodermia e Sjögren), gamopatias monoclonais (IMWG: CRAB e SLiM) e urinálise/urocultura (IDSA 2019). *Enciclopédia*
   (`js/labcore-enciclopedia.js`): meia-vida, interferentes e critérios de encaminhamento; a lista de exames obrigatórios de cada central (CROSS/SISREG) é colada pelo usuário e fica só no navegador.
+  Adendo de hematologia e proteínas: globulinas e A/G, checklist CRAB, IPR, Green & King, cinética do ferro, ANC, coagulograma (INR e razão do TTPa), alerta de pseudotrombocitopenia por EDTA,
+  simulador de EPS com curva SVG e interpretador de eletroforese de hemoglobina/HPLC (`js/labcore-hemato.js`). **Criador de exames**: botão "+ Adicionar Novo Exame / Índice" (salva no navegador, exporta/importa `.json`)
+  ou, por código, os arrays `CUSTOM_EXAMS_PLUGINS` e `CUSTOM_FLOWS_PLUGINS` em `js/labcore-plugins.js`; as fórmulas passam por um avaliador próprio (sem `eval`).
   Cada parâmetro do Registry tem status: diretriz, fonte secundária, a verificar ou referência do laboratório; nenhum dos novos cortes foi conferido no texto original da diretriz.
 - **Leitura crítica de artigos**: risco de viés de ensaios randomizados de grupos paralelos pelo **RoB 2** (algoritmo oficial,
   5 domínios, efeito da designação ou de aderir), com perguntas em português e o original em inglês, e calculadora de efeito

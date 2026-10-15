@@ -214,3 +214,36 @@ test('SOAP traz exames, índices com selo e alertas', () => {
   assert.match(t, /^S:/m); assert.match(t, /^O:/m); assert.match(t, /^A:/m); assert.match(t, /^P:/m);
   assert.match(t, /\[KDIGO 2024 \| Auditado: Out\/2026\]/); assert.match(t, /Hemólise/); assert.match(t, /15\/10\/2026/);
 });
+
+/* ---------- OpenRouter (Modo A) ---------- */
+test('OpenRouter: corpo da requisição com plugin de busca na web, baixa temperatura e limite de tokens', () => {
+  const b = L.openrouterBody('anthropic/claude-sonnet-5.5', 'PROMPT');
+  assert.equal(b.model, 'anthropic/claude-sonnet-5.5'); assert.deepEqual(b.plugins, [{ id: 'web', max_results: 8 }]);
+  assert.equal(b.temperature, 0.1); assert.ok(b.max_tokens >= 2000);
+  assert.equal(b.messages[0].role, 'system'); assert.equal(b.messages[1].content, 'PROMPT');
+  assert.equal(L.OPENROUTER_URL, 'https://openrouter.ai/api/v1/chat/completions');
+});
+test('OpenRouter: leitura da resposta, citações da web (sem duplicar, só http/https) e corte por tamanho', () => {
+  const j = { choices: [{ finish_reason: 'stop', message: { content: '{"a":1}', annotations: [
+    { type: 'url_citation', url_citation: { url: 'https://kdigo.org/x', title: 'KDIGO' } },
+    { type: 'url_citation', url_citation: { url: 'https://kdigo.org/x', title: 'repetida' } },
+    { type: 'url_citation', url_citation: { url: 'javascript:alert(1)', title: 'ruim' } },
+    { type: 'outro' }] } }] };
+  const o = L.openrouterParse(j);
+  assert.equal(o.text, '{"a":1}'); assert.deepEqual(o.citations, [{ uri: 'https://kdigo.org/x', title: 'KDIGO' }]); assert.equal(o.truncated, false);
+  assert.equal(L.openrouterParse({ choices: [{ finish_reason: 'length', message: { content: 'x' } }] }).truncated, true);
+  assert.equal(L.openrouterParse({ choices: [{ message: { content: [{ text: 'a' }, { text: 'b' }] } }] }).text, 'ab');
+  assert.match(L.openrouterParse({ error: { message: 'falha do provedor' } }).error, /falha do provedor/);
+  assert.match(L.openrouterParse({}).error, /não devolveu/);
+});
+test('OpenRouter: mensagens de erro por status (chave, crédito, modelo, limite)', () => {
+  assert.match(L.openrouterErro(401, null), /Chave.*recusada/); assert.match(L.openrouterErro(402, null), /Créditos insuficientes/);
+  assert.match(L.openrouterErro(404, { error: { message: 'No endpoints' } }), /Modelo não encontrado.*No endpoints/);
+  assert.match(L.openrouterErro(429, null), /Limite/); assert.match(L.openrouterErro(500, null), /Erro 500/);
+});
+test('OpenRouter: resposta com JSON dentro de texto vira pacote validável', () => {
+  const reg2 = L.effective({}, {});
+  const o = L.openrouterParse({ choices: [{ message: { content: 'Segue:\n```json\n{"schema":"labcore-update/1","proposals":[{"guideline":"fib4","param":"mid.low","value":1.45,"source":"EASL 2026"}]}\n```' } }] });
+  const v = L.validatePackage(L.extractJson(o.text), reg2);
+  assert.ok(v.ok); assert.equal(v.rows[0].valid, true);
+});

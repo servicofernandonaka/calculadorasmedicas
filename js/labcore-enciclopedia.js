@@ -7,7 +7,7 @@
   else root.LabCoreEnciclopedia = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  const CATS = { fisiologia: 'Fisiologia e meia-vida', interferentes: 'Interferentes pré-analíticos e analíticos', encaminhamento: 'Critérios de encaminhamento (CROSS / SISREG)' };
+  const CATS = { fisiologia: 'Fisiologia e meia-vida', interferentes: 'Interferentes pré-analíticos e analíticos', encaminhamento: 'Critérios de encaminhamento (CROSS / SISREG)', personalizados: 'Exames personalizados' };
   const E = (id, cat, titulo, resumo, pontos, fonte, tags, conf, extra) => Object.assign({ id, cat, titulo, resumo, pontos, fonte, tags: tags || '', conf: conf || 'livro' }, extra);
   const n = (v) => String(v).replace('.', ',');
 
@@ -63,9 +63,9 @@
   /* Busca por texto (sem acento, por termos) e categoria; ordena por relevância. */
   const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const textoPontos = (e, reg) => e.pontos.map((p) => (typeof p === 'function' ? (reg ? p(reg) : '') : p));
-  function buscar(q, cat, reg) {
+  function buscar(q, cat, reg, extra) {
     const termos = norm(q).split(/\s+/).filter(Boolean);
-    return ENTRADAS.filter((e) => !cat || e.cat === cat).map((e) => {
+    return ENTRADAS.concat(extra || []).filter((e) => !cat || e.cat === cat).map((e) => {
       const pal = norm([e.titulo, e.resumo, e.tags, e.fonte].concat(textoPontos(e, reg)).join(' '));
       let pts = 0;
       for (const t of termos) { if (!pal.includes(t)) return null; pts += norm(e.titulo).includes(t) ? 3 : norm(e.tags).includes(t) ? 2 : 1; }
