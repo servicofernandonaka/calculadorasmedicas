@@ -86,6 +86,12 @@
       heart(184, 120, 16, C.coral) +
       spark(46, 40, 9, C.mint) + spark(194, 36, 7, '#fff') + dot(52, 132, 5, C.yellow),
 
+    labcore: halo +
+      `<g fill="#fff"><rect x="86" y="34" width="14" height="56" rx="5"/><rect x="108" y="34" width="14" height="56" rx="5"/><rect x="130" y="34" width="14" height="56" rx="5"/></g>` +
+      `<path d="M86 96h58l-8 34a8 8 0 0 1-8 6h-26a8 8 0 0 1-8-6z" fill="${C.sky}" fill-opacity=".55" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>` +
+      `<path d="M30 112h38l8-14 10 30 10-40 10 32 6-8h58" stroke="#fff" stroke-opacity=".7" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` +
+      spark(40, 40, 9, C.mint) + plus(196, 40, 8, '#fff') + dot(200, 128, 5, C.yellow),
+
     leitura: halo +
       `<rect x="58" y="30" width="96" height="112" rx="12" fill="#fff"/>` +
       `<g stroke="#C9D6DC" stroke-width="5" stroke-linecap="round"><path d="M74 54h44M74 72h64M74 90h52"/></g>` +
