@@ -64,7 +64,7 @@ test('Cinética do ferro: ferropenia, inflamação, sobrecarga e CTLF estimada p
   assert.match(k({ ferritina: 12, ferro: 30, ctlf: 400 }).sub, /Ferropenia clássica/);                         // IST 7,5%
   assert.match(k({ ferritina: 250, ferro: 30, ctlf: 200 }).sub, /Anemia da inflamação/);                      // IST 15%, CTLF 200 < 250
   assert.match(k({ ferritina: 250, ferro: 40, ctlf: 300 }).sub, /CTLF não baixa/);                            // IST 13%, CTLF 300
-  assert.match(k({ ferritina: 60, ferro: 30, ctlf: 400 }).sub, /intermediária/);
+  assert.match(k({ ferritina: 60, ferro: 30, ctlf: 400 }).sub, /Deficiência funcional/);
   assert.match(k({ ferritina: 800, ferro: 180, ctlf: 300 }).sub, /Sobrecarga/);                              // IST 60%
   assert.equal(k({ ferritina: 800, ferro: 180, ctlf: 300 }).level, 'high');
   assert.match(k({ ferritina: 100, ferro: 180, ctlf: 300 }).sub, /elevada com ferritina não alta/);
@@ -234,13 +234,13 @@ test('Avaliação: referência, interpretação, fórmula e variáveis ausentes'
   assert.equal(P.avaliar({ id: 'x_s', nome: 'S', categoria: 'C', siglas: [], unidade: 'u', refMin: null, refMax: null, formula: '', interferentes: '', interpretaAlto: '', interpretaBaixo: '', regulacao: '', fonte: '' }, { x_s: 5 }).sub, 'Sem referência cadastrada');
 });
 test('Plugin integrado ao parser, à Bancada, ao SOAP e à Enciclopédia', () => {
-  const b12 = P.validar({ nome: 'Vitamina B12', id: 'x_b12', siglas: 'B12, Cobalamina', unidade: 'pg/mL', refMin: 200, refMax: 900, regulacao: 'Protocolo local' }, OK, OK).plugin;
+  const b12 = P.validar({ nome: 'Vitamina B12', id: 'x_b12', siglas: 'XB12, Xcobalamina', unidade: 'pg/mL', refMin: 200, refMax: 900, regulacao: 'Protocolo local' }, OK, OK).plugin;
   const ipx = P.validar({ nome: 'Razão VCM/RBC', id: 'x_razao', formula: 'x_b12 / 100 + vcm', refMax: 500 }, OK.concat('x_b12'), OK.concat('x_b12')).plugin;
   const lista = [b12, ipx];
   // parser: reconhece as siglas do plugin (sem acento, com vírgula)
-  const r = L.parseReport('Hb 10,5 Cobalamina 150', P.aliases(lista));
+  const r = L.parseReport('Hb 10,5 Xcobalamina 150', P.aliases(lista));
   assert.equal(r.values.x_b12, 150);
-  assert.equal(L.parseReport('B12: 180', P.aliases(lista)).values.x_b12, 180);
+  assert.equal(L.parseReport('XB12: 180', P.aliases(lista)).values.x_b12, 180);
   assert.equal(r.values.hb, 10.5);
   // bancada: valores nativos + plugin
   const a = L.analyze({ hb: 10.5, vcm: 80 });
@@ -254,8 +254,8 @@ test('Plugin integrado ao parser, à Bancada, ao SOAP e à Enciclopédia', () =>
   // enciclopédia
   const e = P.paraEnciclopedia(b12);
   assert.equal(e.cat, 'personalizados'); assert.equal(e.regulacaoPadrao, 'Protocolo local');
-  assert.deepEqual(E.buscar('cobalamina', '', reg, [e]).map((x) => x.id), ['custom_x_b12']);
-  assert.equal(E.buscar('cobalamina', '', reg).length, 0);
+  assert.deepEqual(E.buscar('xcobalamina', '', reg, [e]).map((x) => x.id), ['custom_x_b12']);
+  assert.equal(E.buscar('xcobalamina', '', reg).length, 0);
   assert.equal(E.buscar('', 'personalizados', reg, [e]).length, 1);
 });
 test('Exportar/importar .json: valida esquema, ids repetidos e itens inválidos', () => {
