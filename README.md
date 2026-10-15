@@ -26,6 +26,9 @@ Site estático (HTML, CSS e JavaScript puro, sem etapa de build) com:
   Adendo de hematologia e proteínas: globulinas e A/G, checklist CRAB, IPR, Green & King, cinética do ferro, ANC, coagulograma (INR e razão do TTPa), alerta de pseudotrombocitopenia por EDTA,
   simulador de EPS com curva SVG e interpretador de eletroforese de hemoglobina/HPLC (`js/labcore-hemato.js`). **Criador de exames**: botão "+ Adicionar Novo Exame / Índice" (salva no navegador, exporta/importa `.json`)
   ou, por código, os arrays `CUSTOM_EXAMS_PLUGINS` e `CUSTOM_FLOWS_PLUGINS` em `js/labcore-plugins.js`; as fórmulas passam por um avaliador próprio (sem `eval`).
+  Painéis estratégicos da APS: próstata (PSA corrigido por 5-ARI, relação livre/total, densidade, interferentes), metabolismo ósseo e paratireoide, vitamina B12 com homocisteína/AMM,
+  doença celíaca (regra da IgA e do glúten prévio), calprotectina e elastase fecais, e o analisador de líquidos cavitários (`js/labcore-liquidos.js`): ascite (GASA, PBE, peritonite secundária)
+  e derrame pleural (critérios de Light, pseudoexsudato por diurético e indicação de drenagem). O botão "+ Novo Exame / Adendo" fica no topo do site; a Governança exporta e importa os exames cadastrados.
   Cada parâmetro do Registry tem status: diretriz, fonte secundária, a verificar ou referência do laboratório; nenhum dos novos cortes foi conferido no texto original da diretriz.
 - **Leitura crítica de artigos**: risco de viés de ensaios randomizados de grupos paralelos pelo **RoB 2** (algoritmo oficial,
   5 domínios, efeito da designação ou de aderir), com perguntas em português e o original em inglês, e calculadora de efeito

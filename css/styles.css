@@ -1025,3 +1025,7 @@ th { background: var(--surface-2); }
 #view-labcore dialog#lab-dlg::backdrop { background:rgba(10, 20, 28, .55); }
 #view-labcore dialog#lab-dlg h2 { margin:0 0 8px; font-size:1.15rem; }
 #view-labcore dialog#lab-dlg .field { margin:8px 0; }
+
+.topbar .lab-global { white-space: nowrap; min-height: 40px; padding: 6px 12px; font-size: .875rem; flex-shrink: 0; }
+.topbar .lab-global .lg-short { display: none; }
+@media (max-width: 700px) { .topbar .lab-global .lg-full { display: none; } .topbar .lab-global .lg-short { display: inline; } }

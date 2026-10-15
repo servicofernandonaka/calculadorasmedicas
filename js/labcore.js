@@ -2,9 +2,9 @@
    Dados do paciente nunca são gravados: só o Registry ajustado, as auditorias, o changelog e (opcional) a chave do OpenRouter vão para o localStorage. */
 (function () {
   'use strict';
-  const L = window.LabCore, FX = window.LabCoreFluxos, EN = window.LabCoreEnciclopedia, HM = window.LabCoreHemato, PL = window.LabCorePlugins;
+  const L = window.LabCore, FX = window.LabCoreFluxos, EN = window.LabCoreEnciclopedia, HM = window.LabCoreHemato, PL = window.LabCorePlugins, LQ = window.LabCoreLiquidos;
   const root = document.getElementById('lab-root');
-  if (!L || !FX || !EN || !HM || !PL || !root) return;
+  if (!L || !FX || !EN || !HM || !PL || !LQ || !root) return;
 
   const store = {
     get(k, d) { try { const s = localStorage.getItem(k); return s == null ? d : JSON.parse(s); } catch (e) { return d; } },
@@ -74,7 +74,7 @@
     const tabs = [['bancada', 'Bancada Rápida'], ['fluxos', 'Fluxogramas'], ['enc', 'Enciclopédia'], ['colar', 'Colar do Prontuário'], ['gov', 'Governança']];
     root.innerHTML = `${banner}
       <p class="lab-notice"><strong>Apoio à decisão para profissionais de saúde.</strong> Não substitui o julgamento clínico nem o laudo do laboratório. Nada do que você digita sobre o paciente sai do navegador nem é salvo; só os ajustes do Registry, os exames que você cadastrar e os protocolos de regulação ficam neste aparelho.</p>
-      <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-new">+ Adicionar Novo Exame / Índice</button></div>
+      <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-new">+ Novo Exame / Adendo</button></div>
       ${S.codeWarn.length ? `<div class="warn"><strong>Adendos de código recusados</strong><span>${S.codeWarn.map(esc).join(' · ')}</span></div>` : ''}
       <div class="lab-tabs" role="tablist">${tabs.map(([id, n]) => `<button type="button" role="tab" class="chip" data-act="sub" data-sub="${id}" aria-pressed="${S.sub === id}" aria-selected="${S.sub === id}">${n}</button>`).join('')}</div>
       <div id="lab-body"></div><dialog id="lab-dlg" aria-labelledby="lab-dlg-t"></dialog>`;
@@ -82,7 +82,8 @@
   }
 
   /* ================= Módulo 1: Bancada Rápida ================= */
-  const GRUPOS = { hemato: 'Hemograma e ferro', renal: 'Rim', eletro: 'Eletrólitos', metab: 'Glicemia', hepat: 'Fígado e hemólise', lipid: 'Lipídios', tireo: 'Tireoide', prot: 'Proteínas', coag: 'Coagulograma' };
+  const GRUPOS = { hemato: 'Hemograma e ferro', renal: 'Rim', eletro: 'Eletrólitos', metab: 'Glicemia', hepat: 'Fígado e hemólise', lipid: 'Lipídios', tireo: 'Tireoide', prot: 'Proteínas', coag: 'Coagulograma', prost: 'Próstata (PSA)', osso: 'Metabolismo ósseo e paratireoide', b12: 'Vitamina B12, folato e metabólitos', gastro: 'Gastroenterologia' };
+  const SIMNAO = [['', '—'], ['pos', 'Positivo'], ['neg', 'Negativo']];
   const CASOS = [
     { n: '1. MASLD / fibrose silenciosa', d: { idade: 52, sexo: 'M', ast: 58, alt: 74, plaq: 168000, ct: 232, hdl: 38, tg: 210, glicemia: 112, insulina: 18, hba1c: 5.9 } },
     { n: '2. Pseudo-hipercalemia por hemólise', d: { idade: 45, sexo: 'F', k: 6.8, ast: 95, ldh: 520, cr: 0.9, na: 139, flags: { hemolise: true } } },
@@ -107,11 +108,22 @@
           <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="casos">Carregar Casos Clínicos de Exemplo</button><button type="button" class="btn btn-ghost" data-act="limpar">Limpar</button></div>
           <div id="lab-casos" class="lab-row" hidden>${CASOS.map((c, i) => `<button type="button" class="chip" data-act="caso" data-i="${i}">${esc(c.n)}</button>`).join('')}</div>
         </section>
-        ${Object.keys(GRUPOS).map((g) => `<section class="lab-panel"><h2>${GRUPOS[g]}</h2><div class="lab-grid">${L.FIELDS.filter((f) => f.group === g).map(inp).join('')}</div>${g === 'prot' ? `<div class="lab-checks">${chk('picoM', 'Pico monoclonal (componente M) presente na eletroforese', v.picoM, 'data-b')}</div>` : ''}</section>`).join('')}
+        ${Object.keys(GRUPOS).map((g) => `<section class="lab-panel"><h2>${GRUPOS[g]}</h2><div class="lab-grid">${L.FIELDS.filter((f) => f.group === g).map(inp).join('')}</div>${extrasGrupo(g, v, chk)}</section>`).join('')}
         ${plugins().filter((p) => !p.formula).length ? `<section class="lab-panel"><h2>Exames personalizados</h2><div class="lab-grid">${plugins().filter((p) => !p.formula).map((p) => `<label class="field"><span>${esc(p.nome)} <span class="unit">${esc(p.unidade)}</span></span><input type="text" inputmode="decimal" autocomplete="off" data-f="${p.id}" value="${esc(v[p.id])}"></label>`).join('')}</div></section>` : ''}
       </div>
       <div class="lab-results" aria-live="polite"><div id="lab-out"></div></div></div>`;
     calc();
+  }
+
+  /* Controles que não são números: caixas de marcação e selects de cada painel. */
+  function extrasGrupo(g, v, chk) {
+    const sel = (id, rot) => `<label class="field"><span>${rot}</span><select data-sel="${id}">${SIMNAO.map((o) => `<option value="${o[0]}" ${v[id] === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></label>`;
+    const box = (arr) => `<div class="lab-checks">${arr.map(([k, t]) => chk(k, t, v[k], 'data-b')).join('')}</div>`;
+    if (g === 'prot') return box([['picoM', 'Pico monoclonal (componente M) presente na eletroforese']]);
+    if (g === 'prost') return box([['ari', 'Em uso de finasterida / dutasterida (≥ 6 meses)'], ['psaProstatite', 'Prostatite ou infecção urinária recente'], ['psaEjac', 'Ejaculação nas últimas 48 h'], ['psaBike', 'Exercício intenso em bicicleta'], ['psaInstr', 'Instrumentação uretral ou toque retal vigoroso recente']]);
+    if (g === 'b12') return box([['metIBP', 'Uso crônico de metformina ou IBP (omeprazol, pantoprazol)'], ['sintB12', 'Parestesias, queixa cognitiva, glossite ou VCM > 98 fL']]);
+    if (g === 'gastro') return `<div class="lab-grid" style="margin-top:10px">${sel('ttgIgA', 'Anti-transglutaminase IgA')}${sel('dgpIgG', 'Anti-gliadina deaminada IgG (anti-DGP)')}</div>${box([['semGluten', 'Paciente já em dieta isenta de glúten antes da coleta']])}`;
+    return '';
   }
 
   function calc() {
@@ -239,10 +251,34 @@
       ],
     },
   };
+  TOOLS.liq = {
+    titulo: 'Analisador de Líquidos Cavitários', resumo: 'Ascite (GASA e PBE) e derrame pleural (critérios de Light, correção por diurético e drenagem torácica).',
+    modo: 'asc',
+    modos: {
+      asc: {
+        nome: 'Líquido ascítico',
+        campos: [['albS', 'Albumina sérica', 'g/dL'], ['albA', 'Albumina no líquido ascítico', 'g/dL'], ['protA', 'Proteína total no líquido ascítico', 'g/dL'], ['pmn', 'Polimorfonucleares (PMN)', 'células/mm³'], ['glicA', 'Glicose no líquido', 'mg/dL'], ['ldhA', 'LDH no líquido', 'U/L'], ['ldhLsn', 'LSN do LDH sérico (opcional)', 'U/L'], ['ada', 'ADA no líquido', 'U/L'], ['peso', 'Peso (opcional, dose de albumina)', 'kg']],
+        selects: [], checks: [['linfocitico', 'Predomínio linfocítico']],
+        exemplos: [['Cirrose', { albS: 3.0, albA: 1.0, protA: 1.0, pmn: 100 }], ['PBE', { albS: 2.8, albA: 0.9, protA: 1.0, pmn: 600, peso: 70 }], ['Causa cardíaca', { albS: 3.5, albA: 1.5, protA: 3.2, pmn: 80 }], ['Carcinomatose (exsudato)', { albS: 3.2, albA: 2.4, protA: 4.0, pmn: 120 }], ['Peritonite secundária', { albS: 3.0, albA: 2.0, protA: 2.0, pmn: 900, glicA: 20, ldhA: 600, ldhLsn: 250 }]],
+      },
+      pl: {
+        nome: 'Derrame pleural',
+        campos: [['protP', 'Proteína pleural', 'g/dL'], ['protS', 'Proteína sérica', 'g/dL'], ['ldhP', 'LDH pleural', 'U/L'], ['ldhS', 'LDH sérico', 'U/L'], ['ldhLsn', 'LSN de referência do LDH sérico', 'U/L'], ['albS', 'Albumina sérica', 'g/dL'], ['albP', 'Albumina pleural', 'g/dL'], ['ph', 'pH pleural', ''], ['glicP', 'Glicose pleural', 'mg/dL'], ['adaP', 'ADA pleural', 'U/L']],
+        selects: [], checks: [['diuretico', 'Em uso de diurético (furosemida / tiazídico)'], ['linfocitico', 'Predomínio linfocítico']],
+        exemplos: [['Transudato (IC)', { protP: 2.0, protS: 6.5, ldhP: 100, ldhS: 250, ldhLsn: 225 }], ['Exsudato parapneumônico', { protP: 4.5, protS: 6.5, ldhP: 600, ldhS: 250, ldhLsn: 225, ph: 7.3, glicP: 90 }], ['Empiema', { protP: 4.8, protS: 6.4, ldhP: 2400, ldhS: 260, ldhLsn: 225, ph: 7.0, glicP: 25 }], ['Falso exsudato por diurético', { protP: 3.6, protS: 6.0, ldhP: 120, ldhS: 250, ldhLsn: 225, albS: 3.6, albP: 1.9, diuretico: true }], ['Tuberculose pleural', { protP: 5.0, protS: 7.0, ldhP: 400, ldhS: 250, ldhLsn: 225, adaP: 60, linfocitico: true }]],
+      },
+    },
+  };
+  const defTool = () => {
+    if (S.tool !== 'liq') return TOOLS[S.tool];
+    const m = TOOLS.liq.modos[S.toolRaw.modo || TOOLS.liq.modo];
+    return Object.assign({}, TOOLS.liq, m);
+  };
   function renderTool() {
-    const t = TOOLS[S.tool], v = S.toolRaw;
+    const t = defTool(), v = S.toolRaw;
     document.getElementById('lab-body').innerHTML = `<section class="lab-panel"><h2>${esc(t.titulo)}</h2>
       <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="tool-back">Voltar aos fluxogramas</button></div>
+      ${S.tool === 'liq' ? `<div class="lab-row">${Object.entries(TOOLS.liq.modos).map(([k, m]) => `<button type="button" class="chip" data-act="tool-modo" data-m="${k}" aria-pressed="${(v.modo || 'asc') === k}">${esc(m.nome)}</button>`).join('')}</div>` : ''}
       <p class="lab-small">Exemplos didáticos (valores inventados para treino, não são de pacientes):</p>
       <div class="lab-row">${t.exemplos.map((e, i) => `<button type="button" class="chip" data-act="tool-ex" data-i="${i}">${esc(e[0])}</button>`).join('')}</div>
       <div class="lab-layout"><div><div class="lab-grid">${t.campos.map(([id, n, u]) => `<label class="field"><span>${esc(n)} <span class="unit">${esc(u)}</span></span><input type="text" inputmode="decimal" autocomplete="off" data-tf="${id}" value="${esc(v[id])}"></label>`).join('')}
@@ -254,11 +290,11 @@
   function calcTool() {
     const out = document.getElementById('lab-toolout');
     if (!out) return;
-    const t = TOOLS[S.tool], v = S.toolRaw, num = {}, avisos = [];
+    const t = defTool(), v = S.toolRaw, num = {}, avisos = [];
     t.campos.forEach(([id, n]) => {
       const x = L.parseNum(v[id]);
       if (x == null) { if (v[id] != null && String(v[id]).trim() !== '') avisos.push(`${n}: não é um número.`); return; }
-      if (x < 0 || (S.tool === 'hplc' && ['a1', 'a2', 'f', 's', 'c'].includes(id) && x > 100)) { avisos.push(`${n}: valor fora da faixa possível.`); return; }
+      if ((x < 0 && id !== 'ph') || (S.tool === 'hplc' && ['a1', 'a2', 'f', 's', 'c'].includes(id) && x > 100)) { avisos.push(`${n}: valor fora da faixa possível.`); return; }
       num[id] = x;
     });
     t.selects.forEach(([id, , ops]) => { num[id] = v[id] || ops[0][0]; });
@@ -268,7 +304,16 @@
     let h = avisos.map((w) => `<div class="warn"><strong>Atenção</strong><span>${esc(w)}</span></div>`).join('');
     if (!dados.length) { out.innerHTML = h + '<p class="lab-notice">Preencha as frações ou escolha um exemplo. O resultado aparece aqui na hora.</p>'; return; }
     let res, nota;
-    if (S.tool === 'eps') {
+    if (S.tool === 'liq') {
+      const asc = (v.modo || 'asc') === 'asc';
+      res = asc ? LQ.ascite(num, r) : LQ.pleural(num, r);
+      res.avisos.forEach((w) => { h += `<div class="warn"><strong>Atenção</strong><span>${esc(w)}</span></div>`; });
+      res.alertas.forEach((x) => { h += `<div class="lab-alert" role="alert"><strong>${esc(x.title)}</strong>${esc(x.text)}</div>`; });
+      if (asc && res.gasa != null) h += `<div class="result ${res.hipertensaoPortal ? 'info' : 'mod'}"><div class="res-head"><span class="sub">GASA</span><span class="main">${esc(L.fmt(res.gasa, 1))} g/dL</span><span class="sub">${res.hipertensaoPortal ? 'Transudato · hipertensão portal' : 'Exsudato · sem hipertensão portal'}</span></div><p class="det">Albumina sérica − albumina do líquido ascítico.</p></div>`;
+      if (!asc && res.criterios.length) h += `<div class="result info"><div class="res-head"><span class="sub">Critérios de Light</span></div><ul class="det">${res.criterios.map((c) => `<li>${c.ok ? '✔' : '✘'} ${esc(c.n)}</li>`).join('')}</ul></div>`;
+      res.padroes.forEach((p) => { h += `<div class="result ${p.level}" ${p.level === 'high' ? 'data-grade="2"' : ''}><div class="res-head"><span class="main" style="font-size:1.15rem">${esc(p.title)}</span></div><p class="det">${esc(p.text)}</p>${(p.recs || []).length ? `<ul class="det">${p.recs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`; });
+      nota = [`${asc ? 'Líquido ascítico' : 'Derrame pleural'} (LabCore APS) — ${today().split('-').reverse().join('/')}`].concat(Object.entries(num).filter(([k, x]) => typeof x === 'number').map(([k, x]) => `${(t.campos.find((c) => c[0] === k) || [k, k])[1]} ${L.fmt(x, 2)}`), asc && res.gasa != null ? [`GASA ${L.fmt(res.gasa, 1)} g/dL`] : [], !asc ? res.criterios.map((c) => `Light: ${c.ok ? 'positivo' : 'negativo'}, ${c.n}`) : [], res.alertas.map((x) => `ALERTA: ${x.title}. ${x.text}`), res.padroes.map((p) => `- ${p.title}: ${p.text}`), [res.selos.join(' '), 'Apoio à decisão; não substitui o julgamento clínico.']).join('\n');
+    } else if (S.tool === 'eps') {
       res = HM.eps(num, r);
       h += `<div class="lab-panel" style="margin:0">${res.svg}</div>`;
       res.padroes.forEach((p) => { h += `<div class="result ${p.level}" ${p.level === 'high' ? 'data-grade="2"' : ''}><div class="res-head"><span class="main" style="font-size:1.15rem">${esc(p.title)}</span></div><p class="det">${esc(p.text)}</p></div>`; });
@@ -293,7 +338,7 @@
     const val = (k) => esc(e ? (Array.isArray(e[k]) ? e[k].join(', ') : e[k] == null ? '' : e[k]) : '');
     const campo = (id, rot, extra) => `<label class="field"><span>${rot}</span><input type="text" id="dlg-${id}" autocomplete="off" value="${val(id)}" ${extra || ''}></label>`;
     const area = (id, rot) => `<label class="field"><span>${rot}</span><textarea id="dlg-${id}" style="min-height:64px">${val(id)}</textarea></label>`;
-    dlg.innerHTML = `<h2 id="lab-dlg-t">${e ? 'Editar exame / índice' : '+ Novo exame / índice'}</h2>
+    dlg.innerHTML = `<h2 id="lab-dlg-t">${e ? 'Editar exame / adendo' : '+ Novo exame / adendo'}</h2>
       <p class="lab-small">Fica salvo neste navegador e passa a valer no Parser, na Bancada Rápida, no SOAP e na Enciclopédia. Sem fórmula, o exame é digitado; com fórmula, é calculado.</p>
       ${S.dlgMsg ? `<div class="warn"><strong>Atenção</strong><span>${esc(S.dlgMsg)}</span></div>` : ''}
       <div class="lab-grid">${campo('nome', 'Nome do exame *')}${campo('categoria', 'Categoria')}${campo('siglas', 'Siglas para o Parser (separe por vírgula)')}${campo('unidade', 'Unidade')}${campo('refMin', 'Referência: mínimo')}${campo('refMax', 'Referência: máximo')}</div>
@@ -321,12 +366,13 @@
     document.getElementById('lab-dlg').close();
     render();
   }
-  function importarExames(texto) {
+  function importarExames(texto, daGov) {
     const ids = idsUsados();
     const r = PL.importar(texto, ids, ids);
-    if (!r.ok) { S.dlgMsg = r.erros.join(' '); return openDlg(); }
+    if (!r.ok) { if (daGov) { setMsg(r.erros.join(' ')); return; } S.dlgMsg = r.erros.join(' '); return openDlg(); }
     r.novos.forEach((x) => S.exams.push(x)); persistExams();
     S.dlgMsg = `${r.novos.length} exame(s) importado(s).${r.ignorados.length ? ' Ignorados: ' + r.ignorados.join(' | ') : ''}`;
+    if (daGov) { S.msg = S.dlgMsg; render(); return; }
     document.getElementById('lab-dlg').close(); render(); openDlg();
   }
 
@@ -336,7 +382,7 @@
       <label class="field"><span>Buscar</span><input type="search" id="lab-q" autocomplete="off" placeholder="ex.: hemólise, EDTA, TSH, nefrologia" value="${esc(S.enc.q)}"></label>
       <div class="lab-row" id="lab-cats">${[['', 'Todas']].concat(Object.entries(EN.CATS)).map(([k, n]) => `<button type="button" class="chip" data-act="enc-cat" data-cat="${k}" aria-pressed="${S.enc.cat === k}">${esc(n)}</button>`).join('')}</div>
       <p class="lab-small">Conteúdo de livro-texto e das diretrizes citadas em cada entrada; "a verificar" indica que ainda falta conferência. Os exames obrigatórios das centrais de regulação (CROSS, SISREG) variam por município e estado: cole o protocolo da sua central em cada especialidade.</p>
-      <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-new">+ Adicionar Novo Exame / Índice</button></div>
+      <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-new">+ Novo Exame / Adendo</button></div>
       <div id="lab-enclist"></div></section>`;
     listaEnc();
   }
@@ -396,7 +442,7 @@
         <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="import">Validar pacote</button><label class="btn btn-ghost" style="cursor:pointer">Abrir arquivo .json<input type="file" id="lab-file" accept=".json,application/json" hidden></label></div>
         <p class="lab-small" id="lab-msg" role="status">${esc(S.msg)}</p>
         <div id="lab-diff"></div></section>
-      <section class="lab-panel"><h2>Exames personalizados</h2><p class="lab-small">Cadastre novos exames e fórmulas sem mexer no código; exporte e importe em .json.</p><div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-new">+ Adicionar Novo Exame / Índice</button></div></section>
+      <section class="lab-panel"><h2>Exames personalizados</h2><p class="lab-small">Cadastre novos exames e fórmulas sem mexer no código; exporte e importe em .json.</p><div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-new">+ Novo Exame / Adendo</button><button type="button" class="btn btn-ghost" data-act="exam-export">Exportar exames .json</button><label class="btn btn-ghost" style="cursor:pointer">Importar exames .json<input type="file" id="lab-gov-file" accept=".json,application/json" hidden></label></div><p class="lab-small">${S.exams.length} exame(s) cadastrado(s) pela tela${codeExams.length ? ` e ${codeExams.length} no código` : ''}. A exportação leva só os cadastrados pela tela.</p></section>
       <section class="lab-panel"><h2>Editor de cutoffs locais</h2>
         <p class="lab-small">Ajuste valores ao kit do laboratório conveniado (ex.: limites superiores de AST, K+, LDH). Cada alteração fica registrada no changelog. Faixas fora do plausível são recusadas.</p>
         ${editor(r)}
@@ -521,9 +567,10 @@
     const act = b.dataset.act;
     if (act === 'sub') { S.sub = b.dataset.sub; render(); }
     else if (act === 'goto-gov') { S.sub = 'gov'; render(); }
-    else if (act === 'tool-open') { S.tool = b.dataset.id; S.toolRaw = {}; renderTool(); }
+    else if (act === 'tool-open') { S.tool = b.dataset.id; S.toolRaw = S.tool === 'liq' ? { modo: 'asc' } : {}; renderTool(); }
     else if (act === 'tool-back') { S.tool = null; renderFluxos(); }
-    else if (act === 'tool-ex') { S.toolRaw = {}; Object.entries(TOOLS[S.tool].exemplos[+b.dataset.i][1]).forEach(([k, x]) => { S.toolRaw[k] = typeof x === 'number' ? String(x).replace('.', ',') : x; }); renderTool(); }
+    else if (act === 'tool-ex') { const modo = S.toolRaw.modo; S.toolRaw = modo ? { modo } : {}; Object.entries(defTool().exemplos[+b.dataset.i][1]).forEach(([k, x]) => { S.toolRaw[k] = typeof x === 'number' ? String(x).replace('.', ',') : x; }); renderTool(); }
+    else if (act === 'tool-modo') { S.toolRaw = { modo: b.dataset.m }; renderTool(); }
     else if (act === 'tool-copy') { const ok = await copiar(S.toolNote); const pre = document.getElementById('lab-toolnote'); pre.hidden = false; pre.textContent = S.toolNote; b.textContent = ok ? 'Copiado' : 'Não foi possível copiar: selecione o texto abaixo'; }
     else if (act === 'exam-new') { S.dlgEdit = null; S.dlgDraft = null; S.dlgMsg = ''; openDlg(); }
     else if (act === 'exam-edit') { S.dlgEdit = b.dataset.id; S.dlgDraft = null; S.dlgMsg = ''; openDlg(); }
@@ -559,6 +606,7 @@
   root.addEventListener('input', (e) => {
     const t = e.target;
     if (t.dataset.f) { S.raw[t.dataset.f] = t.value; calc(); }
+    else if (t.dataset.sel) { S.raw[t.dataset.sel] = t.value; calc(); }
     else if (t.dataset.b) { S.raw[t.dataset.b] = t.checked; calc(); }
     else if (t.dataset.tf) { S.toolRaw[t.dataset.tf] = t.value; calcTool(); }
     else if (t.dataset.ts) { S.toolRaw[t.dataset.ts] = t.value; calcTool(); }
@@ -567,11 +615,17 @@
     else if (t.dataset.fl) { S.raw.flags = Object.assign({}, S.raw.flags, { [t.dataset.fl]: t.checked }); calc(); }
   });
   root.addEventListener('change', (e) => {
-    if (e.target.id === 'lab-dlg-file') { const f = e.target.files[0]; if (f) f.text().then(importarExames); }
+    if (e.target.id === 'lab-gov-file') { const f = e.target.files[0]; if (f) f.text().then((t) => importarExames(t, true)); }
+    else if (e.target.id === 'lab-dlg-file') { const f = e.target.files[0]; if (f) f.text().then(importarExames); }
     else if (e.target.dataset.edit) editar(e.target);
     else if (e.target.dataset.reg) { S.regulacao[e.target.dataset.reg] = e.target.value; store.set('labcore_regulacao', S.regulacao); }
   });
 
+  const gbtn = document.getElementById('lab-global-btn');
+  if (gbtn) gbtn.addEventListener('click', () => {
+    S.dlgEdit = null; S.dlgDraft = null; S.dlgMsg = '';
+    if (location.hash !== '#labcore') { location.hash = '#labcore'; setTimeout(openDlg, 150); } else openDlg();
+  });
   render();
   window.addEventListener('hashchange', () => { if (location.hash === '#labcore') render(); });
 })();

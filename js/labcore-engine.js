@@ -9,6 +9,8 @@
   const REGISTRY = RegMod.GUIDELINES_REGISTRY;
 
   /* ---------- formatação pt-BR ---------- */
+  /* Arredonda a 3 casas para que subtrações como 5,5 − 3,7 não caiam em 1,7999999 e atravessem um corte exato. */
+  const r3 = (x) => Math.round(x * 1000) / 1000;
   const fmt = (n, d) => Number(n).toLocaleString('pt-BR', { minimumFractionDigits: d == null ? 1 : d, maximumFractionDigits: d == null ? 1 : d });
   const MES_ABR = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   const MES_EXT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -43,6 +45,11 @@
     F('tp', 'Tempo de protrombina', 's', 5, 120, 'coag'), F('tpC', 'TP do controle', 's', 5, 60, 'coag'), F('isi', 'ISI do reagente', '', 0.5, 3, 'coag'),
     F('inr', 'INR (se já informado)', '', 0.5, 15, 'coag'), F('ttpa', 'TTPa', 's', 15, 200, 'coag'), F('ttpaC', 'TTPa do controle', 's', 15, 60, 'coag'),
     F('fibrin', 'Fibrinogênio', 'mg/dL', 20, 1500, 'coag'),
+    /* Painéis estratégicos da APS */
+    F('psaT', 'PSA total', 'ng/mL', 0.01, 1000, 'prost'), F('psaL', 'PSA livre', 'ng/mL', 0.01, 500, 'prost'), F('vprost', 'Volume prostático (USG)', 'cm³', 5, 500, 'prost'),
+    F('pth', 'PTH intacto', 'pg/mL', 1, 3000, 'osso'), F('vitd', '25-OH-vitamina D', 'ng/mL', 1, 200, 'osso'), F('fosforo', 'Fósforo sérico', 'mg/dL', 0.5, 15, 'osso'), F('fa', 'Fosfatase alcalina', 'U/L', 10, 3000, 'osso'),
+    F('b12', 'Vitamina B12', 'pg/mL', 20, 5000, 'b12'), F('hcy', 'Homocisteína', 'µmol/L', 1, 500, 'b12'), F('mma', 'Ácido metilmalônico (AMM)', 'nmol/L', 10, 20000, 'b12'),
+    F('iga', 'IgA sérica total', 'mg/dL', 1, 2000, 'gastro'), F('calpro', 'Calprotectina fecal', 'µg/g', 1, 10000, 'gastro'), F('elastase', 'Elastase pancreática fecal', 'µg/g', 1, 1000, 'gastro'),
   ];
   const FIELD = Object.fromEntries(FIELDS.map((f) => [f.id, f]));
 
@@ -75,7 +82,9 @@
     else if (age != null) warnings.push(`Idade ${age} fora de 18 a 120 anos: as fórmulas deste módulo são para adultos; idade ignorada.`);
     v.sexo = raw.sexo === 'F' || raw.sexo === 'M' ? raw.sexo : null;
     v.gestante = !!raw.gestante;
-    ['dm', 'icc', 'persistente', 'picoM'].forEach((k) => { v[k] = !!raw[k]; });
+    ['dm', 'icc', 'persistente', 'picoM', 'ari', 'semGluten', 'metIBP', 'sintB12', 'psaProstatite', 'psaEjac', 'psaBike', 'psaInstr'].forEach((k) => { v[k] = !!raw[k]; });
+    v.ttg = raw.ttgIgA === 'pos' || raw.ttgIgA === 'neg' ? raw.ttgIgA : null;
+    v.dgp = raw.dgpIgG === 'pos' || raw.dgpIgG === 'neg' ? raw.dgpIgG : null;
     v.flags = Object.assign({ hemolise: false, lipemia: false, ictericia: false, biotina: false }, raw.flags || {});
     return { v, notes, warnings };
   }
@@ -255,13 +264,14 @@
   function proteinas(v, reg) {
     if (v.pt == null || v.albumina == null) return null;
     const p = gp(reg, 'proteinas');
-    const glob = v.pt - v.albumina;
+    const glob = r3(v.pt - v.albumina);
     if (glob <= 0) return { id: 'prot', title: 'Globulinas', main: '—', sub: 'Albumina ≥ proteínas totais: confira os valores', level: 'info', guideline: ['proteinas'], details: [] };
     const ag = v.albumina / glob;
     const alto = glob > p['glob.high'] || ag < p['ag.low'];
+    const baixo = glob < p['glob.low'];
     v.glob = glob; v.ag = ag;
     return {
-      id: 'prot', title: 'Globulinas e relação A/G', main: `${fmt(glob, 1)} g/dL`, sub: `A/G ${fmt(ag, 2)}${alto ? ' · hiperglobulinemia' : ''}`, level: alto ? 'mod' : 'info', value: glob, ag, guideline: ['proteinas'],
+      id: 'prot', title: 'Globulinas e relação A/G', main: `${fmt(glob, 1)} g/dL`, sub: `A/G ${fmt(ag, 2)}${alto ? ' · hiperglobulinemia' : ''}`, level: alto || baixo ? 'mod' : 'info', value: glob, ag, baixo, guideline: ['proteinas'],
       details: [`Globulinas = proteínas totais − albumina; A/G = albumina / globulinas.`, alto ? `Globulinas > ${fmt(p['glob.high'], 1)} g/dL ou A/G < ${fmt(p['ag.low'], 1)}: solicitar eletroforese de proteínas séricas (EPS) com imunofixação se houver pico.` : 'Sem sinal de hiperglobulinemia pelos cortes do Registry.'],
       recs: alto ? ['Solicitar eletroforese de proteínas séricas (EPS).'] : [],
     };
@@ -278,7 +288,7 @@
     else if (tfge != null && tfge < g['crab.crcl']) c.push(`TFGe ${fmt(tfge, 0)} mL/min/1,73 m² (< ${fmt(g['crab.crcl'], 0)})`);
     if (v.hb != null && v.hb < g['crab.hb']) c.push(`hemoglobina ${fmt(v.hb, 1)} g/dL (< ${fmt(g['crab.hb'], 1)})`);
     if (!c.length) return null;
-    return { level: 'high', title: 'Investigação hematológica prioritária (CRAB)', text: `${v.picoM ? 'Pico monoclonal presente' : `Globulinas ${fmt(v.glob, 1)} g/dL`} com ${c.join('; ')}. Pode ser mieloma múltiplo: pedir EPS com imunofixação, cadeias leves livres, B2-microglobulina e encaminhar com urgência à Hematologia. A TFGe é usada no lugar da depuração (IMWG usa a depuração de creatinina < 40 mL/min).` };
+    return { level: 'high', title: 'Investigação hematológica prioritária (CRAB)', text: `${v.picoM ? 'Pico monoclonal presente' : `Globulinas ${fmt(v.glob, 1)} g/dL`} com ${c.join('; ')}. Pode ser mieloma múltiplo: pedir EPS com imunofixação, cadeias leves livres, B2-microglobulina e encaminhar com urgência à Hematologia (encaminhamento prioritário via CROSS/SISREG). A TFGe é usada no lugar da depuração (IMWG usa a depuração de creatinina < 40 mL/min).` };
   }
   function ipr(v, reg) {
     if (v.ret == null || v.ht == null) return null;
@@ -314,7 +324,7 @@
       const ctlfBaixa = v.ctlf != null && v.ctlf < p['ctlf.low'];
       sub = ctlfBaixa ? 'Anemia da inflamação' : 'Ferritina alta com IST baixa: inflamação, com CTLF não baixa (considerar ferropenia funcional mista)'; rec = 'Tratar a doença de base; ferro oral costuma não resolver; dosar PCR e, se dúvida, receptor solúvel de transferrina.';
     }
-    else if (low) { sub = 'Zona intermediária: ferropenia possível com inflamação associada'; rec = 'Repetir com PCR e considerar prova terapêutica ou receptor solúvel de transferrina.'; }
+    else if (low) { sub = 'Deficiência funcional de ferro (ferritina entre 30 e 100 com IST baixa)'; rec = 'Repetir com PCR; considerar prova terapêutica com ferro ou receptor solúvel de transferrina; investigar inflamação ou perda crônica.'; }
     else { sub = 'Sem padrão de ferropenia pela saturação'; level = 'low'; rec = 'Se há anemia microcítica, considerar talassemia (eletroforese de hemoglobina).'; }
     return { id: 'ferro_cin', title: 'Cinética do ferro', main: `Ferritina ${fmt(v.ferritina, 0)} · IST ${fmt(v.ist, 0)}%`, sub, level, guideline: ['hemato'], details: ['Classificação por ferritina e saturação de transferrina (limites do Registry; limites de CTLF e de ferritina alta estão "a verificar").'], recs: [rec] };
   }
@@ -345,6 +355,133 @@
     const leucop = v.leuco != null && v.leuco < p['leuco.low'];
     if (anem || leucop) return null;
     return { level: 'mod', title: 'Possível pseudotrombocitopenia por EDTA', text: `Plaquetas ${fmt(v.plaq, 0)} ×10⁹/L isoladas, sem anemia nem leucopenia${v.hb == null || v.leuco == null ? ' (hemoglobina ou leucócitos não informados: confirme)' : ''}. Solicite nova contagem em tubo de citrato de sódio (corrigir a diluição) e revisão de lâmina para agregados plaquetários antes de investigar ou tratar.` };
+  }
+
+
+  /* ---------- Painel 1: eixo prostático ---------- */
+  function psa(v, reg) {
+    if (v.psaT == null) return { items: [], alerts: [] };
+    const p = gp(reg, 'psa');
+    const items = [], alerts = [];
+    const eff = v.ari ? v.psaT * p['ari.factor'] : v.psaT;
+    if (v.ari) {
+      items.push({ id: 'psa_corr', title: 'PSA corrigido (5-ARI)', main: `${fmt(eff, 1)} ng/mL`, sub: `PSA total ${fmt(v.psaT, 1)} × ${fmt(p['ari.factor'], 1)}`, level: eff >= p['tot.hi'] ? 'high' : 'mod', value: eff, guideline: ['psa'], details: [`Uso de finasterida ou dutasterida há ${fmt(p['ari.months'], 0)} meses ou mais: o PSA sérico cai cerca de 50%; use o valor corrigido na decisão clínica.`] });
+      alerts.push({ level: eff >= p['tot.hi'] ? 'high' : 'mod', title: 'Finasterida / dutasterida: PSA reduzido em cerca de 50%', text: 'Finasterida e Dutasterida reduzem o PSA sérico em ~50%. O valor corrigido deve ser usado para decisão clínica; qualquer elevação confirmada na vigência de 5-ARI, mesmo dentro da faixa normal aparente, exige investigação urológica imediata.' });
+    }
+    if (v.psaL != null && v.psaT > 0) {
+      const lt = (v.psaL / v.psaT) * 100;
+      const dentro = eff >= p['tot.lo'] && eff <= p['tot.hi'];
+      let sub, level = 'info', rec = [];
+      if (!dentro) sub = `Relação aplicável com PSA entre ${fmt(p['tot.lo'], 1)} e ${fmt(p['tot.hi'], 1)} ng/mL`;
+      else if (lt < p['lt.high']) { sub = lt < p['lt.veryHigh'] ? 'Risco muito alto de adenocarcinoma de próstata' : 'Alto risco de adenocarcinoma de próstata'; level = 'high'; rec = ['Encaminhar à Urologia para avaliação e biópsia.']; }
+      else if (lt > p['lt.bph']) { sub = 'Sugestivo de hiperplasia prostática benigna (HPB)'; level = 'low'; }
+      else { sub = 'Faixa intermediária'; level = 'mod'; }
+      items.push({ id: 'psa_lt', title: 'Relação PSA livre / total', main: `${fmt(lt, 1)}%`, sub, level, value: lt, guideline: ['psa'], details: [`Aplicável com PSA total (ou corrigido) entre ${fmt(p['tot.lo'], 1)} e ${fmt(p['tot.hi'], 1)} ng/mL: abaixo de ${fmt(p['lt.high'], 0)}% o risco é alto; acima de ${fmt(p['lt.bph'], 0)}% sugere HPB.`], recs: rec });
+    }
+    if (v.vprost != null) {
+      const d = eff / v.vprost;
+      const alto = d >= p['psad.cut'];
+      items.push({ id: 'psad', title: 'Densidade do PSA (PSAD)', main: `${fmt(d, 2)} ng/mL/cm³`, sub: alto ? 'Risco elevado de neoplasia maligna' : 'Abaixo do corte', level: alto ? 'high' : 'low', value: d, guideline: ['psa'], details: [`PSA${v.ari ? ' corrigido' : ' total'} / volume prostático; risco elevado se ≥ ${fmt(p['psad.cut'], 2)}.`], recs: alto ? ['Encaminhar à Urologia (considerar ressonância multiparamétrica e biópsia).'] : [] });
+    }
+    const pre = [v.psaProstatite && 'prostatite ou infecção urinária recente', v.psaEjac && 'ejaculação nas últimas 48 h', v.psaBike && 'exercício intenso em bicicleta', v.psaInstr && 'instrumentação uretral ou toque retal vigoroso recente'].filter(Boolean);
+    if (pre.length) alerts.push({ level: 'mod', title: 'Interferente pré-analítico do PSA', text: `Relato de ${pre.join(', ')}: o PSA pode estar falsamente elevado. Repetir após ${fmt(p['repeat.weeks'], 0)} a 6 semanas da resolução antes de decidir.` });
+    return { items, alerts };
+  }
+
+  /* ---------- Painel 2: metabolismo ósseo e paratireoide ---------- */
+  function osso(v, reg, tfge) {
+    if (v.ca == null || v.pth == null) return [];
+    const p = gp(reg, 'osso'), e = gp(reg, 'eletrolitos');
+    const caC = v.albumina != null ? r3(v.ca + e['ca.factor'] * (e['ca.albRef'] - v.albumina)) : v.ca;
+    const nota = v.albumina != null ? `Ca corrigido ${fmt(caC, 1)} mg/dL` : `Ca total ${fmt(caC, 1)} mg/dL (sem albumina: não corrigido)`;
+    const out = [];
+    const I = (id, level, title, sub, details, recs) => out.push({ id: 'osso_' + id, title, main: `${nota} · PTH ${fmt(v.pth, 0)} pg/mL`, sub, level, guideline: ['osso'], details, recs: recs || [] });
+    if (caC > p['ca.malig'] && v.pth < p['pth.supr']) {
+      I('malig', 'high', 'Hipercalcemia PTH-independente', 'PTH suprimido', ['Investigar neoplasia oculta (mieloma múltiplo, metástases ósseas líticas, produção de PTHrP), doença granulomatosa (sarcoidose, tuberculose) ou intoxicação por vitamina D.'], ['Dosar PTHrP, 25-OH e 1,25-OH vitamina D, EPS com imunofixação e imagem; encaminhar com urgência se o cálcio for alto ou houver sintomas.']);
+    } else if (caC > p['ca.hpp'] && v.pth > p['pth.inap']) {
+      const fBaixo = v.fosforo != null && v.fosforo < p['p.low'];
+      I('hpp', 'high', 'Hiperparatireoidismo primário provável', fBaixo ? 'Fósforo baixo (típico)' : v.fosforo == null ? 'Fósforo não informado' : 'Fósforo não baixo', [`Ca corrigido > ${fmt(p['ca.hpp'], 1)} mg/dL com PTH elevado ou inapropriadamente normal (> ${fmt(p['pth.inap'], 0)} pg/mL).${fBaixo ? '' : ' O fósforo baixo é típico, mas um fósforo normal não exclui.'}`],
+        ['Solicitar calciúria de 24 h (afastar hipercalcemia hipocalciúrica familiar), ultrassom de rins e vias urinárias e densitometria óssea, incluindo rádio distal 33%.', 'Encaminhar à Endocrinologia / Cirurgia de Cabeça e Pescoço.']);
+    } else if (caC > p['ca.hpp']) {
+      I('hipercalcemia', 'mod', 'Hipercalcemia com PTH não elevado', 'PTH baixo-normal', ['PTH entre o suprimido e o inapropriadamente normal: repetir PTH e investigar causas PTH-independentes (PTHrP, vitamina D, doenças granulomatosas, neoplasia).'], ['Repetir cálcio, albumina e PTH; dosar 25-OH e 1,25-OH vitamina D.']);
+    }
+    if (v.pth > p['pth.high'] && caC <= p['ca.hpp']) {
+      let alguma = false;
+      if (v.vitd != null && v.vitd < p['vitd.ins'] && (v.fosforo == null || v.fosforo <= p['p.high'])) {
+        alguma = true;
+        I('sec_vitd', 'mod', 'Hiperparatireoidismo secundário à deficiência de vitamina D', v.vitd < p['vitd.def'] ? 'Deficiência' : 'Insuficiência', [`25-OH vitamina D ${fmt(v.vitd, 0)} ng/mL (< ${fmt(p['vitd.def'], 0)} deficiência; < ${fmt(p['vitd.ins'], 0)} insuficiência) com PTH elevado e cálcio não alto.`, 'Corrija a vitamina D com colecalciferol antes de rotular doença paratireoidiana.'], ['Repor colecalciferol e repetir PTH, cálcio e 25-OH vitamina D após o tratamento (cerca de 2 a 3 meses).']);
+      }
+      if (tfge != null && tfge < p['tfge.drc'] && (v.fosforo == null || v.fosforo >= p['p.low'])) {
+        alguma = true;
+        I('sec_drc', 'mod', 'Hiperparatireoidismo secundário da doença renal crônica (DMO-DRC)', `TFGe ${fmt(tfge, 0)}`, [`TFGe < ${fmt(p['tfge.drc'], 0)} mL/min/1,73 m² com fósforo normal ou elevado e PTH elevado.`], ['Avaliar fósforo, vitamina D e bicarbonato e encaminhar à Nefrologia.']);
+      }
+      if (!alguma) I('sec', 'mod', 'PTH elevado com cálcio não alto: hiperparatireoidismo secundário', '', ['Procure a causa: vitamina D baixa, doença renal, baixa ingestão de cálcio, má absorção, fármacos (lítio, diuréticos de alça).'], ['Dosar 25-OH vitamina D, creatinina/TFGe e fósforo.']);
+    }
+    if (caC < p['ca.hipo'] && v.pth <= p['pth.inap'] && v.fosforo != null && v.fosforo > p['p.high']) {
+      I('hipo', 'high', 'Hipoparatireoidismo provável', 'Fósforo elevado', ['Cálcio baixo com PTH baixo ou inapropriadamente normal e fósforo alto; é comum após tireoidectomia ou cirurgia cervical.'], ['Avaliar sintomas (parestesias, tetania), ECG e magnésio; encaminhar à Endocrinologia.']);
+    }
+    if (!out.length) I('sem', 'info', 'Sem padrão de distúrbio do metabolismo mineral pelos cortes', '', ['Cálcio e PTH não preenchem os padrões do Registry. A faixa do PTH depende do ensaio.']);
+    if (v.fa != null) out[0].details.push(`Fosfatase alcalina ${fmt(v.fa, 0)} U/L: interprete com a faixa do seu laboratório (aumenta em alto remodelamento ósseo, doença de Paget e colestase).`);
+    return out;
+  }
+
+  /* ---------- Painel 3: vitamina B12, folato e metabólitos ---------- */
+  function b12(v, reg) {
+    if (v.b12 == null && v.hcy == null && v.mma == null) return { items: [], alerts: [] };
+    const p = gp(reg, 'b12');
+    const items = [], alerts = [];
+    const risco = v.metIBP || v.sintB12;
+    if (v.b12 != null) {
+      if (v.b12 < p['b12.def']) {
+        items.push({ id: 'b12', title: 'Vitamina B12', main: `${fmt(v.b12, 0)} pg/mL`, sub: 'Deficiência confirmada', level: 'high', value: v.b12, guideline: ['b12'], details: [`B12 < ${fmt(p['b12.def'], 0)} pg/mL.`], recs: [v.sintB12 ? 'Com sintomas neurológicos: reposição parenteral (IM).' : 'Reposição parenteral (IM) se houver sintomas neurológicos, pós-bariátrica ou anemia perniciosa; do contrário, alta dose oral ou sublingual.', 'Investigar a causa (anemia perniciosa, uso de metformina ou IBP, dieta, má absorção).'] });
+      } else if (v.b12 <= p['b12.gray']) {
+        items.push({ id: 'b12', title: 'Vitamina B12', main: `${fmt(v.b12, 0)} pg/mL`, sub: 'Zona cinzenta metrológica', level: 'mod', value: v.b12, guideline: ['b12'], details: [`B12 entre ${fmt(p['b12.def'], 0)} e ${fmt(p['b12.gray'], 0)} pg/mL não confirma nem exclui deficiência.`], recs: ['Dosar homocisteína e ácido metilmalônico (AMM) para decidir.'] });
+        if (risco) alerts.push({ level: 'mod', title: 'B12 limítrofe com fator de risco ou sintomas', text: 'A Metformina reduz a absorção ileal de cobalamina dependente de cálcio no complexo fator intrínseco-cubilina; IBPs reduzem a clivagem ácida da B12 alimentar. Valores entre 200-350 pg/mL NÃO excluem deficiência funcional neuro-hematológica!' });
+      } else items.push({ id: 'b12', title: 'Vitamina B12', main: `${fmt(v.b12, 0)} pg/mL`, sub: 'Acima da zona cinzenta', level: 'low', value: v.b12, guideline: ['b12'], details: [v.sintB12 ? 'Com sintomas neurológicos ou VCM alto, valor normal não exclui deficiência funcional; considere AMM/homocisteína.' : 'Deficiência de B12 pouco provável.'] });
+    }
+    if (v.hcy != null && v.mma != null) {
+      const h = v.hcy > p['hcy.uln'], m = v.mma > p['mma.uln'];
+      let sub, level, det, recs = [];
+      if (h && m) { sub = 'Deficiência tecidual confirmada de vitamina B12'; level = 'high'; det = 'Homocisteína e AMM elevados.'; recs = ['Repor B12 (parenteral se houver sintomas neurológicos).']; }
+      else if (h && !m) { sub = 'Deficiência isolada de ácido fólico (B9)'; level = 'mod'; det = 'Homocisteína elevada com AMM normal.'; recs = ['Repor ácido fólico depois de excluir deficiência de B12.']; alerts.push({ level: 'high', title: 'Não repor ácido fólico isoladamente sem excluir a B12', text: 'Nunca repor ácido fólico isoladamente sem antes excluir ou tratar deficiência de B12: a anemia megaloblástica pode melhorar e mascarar a deficiência, enquanto a degeneração combinada subaguda da medula espinhal progride.' }); }
+      else if (!h && m) { sub = 'AMM elevado isolado'; level = 'mod'; det = 'Considere deficiência precoce de B12 e também insuficiência renal, que eleva o AMM.'; }
+      else { sub = 'Homocisteína e AMM normais'; level = 'low'; det = 'Deficiência tecidual de B12 improvável.'; }
+      items.push({ id: 'b12_dupla', title: 'Dupla metabólica (homocisteína e AMM)', main: `Hcy ${fmt(v.hcy, 1)} · AMM ${fmt(v.mma, 0)}`, sub, level, guideline: ['b12'], details: [det, 'Os limites superiores dependem do método (marcados como referência do laboratório no Registry).'], recs });
+    } else if (v.hcy != null || v.mma != null) {
+      items.push({ id: 'b12_dupla', title: 'Metabólitos da B12', main: v.hcy != null ? `Hcy ${fmt(v.hcy, 1)}` : `AMM ${fmt(v.mma, 0)}`, sub: 'Falta o par', level: 'info', guideline: ['b12'], details: ['A resolução exige homocisteína e AMM juntos.'] });
+    }
+    if (v.vcm != null && v.vcm > p['mcv.macro'] && !items.some((i) => i.id === 'b12' && i.level === 'high')) alerts.push({ level: 'mod', title: `Macrocitose (VCM > ${fmt(p['mcv.macro'], 0)} fL)`, text: 'Investigue B12 e folato (mesmo com B12 normal-baixa), hepatopatia, álcool, hipotireoidismo e fármacos.' });
+    return { items, alerts };
+  }
+
+  /* ---------- Painel 4: celíaca, calprotectina e elastase ---------- */
+  function gastro(v, reg) {
+    const p = gp(reg, 'celiaca');
+    const items = [], alerts = [];
+    if (v.ttg || v.dgp) {
+      const sorologiaNeg = (!v.ttg || v.ttg === 'neg') && (!v.dgp || v.dgp === 'neg');
+      if (v.semGluten && sorologiaNeg) alerts.push({ level: 'high', title: 'Falso-negativo pré-analítico: dieta sem glúten', text: `A sorologia e a biópsia duodenal exigem consumo ativo de glúten por pelo menos ${fmt(p['gluten.weeks'], 0)} a 8 semanas antes do exame. Sorologia negativa em dieta isenta de glúten não exclui doença celíaca: não retire o glúten antes de investigar; se já retirou, discuta a reintrodução supervisionada.` });
+      if (v.ttg === 'neg') {
+        if (v.iga == null) alerts.push({ level: 'mod', title: 'Confira a IgA sérica total', text: 'Sempre confira a IgA Sérica Total! A deficiência seletiva de IgA é 10 a 15x mais frequente em celíacos.' });
+        else if (v.iga < p['iga.low']) {
+          const ausente = v.iga < p['iga.absent'];
+          alerts.push({ level: 'high', title: 'Exame inválido: falso-negativo por deficiência de IgA', text: `Anti-tTG IgA negativo com IgA total ${fmt(v.iga, 0)} mg/dL (< ${fmt(p['iga.low'], 0)}${ausente ? `; deficiência seletiva, < ${fmt(p['iga.absent'], 0)}` : ''}) não vale. Solicitar imediatamente anti-transglutaminase IgG (anti-tTG IgG) e/ou anti-gliadina deaminada IgG (anti-DGP IgG).` });
+        }
+      }
+      const positivo = v.ttg === 'pos' || (v.dgp === 'pos' && v.ttg !== 'pos');
+      items.push({ id: 'celiaca', title: 'Doença celíaca: sorologia', main: [v.ttg ? `anti-tTG IgA ${v.ttg === 'pos' ? 'positivo' : 'negativo'}` : '', v.dgp ? `anti-DGP IgG ${v.dgp === 'pos' ? 'positivo' : 'negativo'}` : ''].filter(Boolean).join(' · '), sub: positivo ? 'Compatível com doença celíaca: confirmar' : 'Sorologia negativa', level: positivo ? 'high' : 'info', guideline: ['celiaca'], details: [positivo ? 'Sorologia positiva não é diagnóstico isolado.' : 'Ver alertas sobre IgA total e dieta.'], recs: positivo ? ['Endoscopia digestiva alta com biópsias da segunda porção duodenal (classificação de Marsh), com o paciente ainda consumindo glúten.'] : [] });
+    }
+    if (v.calpro != null) {
+      const sub = v.calpro < p['calpro.norm'] ? 'Normal: sugere distúrbio funcional (síndrome do intestino irritável)' : v.calpro <= p['calpro.active'] ? 'Zona cinzenta' : 'Inflamação intestinal orgânica ativa';
+      const level = v.calpro < p['calpro.norm'] ? 'low' : v.calpro <= p['calpro.active'] ? 'mod' : 'high';
+      const recs = v.calpro < p['calpro.norm'] ? ['Sem sinais de alarme (sangue, perda de peso, anemia, febre, início após os 50 anos), evita colonoscopia desnecessária.'] : v.calpro <= p['calpro.active'] ? ['Descartar uso de AINEs (elevam a calprotectina) e infecção enteroinvasiva; repetir em 4 a 6 semanas.'] : ['Alta probabilidade de doença de Crohn ou retocolite ulcerativa: colonoscopia com íleo terminal e biópsias seriadas; encaminhar à Gastroenterologia.'];
+      items.push({ id: 'calpro', title: 'Calprotectina fecal', main: `${fmt(v.calpro, 0)} µg/g`, sub, level, value: v.calpro, guideline: ['celiaca'], details: [`Normal < ${fmt(p['calpro.norm'], 0)}; zona cinzenta até ${fmt(p['calpro.active'], 0)}; acima, inflamação ativa.`], recs });
+    }
+    if (v.elastase != null) {
+      const sub = v.elastase > p['elas.norm'] ? 'Normal' : v.elastase >= p['elas.sev'] ? 'Insuficiência pancreática exócrina leve a moderada' : 'Insuficiência pancreática exócrina grave';
+      items.push({ id: 'elastase', title: 'Elastase pancreática fecal', main: `${fmt(v.elastase, 0)} µg/g`, sub, level: v.elastase > p['elas.norm'] ? 'low' : v.elastase >= p['elas.sev'] ? 'mod' : 'high', value: v.elastase, guideline: ['celiaca'], details: ['Fezes líquidas (diarreia aquosa) diluem a amostra e dão valor baixo espúrio: repetir com fezes formadas.'], recs: v.elastase < p['elas.sev'] ? ['Indicar reposição de enzimas pancreáticas (pancreatina) e investigar a causa (pancreatite crônica, fibrose cística).'] : [] });
+    }
+    return { items, alerts };
   }
 
   /* ---------- filtros pré-analíticos ---------- */
@@ -391,8 +528,13 @@
     push(ipr(v, reg)); push(greenKing(v, reg)); push(ferroCin(v, reg)); push(anc(v, reg)); push(coag(v));
     const alerts = preAnalitico(v, reg);
     const tfgeIt = items.find((i) => i.id === 'tfge');
+    const ps = psa(v, reg), bb = b12(v, reg), gg = gastro(v, reg);
+    [ps, bb, gg].forEach((x) => { x.items.forEach(push); x.alerts.forEach((a) => alerts.push(a)); });
+    osso(v, reg, tfgeIt ? tfgeIt.value : null).forEach(push);
     [crab(v, reg, tfgeIt ? tfgeIt.value : null), edta(v, reg)].forEach((x) => { if (x) alerts.push(x); });
-    const globAlto = items.find((i) => i.id === 'prot' && i.level === 'mod');
+    const globBaixo = items.find((i) => i.id === 'prot' && i.baixo);
+    if (globBaixo) alerts.push({ level: 'mod', title: 'Hipogamaglobulinemia', text: `Globulinas ${fmt(globBaixo.value, 1)} g/dL (< ${fmt(gp(reg, 'proteinas')['glob.low'], 1)}): investigar perda renal (síndrome nefrótica), imunodeficiência ou mieloma de cadeias leves (EPS com imunofixação e cadeias leves livres séricas).` });
+    const globAlto = items.find((i) => i.id === 'prot' && i.level === 'mod' && !i.baixo);
     if (globAlto) alerts.push({ level: 'mod', title: 'Hiperglobulinemia', text: 'Globulinas elevadas ou relação A/G invertida: solicitar eletroforese de proteínas séricas (EPS).' });
     items.forEach((it) => { if (it.alerta) alerts.push(it.alerta); });
     if (v.cr != null && (v.idade == null || !v.sexo)) warnings.push('TFGe precisa de idade e sexo biológico.');
@@ -443,11 +585,15 @@
     pt: ['proteinas totais', 'prot totais', 'proteina total', 'ptn'], ht: ['hematocrito', 'htc', 'hct', 'ht'], rdw: ['rdw'], ret: ['reticulocitos', 'retic', 'ret'],
     transf: ['transferrina'], leuco: ['leucocitos', 'leuco', 'leuc', 'wbc'], seg: ['segmentados', 'seg'], bast: ['bastoes', 'bast'],
     tpC: ['tp controle', 'controle tp'], tp: ['tempo de protrombina', 'tp'], isi: ['isi'], inr: ['inr', 'rni'],
+    psaL: ['psa livre', 'psa l'], psaT: ['psa total', 'psa'], vprost: ['volume prostatico', 'vol prostatico'], pth: ['paratormonio', 'pth'],
+    vitd: ['25 oh vitamina d', '25 oh', '25ohd', 'vitamina d', 'vit d'], fosforo: ['fosforo', 'fosf'], fa: ['fosfatase alcalina', 'fa'],
+    b12: ['vitamina b12', 'b12', 'cobalamina'], hcy: ['homocisteina', 'hcy'], mma: ['acido metilmalonico', 'amm', 'mma'],
+    iga: ['iga serica total', 'iga total', 'iga serica', 'iga'], calpro: ['calprotectina fecal', 'calprotectina'], elastase: ['elastase pancreatica fecal', 'elastase fecal', 'elastase'],
     ttpaC: ['ttpa controle', 'controle ttpa'], ttpa: ['tempo de tromboplastina parcial ativada', 'ttpa', 'ptt'], fibrin: ['fibrinogenio'],
   };
   const CONTAGEM = { plaq: 1, rbc: 1 };
   function parseReport(texto, extra) {
-    const t = semAcento(String(texto || ''));
+    const t = semAcento(String(texto || '')).replace(/[-–]+/g, ' ');
     const values = {}, found = [];
     const pares = [];
     Object.entries(ALIASES).forEach(([id, al]) => al.forEach((a) => pares.push([id, a])));
@@ -476,6 +622,11 @@
     if (/\b(feminino|fem|mulher|sexo\s*[:=]?\s*f)\b/.test(t)) values.sexo = 'F';
     else if (/\b(masculino|masc|homem|sexo\s*[:=]?\s*m)\b/.test(t)) values.sexo = 'M';
     if (/\b(gestante|gravida)\b/.test(t)) values.gestante = true;
+    let mm = t.match(/(?:anti[ -]?ttg|anti[ -]?transglutaminase|transglutaminase)(?: iga)?[^a-z0-9]{0,6}(positivo|reagente|negativo|nao reagente)/);
+    if (mm) values.ttgIgA = /^(positivo|reagente)$/.test(mm[1]) ? 'pos' : 'neg';
+    mm = t.match(/(?:anti[ -]?dgp|gliadina deaminada)(?: igg)?[^a-z0-9]{0,6}(positivo|reagente|negativo|nao reagente)/);
+    if (mm) values.dgpIgG = /^(positivo|reagente)$/.test(mm[1]) ? 'pos' : 'neg';
+    if (/\b(finasterida|dutasterida)\b/.test(t)) values.ari = true;
     if (/\b(pico monoclonal|componente m)\b/.test(t) && !/\b(sem|ausencia de|nao ha) (pico|componente)/.test(t)) values.picoM = true;
     return { values, found };
   }
