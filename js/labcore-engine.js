@@ -549,7 +549,40 @@
     return { custom: next, log };
   }
 
-  /* Prompt do Modo B (cole em Gemini/Perplexity/Claude com acesso à web). */
+  /* ---------- Modo A: OpenRouter com busca na web (funções puras; a chamada de rede fica na interface) ---------- */
+  const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+  function openrouterBody(model, prompt) {
+    return {
+      model, temperature: 0.1, max_tokens: 4000,
+      plugins: [{ id: 'web', max_results: 8 }],
+      messages: [
+        { role: 'system', content: 'Você audita diretrizes de medicina laboratorial. Use a busca na web para verificar publicações oficiais e responda SOMENTE com o JSON pedido, sem texto fora dele.' },
+        { role: 'user', content: prompt },
+      ],
+    };
+  }
+  /* Devolve { text, citations:[{uri,title}], truncated } ou { error }. */
+  function openrouterParse(j) {
+    if (j && j.error) return { error: `OpenRouter: ${j.error.message || 'erro do provedor'}.` };
+    const c = j && j.choices && j.choices[0];
+    const m = c && c.message;
+    if (!m) return { error: 'O OpenRouter não devolveu resposta.' };
+    const text = typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? m.content.map((x) => x.text || '').join('') : '';
+    const citations = (m.annotations || []).filter((a) => a && a.type === 'url_citation' && a.url_citation && /^https?:\/\//.test(a.url_citation.url || '')).map((a) => ({ uri: a.url_citation.url, title: a.url_citation.title || '' }));
+    const seen = new Set();
+    return { text, citations: citations.filter((x) => (seen.has(x.uri) ? false : seen.add(x.uri))).slice(0, 8), truncated: c.finish_reason === 'length' };
+  }
+  function openrouterErro(status, j) {
+    const det = j && j.error && j.error.message ? ` (${j.error.message})` : '';
+    if (status === 401) return 'Chave do OpenRouter recusada (401). Confira a chave em openrouter.ai/settings/keys.';
+    if (status === 402) return 'Créditos insuficientes no OpenRouter (402). Adicione créditos em openrouter.ai/settings/credits.';
+    if (status === 403) return `Acesso negado pelo OpenRouter ou pelo modelo (403)${det}.`;
+    if (status === 404) return `Modelo não encontrado no OpenRouter (404)${det}. Confira o nome do modelo.`;
+    if (status === 429) return 'Limite de uso do OpenRouter atingido (429). Tente mais tarde.';
+    return `Erro ${status} do OpenRouter${det}.`;
+  }
+
+  /* Prompt do Modo B (cole em ChatGPT/Perplexity/Claude com acesso à web). */
   function buildAuditPrompt(reg, nowISO) {
     const snap = {};
     Object.entries(reg.guidelines).forEach(([gid, g]) => {
@@ -578,6 +611,6 @@ ${JSON.stringify(snap, null, 1)}`;
 
   return {
     REGISTRY, FIELDS, FIELD, fmt, mesAno, mesAnoExt, daysSince, parseNum, normalize, ckdepi, stageG, stageA, riscoKdigo, analyze, soap, parseReport,
-    selo, effective, cycleStatus, extractJson, validatePackage, applyRows, buildAuditPrompt, keyOf, splitKey, G_ORDER,
+    selo, effective, cycleStatus, extractJson, OPENROUTER_URL, openrouterBody, openrouterParse, openrouterErro, validatePackage, applyRows, buildAuditPrompt, keyOf, splitKey, G_ORDER,
   };
 });

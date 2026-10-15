@@ -1,5 +1,5 @@
 /* LabCore APS — interface (Bancada Rápida, Colar do Prontuário, Governança). O motor está em labcore-engine.js; aqui só há DOM.
-   Dados do paciente nunca são gravados: só o Registry ajustado, as auditorias, o changelog e (opcional) a chave Gemini vão para o localStorage. */
+   Dados do paciente nunca são gravados: só o Registry ajustado, as auditorias, o changelog e (opcional) a chave do OpenRouter vão para o localStorage. */
 (function () {
   'use strict';
   const L = window.LabCore, FX = window.LabCoreFluxos, EN = window.LabCoreEnciclopedia, HM = window.LabCoreHemato, PL = window.LabCorePlugins;
@@ -375,17 +375,19 @@
   function renderGov() {
     const r = reg(), cs = L.cycleStatus(r, today());
     const fontes = cs.rows.map((s) => `<tr><td><strong>${esc(s.sigla)}</strong><br><span class="lab-small">${esc(s.escopo)}</span></td><td>${esc(L.mesAno(s.lastAuditedISO))}</td><td>${s.days == null ? '—' : s.days + ' d'}</td><td><span class="lab-tag ${s.overdue ? 'bad' : 'ok'}">${s.overdue ? 'vencida' : 'em dia'}</span></td><td><button type="button" class="lab-seal" data-act="audit-one" data-id="${s.id}">Marcar auditada hoje</button></td></tr>`).join('');
-    const key = store.raw('labcore_gemini_key'), model = store.raw('labcore_gemini_model') || 'gemini-2.5-flash';
+    const key = store.raw('labcore_openrouter_key') || store.raw('openrouter_key'), model = store.raw('labcore_openrouter_model') || OR_MODELOS[0][0];
+    const custom = !OR_MODELOS.some((m) => m[0] === model);
     document.getElementById('lab-body').innerHTML = `
       <section class="lab-panel"><h2>Status das sociedades e ciclo de ${cs.ttlDays} dias</h2>
         <p class="lab-small">Registry v${esc(r.version)}. Auditoria mais antiga: ${cs.maxDays} dias. A data só muda quando você marca a fonte como auditada, depois de rever as propostas.</p>
         <div class="lab-tablewrap"><table class="lab-table"><thead><tr><th>Fonte monitorada</th><th>Última auditoria</th><th>Dias</th><th>Ciclo</th><th></th></tr></thead><tbody>${fontes}</tbody></table></div>
         <div class="lab-row"><button type="button" class="btn" data-act="audit-all">Concluir auditoria do mês (todas as fontes)</button></div></section>
       <section class="lab-panel"><h2>Sincronização mensal assistida</h2>
-        <h3>Modo A — Gemini com Google Search Grounding</h3>
-        <p class="lab-small">Envia ao Gemini somente o JSON do Registry (nenhum dado de paciente). A chave fica só neste navegador.</p>
-        <div class="lab-grid"><label class="field"><span>Chave da API Gemini</span><input type="password" id="lab-key" autocomplete="off" value="${esc(key)}"></label>
-        <label class="field"><span>Modelo</span><select id="lab-model"><option value="gemini-2.5-flash" ${model === 'gemini-2.5-flash' ? 'selected' : ''}>gemini-2.5-flash</option><option value="gemini-2.5-pro" ${model === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro</option></select></label></div>
+        <h3>Modo A — OpenRouter com busca na web</h3>
+        <p class="lab-small">Envia ao OpenRouter somente o JSON do Registry (nenhum dado de paciente). A chave fica só neste navegador e é a mesma do Assistente IA, se você já a informou lá. O OpenRouter cobra os tokens do modelo e a busca na web: cada varredura consome alguns centavos de crédito.</p>
+        <div class="lab-grid"><label class="field"><span>Chave do OpenRouter</span><input type="password" id="lab-key" autocomplete="off" placeholder="sk-or-…" value="${esc(key)}"></label>
+        <label class="field"><span>Modelo</span><select id="lab-model">${OR_MODELOS.map((m) => `<option value="${m[0]}" ${model === m[0] ? 'selected' : ''}>${esc(m[1])}</option>`).join('')}</select></label>
+        <label class="field"><span>Outro modelo (opcional)</span><input type="text" id="lab-model-custom" autocomplete="off" placeholder="ex.: openai/gpt-…" value="${custom ? esc(model) : ''}"></label></div>
         <div class="lab-row"><button type="button" class="btn" data-act="scan" id="lab-scan">Executar Varredura Mensal nas Sociedades (Search Grounding)</button></div>
         <h3>Modo B — Prompt de auditoria externa (sem chave)</h3>
         <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="prompt">Gerar Prompt de Auditoria do Mês ${esc(L.mesAnoExt(today()))}</button></div>
@@ -435,7 +437,7 @@
       ${p.rows.length ? `<div class="lab-tablewrap"><table class="lab-table"><thead><tr><th>Parâmetro</th><th>Valor atual</th><th>Novo valor</th><th>Fonte / evidência</th><th></th></tr></thead><tbody>${p.rows.map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.current)} ${esc(r.unit)}</td><td><strong>${esc(r.proposed)}</strong></td>
         <td>${esc(r.source)}${r.url ? ` — <a href="${esc(/^https?:\/\//.test(r.url) ? r.url : '#')}" target="_blank" rel="noopener noreferrer">link</a>` : ''}<br><span class="lab-small">${esc(r.evidence)}</span></td>
         <td>${r.valid ? `<button type="button" class="btn" data-act="approve" data-i="${r.idx}">Aprovar e Atualizar Registry</button>` : `<span class="lab-tag bad">${esc(r.problem)}</span>`}</td></tr>`).join('')}</tbody></table></div>` : '<p class="lab-small">Nenhuma mudança proposta. Se você revisou as fontes, registre a auditoria.</p>'}
-      ${(p.grounding || []).length ? `<p class="lab-small">Páginas consultadas pelo Gemini: ${p.grounding.map((g) => `<a href="${esc(g.uri)}" target="_blank" rel="noopener noreferrer">${esc(g.title || g.uri)}</a>`).join(' · ')}</p>` : ''}
+      ${(p.grounding || []).length ? `<p class="lab-small">Páginas consultadas na busca: ${p.grounding.map((g) => `<a href="${esc(g.uri)}" target="_blank" rel="noopener noreferrer">${esc(g.title || g.uri)}</a>`).join(' · ')}</p>` : ''}
       <div class="lab-row">${validas > 1 ? '<button type="button" class="btn" data-act="approve-all">Aprovar todas as aplicáveis</button>' : ''}<button type="button" class="btn btn-ghost" data-act="discard">Descartar propostas</button></div>
       <p class="lab-small">Propostas de IA podem estar erradas: confira a fonte antes de aprovar. Nada é alterado sem o seu clique.</p>`;
   }
@@ -457,28 +459,36 @@
     renderDiff();
   }
 
+  const OR_MODELOS = [
+    ['anthropic/claude-sonnet-5.5', 'Claude Sonnet 5.5 (recomendado)'],
+    ['anthropic/claude-opus-5.5', 'Claude Opus 5.5 (mais detalhado, mais caro)'],
+    ['google/gemini-3.8-flash', 'Gemini 3.8 Flash (rápido e econômico)'],
+    ['openai/gpt-5.6-terra', 'GPT-5.6 Terra'],
+  ];
   async function varredura() {
-    const key = document.getElementById('lab-key').value.trim(), model = document.getElementById('lab-model').value;
-    store.setRaw('labcore_gemini_key', key); store.setRaw('labcore_gemini_model', model);
-    if (!key) { setMsg('Informe a chave da API Gemini ou use o Modo B (sem chave).'); return; }
+    const key = document.getElementById('lab-key').value.trim();
+    const model = document.getElementById('lab-model-custom').value.trim() || document.getElementById('lab-model').value;
+    store.setRaw('labcore_openrouter_key', key); store.setRaw('labcore_openrouter_model', model);
+    if (!key) { setMsg('Informe a chave do OpenRouter ou use o Modo B (sem chave).'); return; }
+    if (!/^[\w.\-]+\/[\w.\-:]+$/.test(model)) { setMsg('Nome de modelo inválido. Use o formato empresa/modelo, como anthropic/claude-sonnet-5.5.'); return; }
     const btn = document.getElementById('lab-scan'); btn.disabled = true;
-    setMsg('Consultando o Gemini com busca na web… pode levar um minuto.');
+    setMsg('Consultando o OpenRouter com busca na web… pode levar um minuto.');
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      const res = await fetch(L.OPENROUTER_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: L.buildAuditPrompt(reg(), today()) }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.1 } }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, 'HTTP-Referer': location.origin + location.pathname, 'X-Title': 'CalcMed LabCore' },
+        body: JSON.stringify(L.openrouterBody(model, L.buildAuditPrompt(reg(), today()))),
       });
-      if (!res.ok) throw new Error(res.status === 400 || res.status === 403 ? 'Chave recusada ou sem permissão (erro ' + res.status + ').' : res.status === 429 ? 'Limite de uso do Gemini atingido (429). Tente mais tarde.' : 'Erro ' + res.status + ' do Gemini.');
-      const j = await res.json();
-      const c = j.candidates && j.candidates[0];
-      const texto = c && c.content && c.content.parts ? c.content.parts.map((x) => x.text || '').join('') : '';
-      const pkg = L.extractJson(texto);
+      let j = null;
+      try { j = await res.json(); } catch (e) { /* corpo vazio ou não JSON */ }
+      if (!res.ok) throw new Error(L.openrouterErro(res.status, j));
+      const o = L.openrouterParse(j);
+      if (o.error) throw new Error(o.error);
+      const pkg = L.extractJson(o.text);
       const v = L.validatePackage(pkg, reg());
-      if (!v.ok) throw new Error('O Gemini não devolveu um pacote válido. ' + v.erros.join(' '));
-      const ch = (c.groundingMetadata && c.groundingMetadata.groundingChunks) || [];
-      S.pending = { rows: v.rows, origem: 'varredura Gemini (' + model + ')', grounding: ch.map((x) => x.web).filter(Boolean).slice(0, 8) };
-      setMsg('Varredura concluída. Revise o diff abaixo.');
+      if (!v.ok) throw new Error(`O modelo não devolveu um pacote válido${o.truncated ? ' (resposta cortada por limite de tamanho)' : ''}. ${v.erros.join(' ')}`);
+      S.pending = { rows: v.rows, origem: 'varredura OpenRouter (' + model + ')', grounding: o.citations };
+      setMsg(o.citations.length ? 'Varredura concluída. Revise o diff e as páginas consultadas.' : 'Varredura concluída, mas o modelo não citou páginas da web: desconfie das propostas e confira cada fonte.');
       renderDiff();
     } catch (e) {
       setMsg(e.message || 'Falha na varredura. Verifique a conexão e a chave.');
@@ -538,7 +548,7 @@
     else if (act === 'audit-one') auditar([b.dataset.id]);
     else if (act === 'audit-all') auditar(L.REGISTRY.sources.map((s) => s.id));
     else if (act === 'scan') varredura();
-    else if (act === 'prompt') { const p = L.buildAuditPrompt(reg(), today()); const ok = await copiar(p); const pre = document.getElementById('lab-prompt'); pre.hidden = false; pre.textContent = p; setMsg(ok ? 'Prompt copiado. Cole no Gemini, Perplexity ou Claude com acesso à web e traga o JSON de volta.' : 'Não foi possível copiar: selecione o texto abaixo.'); }
+    else if (act === 'prompt') { const p = L.buildAuditPrompt(reg(), today()); const ok = await copiar(p); const pre = document.getElementById('lab-prompt'); pre.hidden = false; pre.textContent = p; setMsg(ok ? 'Prompt copiado. Cole no ChatGPT, Perplexity ou Claude com acesso à web e traga o JSON de volta.' : 'Não foi possível copiar: selecione o texto abaixo.'); }
     else if (act === 'import') importar();
     else if (act === 'approve') { const row = S.pending.rows.find((r) => r.idx === +b.dataset.i); aplicar([row]); S.pending.rows = L.validatePackage({ schema: 'labcore-update/1', proposals: S.pending.rows.map((r) => ({ guideline: r.gid, param: r.key, value: r.proposed, source: r.source, evidence: r.evidence, url: r.url })) }, reg()).rows; setMsg('Registry atualizado e registrado no changelog.'); renderGov(); }
     else if (act === 'approve-all') { aplicar(S.pending.rows); S.pending = null; setMsg('Propostas aplicáveis aprovadas e registradas no changelog.'); renderGov(); }
