@@ -201,12 +201,11 @@ a { color: var(--primary); }
   max-width: 1200px; margin: 0 auto; padding: 0 16px;
   display: flex; align-items: stretch; gap: 8px;
 }
-.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
-.tabs::-webkit-scrollbar { display: none; }
+.tabs { display: flex; flex-wrap: wrap; gap: 2px 4px; min-width: 0; flex: 1; }
 .tab {
   position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 46px;
   border: 0; background: none; color: var(--muted); font: inherit; font-size: .925rem; font-weight: 600; text-decoration: none;
-  padding: 10px 14px; cursor: pointer; white-space: nowrap; border-radius: 10px 10px 0 0;
+  padding: 10px 14px; cursor: pointer; white-space: nowrap; border-radius: 10px;
 }
 .tab:hover { color: var(--text); background: var(--surface-2); }
 .tab::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: transparent; }
@@ -1015,3 +1014,10 @@ th { background: var(--surface-2); }
 #view-labcore .lab-enc { border:1px solid var(--border); border-radius:12px; padding:8px 12px; margin:8px 0; background:var(--surface); }
 #view-labcore .lab-enc summary { cursor:pointer; min-height:36px; display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; }
 #view-labcore .lab-tag.sec { color:var(--info-ink); background:var(--info-soft); border-color:var(--info); }
+
+/* Abas em várias linhas: no celular o cabeçalho deixa de ser fixo para não ocupar a tela */
+@media (max-width: 720px) {
+  .topbar { position: static; }
+  .tab { min-height: 38px; padding: 6px 10px; font-size: .85rem; }
+  .tab::after { left: 8px; right: 8px; }
+}
