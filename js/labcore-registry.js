@@ -2,7 +2,8 @@
    Nada clínico fica fora deste arquivo (o motor e a interface só leem daqui, já com os ajustes locais aplicados).
    status de cada parâmetro:
      'diretriz'   = valor da diretriz/publicação citada em `ref` (carga inicial, vinda da especificação do Fernando; ainda não revalidada online).
-     'a_verificar'= valor usado na prática, mas sem fonte primária conferida: confirmar antes de confiar.
+     'secundaria' = valor confirmado em fonte secundária (resumo, protocolo municipal, material de ensino) que cita a diretriz; o texto original ainda não foi aberto.
+     'a_verificar'= valor de conhecimento prévio ou de uso prático, sem fonte conferida: confirmar antes de confiar.
      'lab_local'  = referência que depende do kit do laboratório: ajuste no editor de cutoffs.
    lastAuditedISO = última conferência (carga inicial = 2026-10-15; a primeira varredura online ainda não foi feita). */
 (function (root, factory) {
@@ -117,6 +118,95 @@
         'ast.uln': P('AST (TGO): limite superior de referência', 40, 'U/L', 20, 60, 'lab_local'),
         'ldh.uln': P('LDH: limite superior de referência', 250, 'U/L', 150, 400, 'lab_local'),
         'folato.uln': P('Folato sérico: limite superior de referência', 20, 'ng/mL', 10, 40, 'lab_local'),
+      },
+    },
+    tireoide: {
+      selo: 'SBEM/ATA/ETA', society: 'SBEM / ATA / ETA', title: 'Eixo tireoidiano: hipotireoidismo subclínico e gestação', version: 'ETA 2013; ATA 2017', year: 2017, sources: ['sbem'], lastAuditedISO: BASE,
+      ref: 'Pearce SH et al. 2013 ETA Guideline: Management of Subclinical Hypothyroidism. Eur Thyroid J 2013;2:215-28. Alexander EK et al. 2017 ATA Guidelines for thyroid disease in pregnancy. Thyroid 2017;27:315-89. Conferidos em resumos; os textos originais não foram abertos.',
+      params: {
+        'sch.tshTreat': P('Subclínico: TSH ≥ este valor indica tratar (abaixo de ~70 anos)', 10, 'mUI/L', 5, 20, 'secundaria'),
+        'sch.ageSoft': P('Subclínico: idade de referência (limite flexível)', 70, 'anos', 60, 80, 'secundaria'),
+        'sch.veryOld': P('Subclínico com TSH ≤10: idosos acima desta idade, observar', 80, 'anos', 75, 90, 'secundaria'),
+        'preg.urlFallback': P('Gestação: limite superior de TSH se o laboratório não tiver faixa por trimestre', 4.0, 'mUI/L', 3, 5, 'secundaria'),
+        'preg.tpoTsh': P('Gestação com anti-TPO positivo: TSH acima deste valor (e dentro da faixa) → considerar', 2.5, 'mUI/L', 1.5, 3.5, 'secundaria'),
+        'preg.treatTsh': P('Gestação, anti-TPO negativo: TSH ≥ este valor → tratar', 10, 'mUI/L', 5, 15, 'secundaria'),
+      },
+    },
+    sifilis: {
+      selo: 'PCDT IST 2022', society: 'Ministério da Saúde (PCDT IST)', title: 'Sífilis: interpretação sorológica e resposta ao tratamento', version: 'PCDT IST 2022', year: 2022, sources: ['pcdt'], lastAuditedISO: BASE,
+      ref: 'Ministério da Saúde. PCDT para Atenção Integral às Pessoas com IST, 2022. Critérios de resposta conferidos em materiais que reproduzem o PCDT; o texto original não foi aberto.',
+      params: {
+        'resp.dilutions': P('Resposta adequada: queda mínima (diluições)', 2, 'diluições', 1, 4, 'secundaria'),
+        'resp.recentMonths': P('Sífilis recente: prazo para a queda', 6, 'meses', 3, 12, 'secundaria'),
+        'resp.lateMonths': P('Sífilis tardia: prazo para a queda', 12, 'meses', 6, 24, 'secundaria'),
+        'rise.dilutions': P('Falha/reinfecção: aumento mínimo (diluições)', 2, 'diluições', 1, 4, 'secundaria'),
+        'cicatriz.maxTiter': P('Cicatriz sorológica: título máximo (1:n)', 4, '1:n', 1, 16, 'a_verificar'),
+      },
+    },
+    toxo: {
+      selo: 'PCDT/Febrasgo', society: 'Ministério da Saúde / Febrasgo', title: 'Toxoplasmose gestacional: IgG, IgM e avidez', version: 'Protocolos 2010-2022', year: 2022, sources: ['pcdt'], lastAuditedISO: BASE,
+      ref: 'Febrasgo, Toxoplasmose e gravidez; protocolos de manejo (Res. SS-SP 200/2010; protocolos municipais). Os pontos de corte percentuais da avidez dependem do kit e não ficam no Registry. O protocolo nacional do Ministério da Saúde não foi aberto.',
+      params: {
+        'avidez.maxGa': P('Avidez alta exclui infecção na gestação se coletada até', 16, 'semanas', 10, 20, 'secundaria'),
+        'avidez.repeatWeeks': P('Avidez intermediária: repetir em', 2, 'semanas', 1, 4, 'secundaria'),
+      },
+    },
+    hbv: {
+      selo: 'PCDT HBV/CDC', society: 'Ministério da Saúde / CDC', title: 'Hepatite B: leitura dos marcadores', version: 'PCDT Hepatite B e Coinfecções', year: 2022, sources: ['pcdt', 'easl'], lastAuditedISO: BASE,
+      ref: 'Leitura convencional dos marcadores (CDC, Interpretation of Hepatitis B Serologic Test Results; PCDT Hepatite B e Coinfecções, Ministério da Saúde). Não reconferida nesta carga.',
+      params: {
+        'antiHbs.protecao': P('Anti-HBs considerado protetor se ≥', 10, 'mUI/mL', 5, 20, 'a_verificar'),
+      },
+    },
+    hepato: {
+      selo: 'EASL/ACG', society: 'EASL / ACG', title: 'Hipertransaminasemia, colestase e fator R', version: 'ACG 2017; EASL DILI 2019', year: 2019, sources: ['easl'], lastAuditedISO: BASE,
+      ref: 'Fator R conforme ACG 2014/2017 e EASL DILI 2019 (J Hepatol 2019;70:1222-61); limites confirmados em resumos, sem abrir o texto original. Gilbert: diagnóstico de exclusão; os limiares numéricos vêm de um material clínico e ficam "a verificar".',
+      params: {
+        'r.hepatocelular': P('Fator R: hepatocelular se ≥', 5, '', 3, 8, 'secundaria'),
+        'r.colestatico': P('Fator R: colestático se ≤', 2, '', 1, 3, 'secundaria'),
+        'dili.altUln': P('Lesão hepática relevante: ALT ≥ (× LSN)', 5, '× LSN', 3, 8, 'secundaria'),
+        'dili.alpUln': P('Lesão hepática relevante: FA ≥ (× LSN)', 2, '× LSN', 1.5, 3, 'secundaria'),
+        'gilbert.indiretaPct': P('Gilbert provável: bilirrubina indireta ≥', 70, '% da total', 50, 95, 'a_verificar'),
+        'gilbert.btUln': P('Gilbert provável: bilirrubina total abaixo de (× LSN)', 3, '× LSN', 1.5, 5, 'a_verificar'),
+      },
+    },
+    fan: {
+      selo: 'ICAP', society: 'ICAP / SBR', title: 'FAN em células HEp-2: padrões ICAP', version: 'ICAP (AC-0 a AC-29)', year: 2019, sources: ['icap'], lastAuditedISO: BASE,
+      ref: 'International Consensus on ANA Patterns (anapatterns.org; Chan EKL et al., Front Immunol 2015 e atualizações). O site do ICAP não pôde ser aberto nesta sessão: as associações antígeno-doença vêm de conhecimento prévio e estão marcadas "a verificar", exceto AC-2 e o grupo esclerodermia, confirmados em artigos que citam o ICAP.',
+      params: {
+        'titer.cut': P('FAN positivo se título ≥ 1:n', 80, '1:n', 40, 160, 'a_verificar'),
+      },
+    },
+    imwg: {
+      selo: 'IMWG 2014', society: 'IMWG', title: 'Gamopatias monoclonais: MGUS, mieloma indolente e mieloma múltiplo', version: 'IMWG 2014', year: 2014, sources: ['hemato'], lastAuditedISO: BASE,
+      ref: 'Rajkumar SV et al. International Myeloma Working Group updated criteria for the diagnosis of multiple myeloma. Lancet Oncol 2014;15:e538-48. CRAB e SLiM conferidos em resumos; limites de MGUS/mieloma indolente de conhecimento prévio.',
+      params: {
+        'crab.ca': P('CRAB, hipercalcemia: cálcio >', 11, 'mg/dL', 10, 13, 'secundaria'),
+        'crab.caAboveUln': P('CRAB, hipercalcemia: ou acima do LSN em mais de', 1, 'mg/dL', 0.5, 2, 'secundaria'),
+        'crab.cr': P('CRAB, renal: creatinina >', 2, 'mg/dL', 1.5, 3, 'secundaria'),
+        'crab.crcl': P('CRAB, renal: ou depuração de creatinina <', 40, 'mL/min', 30, 60, 'secundaria'),
+        'crab.hb': P('CRAB, anemia: hemoglobina <', 10, 'g/dL', 8, 12, 'secundaria'),
+        'crab.hbBelowLln': P('CRAB, anemia: ou abaixo do LIN em mais de', 2, 'g/dL', 1, 3, 'secundaria'),
+        'slim.pc': P('SLiM: plasmócitos clonais na medula ≥', 60, '%', 50, 70, 'secundaria'),
+        'slim.flc': P('SLiM: razão de cadeias leves livres envolvida/não envolvida ≥', 100, '', 50, 200, 'secundaria'),
+        'slim.flcInvolved': P('SLiM: cadeia leve envolvida deve ser ≥', 100, 'mg/L', 50, 200, 'secundaria'),
+        'slim.mri': P('SLiM: lesões focais na RM (mais de)', 1, 'lesão', 0, 3, 'secundaria'),
+        'mm.pcMin': P('Mieloma/indolente: plasmócitos clonais ≥', 10, '%', 5, 20, 'secundaria'),
+        'mgus.mMax': P('MGUS: componente M sérico <', 3, 'g/dL', 2, 4, 'a_verificar'),
+        'mgus.riskM': P('MGUS de maior risco: componente M ≥', 1.5, 'g/dL', 1, 2, 'a_verificar'),
+      },
+    },
+    urina: {
+      selo: 'IDSA 2019', society: 'IDSA / SBU', title: 'Urinálise e urocultura: bacteriúria assintomática e sedimento', version: 'IDSA ASB 2019', year: 2019, sources: ['pcdt', 'sbpc'], lastAuditedISO: BASE,
+      ref: 'Nicolle LE et al. IDSA Guideline for Asymptomatic Bacteriuria, 2019 (Clin Infect Dis 2019;68:e83-e110), conferido em resumos. Dismorfismo: Fogazzi et al.; não existe ponto de corte único validado. Limiares de cistite e de contaminação: conhecimento prévio.',
+      params: {
+        'asb.cfu': P('Bacteriúria: UFC/mL em jato médio ≥', 100000, 'UFC/mL', 10000, 1000000, 'secundaria'),
+        'asb.cfuCath': P('Bacteriúria: UFC/mL em cateterismo de alívio/sonda recém-colocada ≥', 100, 'UFC/mL', 10, 10000, 'secundaria'),
+        'asb.pregDaysMin': P('Gestante: duração do tratamento, mínimo', 4, 'dias', 3, 7, 'secundaria'),
+        'asb.pregDaysMax': P('Gestante: duração do tratamento, máximo', 7, 'dias', 4, 14, 'secundaria'),
+        'cyst.cfu': P('Cistite sintomática: UFC/mL a partir de', 1000, 'UFC/mL', 100, 10000, 'a_verificar'),
+        'contam.species': P('Contaminação provável com este número de espécies ou mais', 3, 'espécies', 2, 5, 'a_verificar'),
+        'acantocitos.pct': P('Hematúria glomerular provável: acantócitos (G1) ≥', 5, '%', 1, 20, 'secundaria'),
       },
     },
   };

@@ -2,9 +2,9 @@
    Dados do paciente nunca são gravados: só o Registry ajustado, as auditorias, o changelog e (opcional) a chave Gemini vão para o localStorage. */
 (function () {
   'use strict';
-  const L = window.LabCore;
+  const L = window.LabCore, FX = window.LabCoreFluxos, EN = window.LabCoreEnciclopedia;
   const root = document.getElementById('lab-root');
-  if (!L || !root) return;
+  if (!L || !FX || !EN || !root) return;
 
   const store = {
     get(k, d) { try { const s = localStorage.getItem(k); return s == null ? d : JSON.parse(s); } catch (e) { return d; } },
@@ -24,10 +24,16 @@
     pending: null,       // { rows, origem, grounding }
     seal: null,          // guideline cuja ficha está aberta
     parsed: null,
+    fx: null,            // { flow, node, ctx, hist:[{node,ctx}], error, raw }
+    enc: { q: '', cat: '' },
+    regulacao: store.get('labcore_regulacao', {}),
     msg: '',
   };
   const reg = () => L.effective(S.custom, S.audits);
   const persist = () => { store.set('labcore_custom', S.custom); store.set('labcore_audits', S.audits); store.set('labcore_log', S.log); };
+
+  const STATUS = { diretriz: ['ok', 'diretriz'], secundaria: ['sec', 'fonte secundária'], a_verificar: ['a_verificar', 'a verificar'], lab_local: ['lab_local', 'ref. do laboratório'] };
+  const statusTag = (st) => { const x = STATUS[st] || STATUS.a_verificar; return `<span class="lab-tag ${x[0]}">${x[1]}</span>`; };
 
   async function copiar(texto) {
     try { await navigator.clipboard.writeText(texto); return true; } catch (e) { /* tenta o plano B */ }
@@ -41,12 +47,12 @@
   function render() {
     const r = reg(), cs = L.cycleStatus(r, today());
     const banner = cs.overdue ? `<div class="lab-banner" role="alert">Ciclo Mensal de Revisão de Guidelines Vencido — Recomenda-se rodar a rotina de sincronização <span class="lab-small">(última auditoria há ${cs.maxDays} dias; limite ${cs.ttlDays}).</span> <button type="button" class="lab-seal" data-act="goto-gov">Abrir Governança</button></div>` : '';
-    const tabs = [['bancada', 'Bancada Rápida'], ['colar', 'Colar do Prontuário'], ['gov', 'Governança']];
+    const tabs = [['bancada', 'Bancada Rápida'], ['fluxos', 'Fluxogramas'], ['enc', 'Enciclopédia'], ['colar', 'Colar do Prontuário'], ['gov', 'Governança']];
     root.innerHTML = `${banner}
       <p class="lab-notice"><strong>Apoio à decisão para profissionais de saúde.</strong> Não substitui o julgamento clínico nem o laudo do laboratório. Nada do que você digita sai do navegador nem é salvo; só os ajustes do Registry ficam neste aparelho.</p>
       <div class="lab-tabs" role="tablist">${tabs.map(([id, n]) => `<button type="button" role="tab" class="chip" data-act="sub" data-sub="${id}" aria-pressed="${S.sub === id}" aria-selected="${S.sub === id}">${n}</button>`).join('')}</div>
       <div id="lab-body"></div>`;
-    ({ bancada: renderBancada, colar: renderColar, gov: renderGov })[S.sub]();
+    ({ bancada: renderBancada, fluxos: renderFluxos, enc: renderEnc, colar: renderColar, gov: renderGov })[S.sub]();
   }
 
   /* ================= Módulo 1: Bancada Rápida ================= */
@@ -107,7 +113,7 @@
 
   function sealPanel(r, g) {
     const G = r.guidelines[g];
-    const ps = Object.values(G.params).map((p) => `<li>${esc(p.label)}: <strong>${esc(L.fmt(p.value, p.value % 1 === 0 ? 0 : 3))} ${esc(p.unit)}</strong> <span class="lab-tag ${p.status === 'diretriz' ? 'ok' : p.status}">${p.status === 'diretriz' ? 'diretriz' : p.status === 'lab_local' ? 'ref. do laboratório' : 'a verificar'}</span>${p.custom ? ' <span class="lab-tag lab_local">ajustado</span>' : ''}</li>`).join('');
+    const ps = Object.values(G.params).map((p) => `<li>${esc(p.label)}: <strong>${esc(L.fmt(p.value, p.value % 1 === 0 ? 0 : 3))} ${esc(p.unit)}</strong> ${statusTag(p.status)}${p.custom ? ' <span class="lab-tag lab_local">ajustado</span>' : ''}</li>`).join('');
     return `<div class="lab-seal-panel"><strong>${esc(G.title)}</strong> — ${esc(G.society)}, versão ${esc(G.version)} (${G.year}). Auditado em ${esc(L.mesAno(G.lastAuditedISO))}.<br><span class="lab-small">${esc(G.ref)}</span><ul>${ps}</ul></div>`;
   }
 
@@ -119,6 +125,72 @@
     const b = root.querySelector('[data-act="soap"]');
     b.textContent = ok ? 'Copiado' : 'Não foi possível copiar: selecione o texto abaixo';
     setTimeout(() => { if (b.isConnected) b.textContent = 'Copiar Evolução para Prontuário (SOAP/e-SUS)'; }, 2500);
+  }
+
+
+  /* ================= Módulo 2: Fluxogramas ================= */
+  function renderFluxos() {
+    const body = document.getElementById('lab-body');
+    const x = S.fx;
+    if (!x) {
+      body.innerHTML = `<section class="lab-panel"><h2>Fluxogramas sindrômicos</h2><p class="lab-small">Responda passo a passo. Cada resultado traz o selo da diretriz, sugestões e um texto para o prontuário. Os pontos de corte vêm do Registry (Governança).</p>
+        <div class="lab-cards">${FX.FLUXOS.map((f) => `<button type="button" class="lab-card" data-act="fx-open" data-id="${f.id}"><strong>${esc(f.titulo)}</strong><span>${esc(f.resumo)}</span></button>`).join('')}</div></section>`;
+      return;
+    }
+    const flow = FX.byId(x.flow), node = flow.nodes[x.node], r = reg();
+    const barra = `<div class="lab-row"><button type="button" class="btn btn-ghost" data-act="fx-back">Voltar</button><button type="button" class="btn btn-ghost" data-act="fx-reset">Escolher outro fluxograma</button></div>`;
+    let h = `<section class="lab-panel"><h2>${esc(flow.titulo)}</h2>${barra}`;
+    if (x.error) h += `<div class="warn"><strong>Atenção</strong><span>${esc(x.error)}</span></div>`;
+    if (node.t === 'choice') {
+      h += `<p><strong>${esc(node.q)}</strong></p><div class="lab-row">${node.opts.map((o) => `<button type="button" class="btn" data-act="fx-choice" data-v="${esc(o.v)}">${esc(o.label)}</button>`).join('')}</div>`;
+    } else if (node.t === 'form') {
+      const raw = x.raw || {};
+      h += `<p><strong>${esc(node.q)}</strong></p><div class="lab-grid" id="lab-ffields">${node.fields.map((f) => {
+        const v = raw[f.id];
+        if (f.type === 'check') return `<label class="lab-checks lab-fullrow"><span><input type="checkbox" data-ff="${f.id}" ${v ? 'checked' : ''}> ${esc(f.label)}</span></label>`;
+        if (f.type === 'select') return `<label class="field"><span>${esc(f.label)}${f.req ? '' : ' <span class="unit">(opcional)</span>'}</span><select data-ff="${f.id}"><option value="">—</option>${f.options.map((o) => `<option value="${esc(o[0])}" ${v === o[0] ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
+        return `<label class="field"><span>${esc(f.label)} ${f.unit ? `<span class="unit">${esc(f.unit)}</span>` : ''}${f.req ? '' : ' <span class="unit">(opcional)</span>'}</span><input type="text" inputmode="decimal" autocomplete="off" data-ff="${f.id}" value="${esc(v)}"></label>`;
+      }).join('')}</div><div class="lab-row"><button type="button" class="btn" data-act="fx-next">Continuar</button></div>`;
+    } else {
+      const res = FX.result(flow, x.node, x.ctx, r);
+      h += `<div class="result ${res.level}" ${res.level === 'high' ? 'data-grade="2"' : ''}><div class="res-head"><span class="main" style="font-size:1.25rem">${esc(res.title)}</span></div>
+        <div>${res.selos.map((t) => `<span class="lab-seal" style="cursor:default">${esc(t)}</span>`).join(' ')}</div>
+        ${res.texts.map((t) => `<p class="det">${esc(t)}</p>`).join('')}
+        ${res.recs.length ? `<ul class="det">${res.recs.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</div>
+        <div class="lab-row lab-print"><button type="button" class="btn" data-act="fx-copy">Copiar para Prontuário (SOAP/e-SUS)</button></div><pre class="lab-pre" id="lab-fxnote" hidden></pre>`;
+    }
+    body.innerHTML = h + '</section>';
+  }
+  function lerForm() {
+    const raw = {};
+    root.querySelectorAll('[data-ff]').forEach((el) => { raw[el.dataset.ff] = el.type === 'checkbox' ? el.checked : el.value; });
+    return raw;
+  }
+  function fxIr(answer) {
+    const x = S.fx, flow = FX.byId(x.flow);
+    const s = FX.step(flow, x.ctx, x.node, answer, reg());
+    if (s.error) { x.error = s.error; if (typeof answer === 'object') x.raw = answer; return renderFluxos(); }
+    x.hist.push({ node: x.node, ctx: x.ctx, raw: typeof answer === 'object' ? answer : {} });
+    x.node = s.next; x.ctx = s.ctx; x.error = ''; x.raw = {};
+    renderFluxos();
+  }
+
+  /* ================= Módulo 3: Enciclopédia ================= */
+  function renderEnc() {
+    document.getElementById('lab-body').innerHTML = `<section class="lab-panel"><h2>Enciclopédia metrológica e pérolas de bancada</h2>
+      <label class="field"><span>Buscar</span><input type="search" id="lab-q" autocomplete="off" placeholder="ex.: hemólise, EDTA, TSH, nefrologia" value="${esc(S.enc.q)}"></label>
+      <div class="lab-row" id="lab-cats">${[['', 'Todas']].concat(Object.entries(EN.CATS)).map(([k, n]) => `<button type="button" class="chip" data-act="enc-cat" data-cat="${k}" aria-pressed="${S.enc.cat === k}">${esc(n)}</button>`).join('')}</div>
+      <p class="lab-small">Conteúdo de livro-texto e das diretrizes citadas em cada entrada; "a verificar" indica que ainda falta conferência. Os exames obrigatórios das centrais de regulação (CROSS, SISREG) variam por município e estado: cole o protocolo da sua central em cada especialidade.</p>
+      <div id="lab-enclist"></div></section>`;
+    listaEnc();
+  }
+  function listaEnc() {
+    const r = reg(), items = EN.buscar(S.enc.q, S.enc.cat, r);
+    const el = document.getElementById('lab-enclist');
+    el.innerHTML = items.length ? items.map((e) => `<details class="lab-enc"><summary><strong>${esc(e.titulo)}</strong> <span class="lab-small">${esc(EN.CATS[e.cat])}</span></summary>
+      <p>${esc(e.resumo)}</p><ul>${EN.textoPontos(e, r).map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
+      <p class="lab-small">Fonte: ${esc(e.fonte)} ${e.conf === 'a_verificar' ? '<span class="lab-tag a_verificar">a verificar</span>' : ''}</p>
+      ${e.regulacao ? `<label class="field"><span>Protocolo local de regulação (exames obrigatórios, documentos, prioridade)</span><textarea data-reg="${e.id}" placeholder="Cole aqui o protocolo da central do seu município/estado">${esc(S.regulacao[e.id] || '')}</textarea></label><p class="lab-small">Fica só neste navegador.</p>` : ''}</details>`).join('') : '<p class="lab-small">Nada encontrado. Tente outro termo.</p>';
   }
 
   /* ================= Módulo 4: Colar do Prontuário ================= */
@@ -183,7 +255,7 @@
         return `<tr><td>${esc(p.label)}<br><span class="lab-small">${esc(p.unit)} · faixa ${p.min} a ${p.max}</span></td>
           <td><input class="lab-edit" inputmode="decimal" data-edit="${gid}:${k}" value="${esc(String(p.value).replace('.', ','))}" aria-label="${esc(p.label)}"></td>
           <td>${esc(String(def).replace('.', ','))}</td>
-          <td><span class="lab-tag ${p.status === 'diretriz' ? 'ok' : p.status}">${p.status === 'diretriz' ? 'diretriz' : p.status === 'lab_local' ? 'lab. local' : 'a verificar'}</span>${p.custom ? ` <span class="lab-tag lab_local">${esc(p.custom)}</span>` : ''}</td>
+          <td>${statusTag(p.status)}${p.custom ? ` <span class="lab-tag lab_local">${esc(p.custom)}</span>` : ''}</td>
           <td>${p.custom ? `<button type="button" class="lab-seal" data-act="reset-one" data-k="${gid}:${k}">Restaurar padrão</button>` : ''}</td></tr>`;
       }).join('')}</tbody></table></div></details>`).join('');
   }
@@ -282,6 +354,13 @@
     const act = b.dataset.act;
     if (act === 'sub') { S.sub = b.dataset.sub; render(); }
     else if (act === 'goto-gov') { S.sub = 'gov'; render(); }
+    else if (act === 'fx-open') { const f = FX.byId(b.dataset.id); S.fx = { flow: f.id, node: f.start, ctx: {}, hist: [], error: '', raw: {} }; renderFluxos(); }
+    else if (act === 'fx-choice') fxIr(b.dataset.v);
+    else if (act === 'fx-next') fxIr(lerForm());
+    else if (act === 'fx-back') { const x = S.fx, h = x.hist.pop(); if (h) { x.node = h.node; x.ctx = h.ctx; x.raw = h.raw || {}; x.error = ''; renderFluxos(); } else { S.fx = null; renderFluxos(); } }
+    else if (act === 'fx-reset') { S.fx = null; renderFluxos(); }
+    else if (act === 'fx-copy') { const flow = FX.byId(S.fx.flow), t = FX.nota(flow, FX.result(flow, S.fx.node, S.fx.ctx, reg()), today()); const ok = await copiar(t); const pre = document.getElementById('lab-fxnote'); pre.hidden = false; pre.textContent = t; b.textContent = ok ? 'Copiado' : 'Não foi possível copiar: selecione o texto abaixo'; }
+    else if (act === 'enc-cat') { S.enc.cat = b.dataset.cat; renderEnc(); }
     else if (act === 'casos') { const c = document.getElementById('lab-casos'); c.hidden = !c.hidden; }
     else if (act === 'caso') { const c = CASOS[+b.dataset.i].d; S.raw = { flags: Object.assign({}, c.flags) }; Object.keys(c).forEach((k) => { if (k !== 'flags') S.raw[k] = String(c[k]).replace('.', ','); }); renderBancada(); }
     else if (act === 'limpar') { S.raw = { flags: {} }; renderBancada(); }
@@ -304,9 +383,13 @@
     const t = e.target;
     if (t.dataset.f) { S.raw[t.dataset.f] = t.value; calc(); }
     else if (t.dataset.b) { S.raw[t.dataset.b] = t.checked; calc(); }
+    else if (t.id === 'lab-q') { S.enc.q = t.value; listaEnc(); }
     else if (t.dataset.fl) { S.raw.flags = Object.assign({}, S.raw.flags, { [t.dataset.fl]: t.checked }); calc(); }
   });
-  root.addEventListener('change', (e) => { if (e.target.dataset.edit) editar(e.target); });
+  root.addEventListener('change', (e) => {
+    if (e.target.dataset.edit) editar(e.target);
+    else if (e.target.dataset.reg) { S.regulacao[e.target.dataset.reg] = e.target.value; store.set('labcore_regulacao', S.regulacao); }
+  });
 
   render();
   window.addEventListener('hashchange', () => { if (location.hash === '#labcore') render(); });
