@@ -2,9 +2,9 @@
    Dados do paciente nunca são gravados: só o Registry ajustado, as auditorias, o changelog e (opcional) a chave Gemini vão para o localStorage. */
 (function () {
   'use strict';
-  const L = window.LabCore, FX = window.LabCoreFluxos, EN = window.LabCoreEnciclopedia;
+  const L = window.LabCore, FX = window.LabCoreFluxos, EN = window.LabCoreEnciclopedia, HM = window.LabCoreHemato, PL = window.LabCorePlugins;
   const root = document.getElementById('lab-root');
-  if (!L || !FX || !EN || !root) return;
+  if (!L || !FX || !EN || !HM || !PL || !root) return;
 
   const store = {
     get(k, d) { try { const s = localStorage.getItem(k); return s == null ? d : JSON.parse(s); } catch (e) { return d; } },
@@ -27,8 +27,32 @@
     fx: null,            // { flow, node, ctx, hist:[{node,ctx}], error, raw }
     enc: { q: '', cat: '' },
     regulacao: store.get('labcore_regulacao', {}),
+    exams: [],           // exames cadastrados pela tela (localStorage 'labcore_exams')
+    codeWarn: [],        // problemas em CUSTOM_EXAMS_PLUGINS / CUSTOM_FLOWS_PLUGINS
+    tool: null,          // simulador aberto em Fluxogramas: 'eps' | 'hplc'
+    toolRaw: {},
+    dlgEdit: null,
+    dlgMsg: '',
     msg: '',
   };
+
+  /* ---------- exames personalizados (plug-and-play) ---------- */
+  const RESERVADOS = L.FIELDS.map((f) => f.id).concat(['idade', 'sexo', 'flags', 'gestante', 'dm', 'icc', 'persistente', 'picoM']);
+  const codeExams = [];
+  (function carregarPlugins() {
+    const ids = RESERVADOS.slice();
+    const aceitar = (raw, origem, destino) => {
+      const r = PL.validar(raw, ids, ids);
+      if (r.ok) { destino.push(r.plugin); ids.push(r.plugin.id); } else S.codeWarn.push(`${origem} "${(raw && raw.nome) || '?'}": ${r.erros.join(' ')}`);
+    };
+    PL.CUSTOM_EXAMS_PLUGINS.forEach((x) => aceitar(x, 'CUSTOM_EXAMS_PLUGINS', codeExams));
+    (store.get('labcore_exams', []) || []).forEach((x) => aceitar(x, 'Exame salvo', S.exams));
+    PL.CUSTOM_FLOWS_PLUGINS.forEach((f) => { const r = FX.registrar(f); if (!r.ok) S.codeWarn.push(`CUSTOM_FLOWS_PLUGINS "${(f && f.id) || '?'}": ${r.erros.join('; ')}`); });
+  })();
+  const plugins = () => codeExams.concat(S.exams);
+  const idsUsados = (exceto) => RESERVADOS.concat(plugins().map((p) => p.id)).filter((x) => x !== exceto);
+  const persistExams = () => store.set('labcore_exams', S.exams);
+  const customLabel = (id) => { const p = plugins().find((x) => x.id === id); return p ? { label: p.nome, unit: p.unidade } : null; };
   const reg = () => L.effective(S.custom, S.audits);
   const persist = () => { store.set('labcore_custom', S.custom); store.set('labcore_audits', S.audits); store.set('labcore_log', S.log); };
 
@@ -49,14 +73,16 @@
     const banner = cs.overdue ? `<div class="lab-banner" role="alert">Ciclo Mensal de Revisão de Guidelines Vencido — Recomenda-se rodar a rotina de sincronização <span class="lab-small">(última auditoria há ${cs.maxDays} dias; limite ${cs.ttlDays}).</span> <button type="button" class="lab-seal" data-act="goto-gov">Abrir Governança</button></div>` : '';
     const tabs = [['bancada', 'Bancada Rápida'], ['fluxos', 'Fluxogramas'], ['enc', 'Enciclopédia'], ['colar', 'Colar do Prontuário'], ['gov', 'Governança']];
     root.innerHTML = `${banner}
-      <p class="lab-notice"><strong>Apoio à decisão para profissionais de saúde.</strong> Não substitui o julgamento clínico nem o laudo do laboratório. Nada do que você digita sai do navegador nem é salvo; só os ajustes do Registry ficam neste aparelho.</p>
+      <p class="lab-notice"><strong>Apoio à decisão para profissionais de saúde.</strong> Não substitui o julgamento clínico nem o laudo do laboratório. Nada do que você digita sobre o paciente sai do navegador nem é salvo; só os ajustes do Registry, os exames que você cadastrar e os protocolos de regulação ficam neste aparelho.</p>
+      <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-new">+ Adicionar Novo Exame / Índice</button></div>
+      ${S.codeWarn.length ? `<div class="warn"><strong>Adendos de código recusados</strong><span>${S.codeWarn.map(esc).join(' · ')}</span></div>` : ''}
       <div class="lab-tabs" role="tablist">${tabs.map(([id, n]) => `<button type="button" role="tab" class="chip" data-act="sub" data-sub="${id}" aria-pressed="${S.sub === id}" aria-selected="${S.sub === id}">${n}</button>`).join('')}</div>
-      <div id="lab-body"></div>`;
+      <div id="lab-body"></div><dialog id="lab-dlg" aria-labelledby="lab-dlg-t"></dialog>`;
     ({ bancada: renderBancada, fluxos: renderFluxos, enc: renderEnc, colar: renderColar, gov: renderGov })[S.sub]();
   }
 
   /* ================= Módulo 1: Bancada Rápida ================= */
-  const GRUPOS = { hemato: 'Hemograma e ferro', renal: 'Rim', eletro: 'Eletrólitos', metab: 'Glicemia', hepat: 'Fígado e hemólise', lipid: 'Lipídios', tireo: 'Tireoide' };
+  const GRUPOS = { hemato: 'Hemograma e ferro', renal: 'Rim', eletro: 'Eletrólitos', metab: 'Glicemia', hepat: 'Fígado e hemólise', lipid: 'Lipídios', tireo: 'Tireoide', prot: 'Proteínas', coag: 'Coagulograma' };
   const CASOS = [
     { n: '1. MASLD / fibrose silenciosa', d: { idade: 52, sexo: 'M', ast: 58, alt: 74, plaq: 168000, ct: 232, hdl: 38, tg: 210, glicemia: 112, insulina: 18, hba1c: 5.9 } },
     { n: '2. Pseudo-hipercalemia por hemólise', d: { idade: 45, sexo: 'F', k: 6.8, ast: 95, ldh: 520, cr: 0.9, na: 139, flags: { hemolise: true } } },
@@ -81,7 +107,8 @@
           <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="casos">Carregar Casos Clínicos de Exemplo</button><button type="button" class="btn btn-ghost" data-act="limpar">Limpar</button></div>
           <div id="lab-casos" class="lab-row" hidden>${CASOS.map((c, i) => `<button type="button" class="chip" data-act="caso" data-i="${i}">${esc(c.n)}</button>`).join('')}</div>
         </section>
-        ${Object.keys(GRUPOS).map((g) => `<section class="lab-panel"><h2>${GRUPOS[g]}</h2><div class="lab-grid">${L.FIELDS.filter((f) => f.group === g).map(inp).join('')}</div></section>`).join('')}
+        ${Object.keys(GRUPOS).map((g) => `<section class="lab-panel"><h2>${GRUPOS[g]}</h2><div class="lab-grid">${L.FIELDS.filter((f) => f.group === g).map(inp).join('')}</div>${g === 'prot' ? `<div class="lab-checks">${chk('picoM', 'Pico monoclonal (componente M) presente na eletroforese', v.picoM, 'data-b')}</div>` : ''}</section>`).join('')}
+        ${plugins().filter((p) => !p.formula).length ? `<section class="lab-panel"><h2>Exames personalizados</h2><div class="lab-grid">${plugins().filter((p) => !p.formula).map((p) => `<label class="field"><span>${esc(p.nome)} <span class="unit">${esc(p.unidade)}</span></span><input type="text" inputmode="decimal" autocomplete="off" data-f="${p.id}" value="${esc(v[p.id])}"></label>`).join('')}</div></section>` : ''}
       </div>
       <div class="lab-results" aria-live="polite"><div id="lab-out"></div></div></div>`;
     calc();
@@ -91,6 +118,9 @@
     const out = document.getElementById('lab-out');
     if (!out) return;
     const r = reg(), a = L.analyze(S.raw, r);
+    const vars = Object.assign({}, a.v);
+    plugins().forEach((p) => { const x = L.parseNum(S.raw[p.id]); if (x != null) vars[p.id] = x; });
+    a.items = a.items.concat(PL.avaliarTodos(plugins(), vars));
     S.analysis = a;
     const temDado = a.items.length || a.alerts.length || a.warnings.length;
     let h = '';
@@ -100,7 +130,7 @@
       const seals = (it.guideline || []).map((g) => `<button type="button" class="lab-seal" data-act="seal" data-g="${g}" aria-expanded="${S.seal === g}">${esc(L.selo(r, g))}</button>`).join(' ');
       h += `<div class="result ${it.level}" ${it.grade ? `data-grade="${it.grade}"` : ''}>
         <div class="res-head"><span class="sub">${esc(it.title)}</span><span class="main">${esc(it.main)}</span>${it.sub ? `<span class="sub">${esc(it.sub)}</span>` : ''}</div>
-        <div>${seals}</div>
+        <div>${seals}${it.selo ? `<span class="lab-seal" style="cursor:default">${esc(it.selo)}</span>` : ''}</div>
         ${(it.guideline || []).includes(S.seal) ? sealPanel(r, S.seal) : ''}
         ${(it.details || []).filter(Boolean).map((d) => `<p class="det">${esc(d)}</p>`).join('')}
         ${(it.recs || []).length ? `<ul class="det">${it.recs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`;
@@ -131,10 +161,12 @@
   /* ================= Módulo 2: Fluxogramas ================= */
   function renderFluxos() {
     const body = document.getElementById('lab-body');
+    if (S.tool) return renderTool();
     const x = S.fx;
     if (!x) {
       body.innerHTML = `<section class="lab-panel"><h2>Fluxogramas sindrômicos</h2><p class="lab-small">Responda passo a passo. Cada resultado traz o selo da diretriz, sugestões e um texto para o prontuário. Os pontos de corte vêm do Registry (Governança).</p>
-        <div class="lab-cards">${FX.FLUXOS.map((f) => `<button type="button" class="lab-card" data-act="fx-open" data-id="${f.id}"><strong>${esc(f.titulo)}</strong><span>${esc(f.resumo)}</span></button>`).join('')}</div></section>`;
+        <div class="lab-cards">${FX.FLUXOS.map((f) => `<button type="button" class="lab-card" data-act="fx-open" data-id="${f.id}"><strong>${esc(f.titulo)}</strong><span>${esc(f.resumo)}</span></button>`).join('')}
+        ${Object.entries(TOOLS).map(([id, t]) => `<button type="button" class="lab-card" data-act="tool-open" data-id="${id}"><strong>${esc(t.titulo)}</strong><span>${esc(t.resumo)}</span></button>`).join('')}</div></section>`;
       return;
     }
     const flow = FX.byId(x.flow), node = flow.nodes[x.node], r = reg();
@@ -175,22 +207,146 @@
     renderFluxos();
   }
 
+
+  /* ---------- simuladores: EPS com curva SVG e eletroforese de hemoglobina / HPLC ---------- */
+  const TOOLS = {
+    eps: {
+      titulo: 'Simulador de Eletroforese de Proteínas Séricas (EPS)', resumo: 'Curva densitométrica (normal × paciente), padrões clínicos e pico monoclonal (MGUS × mieloma).',
+      campos: [['alb', 'Albumina', 'g/dL'], ['a1', 'Alfa-1', 'g/dL'], ['a2', 'Alfa-2', 'g/dL'], ['b1', 'Beta-1', 'g/dL'], ['b2', 'Beta-2', 'g/dL'], ['gama', 'Gama', 'g/dL'], ['pico', 'Pico monoclonal (componente M)', 'g/dL'], ['ca', 'Cálcio total (opcional, CRAB)', 'mg/dL'], ['cr', 'Creatinina (opcional, CRAB)', 'mg/dL'], ['hb', 'Hemoglobina (opcional, CRAB)', 'g/dL']],
+      selects: [['picoZona', 'Zona do pico', [['g', 'Gama'], ['b', 'Beta'], ['a2', 'Alfa-2']]]], checks: [['osso', 'Lesão óssea lítica em imagem']],
+      exemplos: [
+        ['Normal (didático)', { alb: 4.2, a1: 0.25, a2: 0.65, b1: 0.45, b2: 0.35, gama: 1.1 }],
+        ['Inflamação aguda', { alb: 3.0, a1: 0.6, a2: 1.2, b1: 0.4, b2: 0.3, gama: 1.2 }],
+        ['Síndrome nefrótica', { alb: 2.0, a1: 0.2, a2: 1.4, b1: 0.4, b2: 0.3, gama: 0.5 }],
+        ['Cirrose (ponte β-γ)', { alb: 3.0, a1: 0.2, a2: 0.6, b1: 0.4, b2: 0.7, gama: 2.2 }],
+        ['Pico < 3 g/dL (MGUS)', { alb: 3.8, a1: 0.25, a2: 0.6, b1: 0.4, b2: 0.3, gama: 2.4, pico: 1.2 }],
+        ['Pico + CRAB (mieloma)', { alb: 3.0, a1: 0.2, a2: 0.5, b1: 0.35, b2: 0.3, gama: 5.0, pico: 3.8, ca: 11.4, cr: 2.3, hb: 8.9 }],
+      ],
+    },
+    hplc: {
+      titulo: 'Interpretador de Eletroforese de Hemoglobina / HPLC', resumo: 'Beta e alfa-talassemia, traço e doença falciforme, HbSC e o efeito da ferropenia sobre a HbA2.',
+      campos: [['a1', 'HbA1', '%'], ['a2', 'HbA2', '%'], ['f', 'HbF', '%'], ['s', 'HbS', '%'], ['c', 'HbC', '%'], ['vcm', 'VCM', 'fL'], ['rbc', 'Eritrócitos (opcional, Mentzer)', '10⁶/µL'], ['ferritina', 'Ferritina (opcional)', 'ng/mL']],
+      selects: [], checks: [['ferropenia', 'Ferropenia concomitante presente']],
+      exemplos: [
+        ['Normal (didático)', { a1: 96.5, a2: 2.6, f: 0.9, vcm: 88 }],
+        ['Beta-talassemia menor', { a1: 91, a2: 5.2, f: 1.5, vcm: 66 }],
+        ['Ferropenia mascarando', { a1: 96.8, a2: 2.9, f: 0.3, vcm: 68, ferropenia: true }],
+        ['Traço alfa', { a1: 97, a2: 2.5, f: 0.5, vcm: 68, rbc: 5.8 }],
+        ['Traço falciforme (AS)', { a1: 60, a2: 2.5, f: 0.5, s: 38, vcm: 85 }],
+        ['Anemia falciforme (SS)', { a1: 0, a2: 2.8, f: 8, s: 89, vcm: 88 }],
+        ['S-beta⁰', { a1: 0, a2: 5.0, f: 6, s: 88, vcm: 68 }],
+        ['HbSC', { a1: 0, a2: 2.5, f: 1.5, s: 49, c: 48, vcm: 80 }],
+      ],
+    },
+  };
+  function renderTool() {
+    const t = TOOLS[S.tool], v = S.toolRaw;
+    document.getElementById('lab-body').innerHTML = `<section class="lab-panel"><h2>${esc(t.titulo)}</h2>
+      <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="tool-back">Voltar aos fluxogramas</button></div>
+      <p class="lab-small">Exemplos didáticos (valores inventados para treino, não são de pacientes):</p>
+      <div class="lab-row">${t.exemplos.map((e, i) => `<button type="button" class="chip" data-act="tool-ex" data-i="${i}">${esc(e[0])}</button>`).join('')}</div>
+      <div class="lab-layout"><div><div class="lab-grid">${t.campos.map(([id, n, u]) => `<label class="field"><span>${esc(n)} <span class="unit">${esc(u)}</span></span><input type="text" inputmode="decimal" autocomplete="off" data-tf="${id}" value="${esc(v[id])}"></label>`).join('')}
+        ${t.selects.map(([id, n, ops]) => `<label class="field"><span>${esc(n)}</span><select data-ts="${id}">${ops.map((o) => `<option value="${o[0]}" ${v[id] === o[0] ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`).join('')}</div>
+        <div class="lab-checks">${t.checks.map(([id, n]) => `<label><input type="checkbox" data-tb="${id}" ${v[id] ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div></div>
+      <div class="lab-results" aria-live="polite" id="lab-toolout"></div></div></section>`;
+    calcTool();
+  }
+  function calcTool() {
+    const out = document.getElementById('lab-toolout');
+    if (!out) return;
+    const t = TOOLS[S.tool], v = S.toolRaw, num = {}, avisos = [];
+    t.campos.forEach(([id, n]) => {
+      const x = L.parseNum(v[id]);
+      if (x == null) { if (v[id] != null && String(v[id]).trim() !== '') avisos.push(`${n}: não é um número.`); return; }
+      if (x < 0 || (S.tool === 'hplc' && ['a1', 'a2', 'f', 's', 'c'].includes(id) && x > 100)) { avisos.push(`${n}: valor fora da faixa possível.`); return; }
+      num[id] = x;
+    });
+    t.selects.forEach(([id, , ops]) => { num[id] = v[id] || ops[0][0]; });
+    t.checks.forEach(([id]) => { num[id] = !!v[id]; });
+    const dados = Object.keys(num).filter((k) => typeof num[k] === 'number');
+    const r = reg();
+    let h = avisos.map((w) => `<div class="warn"><strong>Atenção</strong><span>${esc(w)}</span></div>`).join('');
+    if (!dados.length) { out.innerHTML = h + '<p class="lab-notice">Preencha as frações ou escolha um exemplo. O resultado aparece aqui na hora.</p>'; return; }
+    let res, nota;
+    if (S.tool === 'eps') {
+      res = HM.eps(num, r);
+      h += `<div class="lab-panel" style="margin:0">${res.svg}</div>`;
+      res.padroes.forEach((p) => { h += `<div class="result ${p.level}" ${p.level === 'high' ? 'data-grade="2"' : ''}><div class="res-head"><span class="main" style="font-size:1.15rem">${esc(p.title)}</span></div><p class="det">${esc(p.text)}</p></div>`; });
+      nota = ['Eletroforese de proteínas séricas (LabCore APS) — ' + today().split('-').reverse().join('/')].concat(Object.entries(num).filter(([k, x]) => typeof x === 'number').map(([k, x]) => `${(t.campos.find((c) => c[0] === k) || [k, k])[1]} ${L.fmt(x, 2)}`), res.padroes.map((p) => `- ${p.title}: ${p.text}`), ['Faixas de referência: Registry local (dependem do laboratório).', res.selos.join(' '), 'Apoio à decisão; não substitui o julgamento clínico.']).join('\n');
+    } else {
+      res = HM.hplc(num, r);
+      res.avisos.forEach((w) => { h += `<div class="warn"><strong>Atenção</strong><span>${esc(w)}</span></div>`; });
+      res.alertas.forEach((x) => { h += `<div class="lab-alert" role="alert"><strong>${esc(x.title)}</strong>${esc(x.text)}</div>`; });
+      res.padroes.forEach((p) => { h += `<div class="result ${p.level}" ${p.level === 'high' ? 'data-grade="2"' : ''}><div class="res-head"><span class="main" style="font-size:1.15rem">${esc(p.title)}</span></div><p class="det">${esc(p.text)}</p>${(p.recs || []).length ? `<ul class="det">${p.recs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`; });
+      nota = ['Eletroforese de hemoglobina / HPLC (LabCore APS) — ' + today().split('-').reverse().join('/')].concat(Object.entries(num).filter(([k, x]) => typeof x === 'number').map(([k, x]) => `${(t.campos.find((c) => c[0] === k) || [k, k])[1]} ${L.fmt(x, 1)}`), num.ferropenia ? ['Ferropenia concomitante: sim'] : [], res.alertas.map((x) => `ALERTA: ${x.title}. ${x.text}`), res.padroes.map((p) => `- ${p.title}: ${p.text}`), [res.selos.join(' '), 'Apoio à decisão; não substitui o julgamento clínico.']).join('\n');
+    }
+    S.toolNote = nota;
+    h += `<div class="lab-row lab-print"><button type="button" class="btn" data-act="tool-copy">Copiar para Prontuário (SOAP/e-SUS)</button></div><pre class="lab-pre" id="lab-toolnote" hidden></pre>`;
+    out.innerHTML = h;
+  }
+
+  /* ---------- Criador de Exames & Fórmulas Customizadas ---------- */
+  function openDlg() {
+    const dlg = document.getElementById('lab-dlg');
+    if (!dlg) return;
+    const e = S.dlgDraft || (S.dlgEdit ? S.exams.find((x) => x.id === S.dlgEdit) : null);
+    const val = (k) => esc(e ? (Array.isArray(e[k]) ? e[k].join(', ') : e[k] == null ? '' : e[k]) : '');
+    const campo = (id, rot, extra) => `<label class="field"><span>${rot}</span><input type="text" id="dlg-${id}" autocomplete="off" value="${val(id)}" ${extra || ''}></label>`;
+    const area = (id, rot) => `<label class="field"><span>${rot}</span><textarea id="dlg-${id}" style="min-height:64px">${val(id)}</textarea></label>`;
+    dlg.innerHTML = `<h2 id="lab-dlg-t">${e ? 'Editar exame / índice' : '+ Novo exame / índice'}</h2>
+      <p class="lab-small">Fica salvo neste navegador e passa a valer no Parser, na Bancada Rápida, no SOAP e na Enciclopédia. Sem fórmula, o exame é digitado; com fórmula, é calculado.</p>
+      ${S.dlgMsg ? `<div class="warn"><strong>Atenção</strong><span>${esc(S.dlgMsg)}</span></div>` : ''}
+      <div class="lab-grid">${campo('nome', 'Nome do exame *')}${campo('categoria', 'Categoria')}${campo('siglas', 'Siglas para o Parser (separe por vírgula)')}${campo('unidade', 'Unidade')}${campo('refMin', 'Referência: mínimo')}${campo('refMax', 'Referência: máximo')}</div>
+      ${campo('formula', 'Fórmula opcional (ex.: vcm / rbc ; use + - * / ^ ( ) sqrt ln log exp abs min max)')}
+      <details><summary class="lab-small">Variáveis que a fórmula pode usar</summary><p class="lab-small">${esc(idsUsados(S.dlgEdit).filter((i) => !['sexo', 'flags', 'gestante', 'dm', 'icc', 'persistente', 'picoM'].includes(i)).join(', '))}</p></details>
+      ${area('interferentes', 'Interferentes de bancada (pré-analítico / analítico)')}${area('interpretaAlto', 'Interpretação se alto')}${area('interpretaBaixo', 'Interpretação se baixo')}
+      ${area('regulacao', 'Critério de regulação (CROSS/SISREG) do seu município')}${campo('fonte', 'Fonte / diretriz dos valores (recomendado)')}
+      <div class="lab-row"><button type="button" class="btn" data-act="exam-save">Salvar</button><button type="button" class="btn btn-ghost" data-act="exam-cancel">Fechar</button></div>
+      <h3>Meus exames</h3>
+      ${S.exams.length ? `<ul>${S.exams.map((x) => `<li><strong>${esc(x.nome)}</strong> <span class="lab-small">(${esc(x.id)}${x.formula ? ' · fórmula' : ''})</span> <button type="button" class="lab-seal" data-act="exam-edit" data-id="${x.id}">Editar</button> <button type="button" class="lab-seal" data-act="exam-del" data-id="${x.id}">Excluir</button></li>`).join('')}</ul>` : '<p class="lab-small">Nenhum exame cadastrado pela tela.</p>'}
+      ${codeExams.length ? `<p class="lab-small">No código (CUSTOM_EXAMS_PLUGINS): ${codeExams.map((x) => esc(x.nome)).join(', ')}.</p>` : ''}
+      <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-export">Exportar .json</button><label class="btn btn-ghost" style="cursor:pointer">Importar .json<input type="file" id="lab-dlg-file" accept=".json,application/json" hidden></label></div>`;
+    if (!dlg.open) dlg.showModal();
+  }
+  function salvarExame() {
+    const g = (k) => document.getElementById('dlg-' + k).value;
+    const raw = { nome: g('nome'), categoria: g('categoria'), siglas: g('siglas'), unidade: g('unidade'), refMin: g('refMin'), refMax: g('refMax'), formula: g('formula'), interferentes: g('interferentes'), interpretaAlto: g('interpretaAlto'), interpretaBaixo: g('interpretaBaixo'), regulacao: g('regulacao'), fonte: g('fonte') };
+    if (S.dlgEdit) raw.id = S.dlgEdit;
+    const ids = idsUsados(S.dlgEdit);
+    const r = PL.validar(raw, ids, ids);
+    if (!r.ok) { S.dlgMsg = r.erros.join(' '); S.dlgDraft = raw; return openDlg(); }
+    const i = S.exams.findIndex((x) => x.id === r.plugin.id);
+    if (i >= 0) S.exams[i] = r.plugin; else S.exams.push(r.plugin);
+    persistExams(); S.dlgMsg = ''; S.dlgEdit = null; S.dlgDraft = null;
+    document.getElementById('lab-dlg').close();
+    render();
+  }
+  function importarExames(texto) {
+    const ids = idsUsados();
+    const r = PL.importar(texto, ids, ids);
+    if (!r.ok) { S.dlgMsg = r.erros.join(' '); return openDlg(); }
+    r.novos.forEach((x) => S.exams.push(x)); persistExams();
+    S.dlgMsg = `${r.novos.length} exame(s) importado(s).${r.ignorados.length ? ' Ignorados: ' + r.ignorados.join(' | ') : ''}`;
+    document.getElementById('lab-dlg').close(); render(); openDlg();
+  }
+
   /* ================= Módulo 3: Enciclopédia ================= */
   function renderEnc() {
     document.getElementById('lab-body').innerHTML = `<section class="lab-panel"><h2>Enciclopédia metrológica e pérolas de bancada</h2>
       <label class="field"><span>Buscar</span><input type="search" id="lab-q" autocomplete="off" placeholder="ex.: hemólise, EDTA, TSH, nefrologia" value="${esc(S.enc.q)}"></label>
       <div class="lab-row" id="lab-cats">${[['', 'Todas']].concat(Object.entries(EN.CATS)).map(([k, n]) => `<button type="button" class="chip" data-act="enc-cat" data-cat="${k}" aria-pressed="${S.enc.cat === k}">${esc(n)}</button>`).join('')}</div>
       <p class="lab-small">Conteúdo de livro-texto e das diretrizes citadas em cada entrada; "a verificar" indica que ainda falta conferência. Os exames obrigatórios das centrais de regulação (CROSS, SISREG) variam por município e estado: cole o protocolo da sua central em cada especialidade.</p>
+      <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-new">+ Adicionar Novo Exame / Índice</button></div>
       <div id="lab-enclist"></div></section>`;
     listaEnc();
   }
   function listaEnc() {
-    const r = reg(), items = EN.buscar(S.enc.q, S.enc.cat, r);
+    const r = reg(), items = EN.buscar(S.enc.q, S.enc.cat, r, plugins().map(PL.paraEnciclopedia));
     const el = document.getElementById('lab-enclist');
     el.innerHTML = items.length ? items.map((e) => `<details class="lab-enc"><summary><strong>${esc(e.titulo)}</strong> <span class="lab-small">${esc(EN.CATS[e.cat])}</span></summary>
       <p>${esc(e.resumo)}</p><ul>${EN.textoPontos(e, r).map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
       <p class="lab-small">Fonte: ${esc(e.fonte)} ${e.conf === 'a_verificar' ? '<span class="lab-tag a_verificar">a verificar</span>' : ''}</p>
-      ${e.regulacao ? `<label class="field"><span>Protocolo local de regulação (exames obrigatórios, documentos, prioridade)</span><textarea data-reg="${e.id}" placeholder="Cole aqui o protocolo da central do seu município/estado">${esc(S.regulacao[e.id] || '')}</textarea></label><p class="lab-small">Fica só neste navegador.</p>` : ''}</details>`).join('') : '<p class="lab-small">Nada encontrado. Tente outro termo.</p>';
+      ${e.regulacao ? `<label class="field"><span>Protocolo local de regulação (exames obrigatórios, documentos, prioridade)</span><textarea data-reg="${e.id}" placeholder="Cole aqui o protocolo da central do seu município/estado">${esc(S.regulacao[e.id] != null ? S.regulacao[e.id] : e.regulacaoPadrao || '')}</textarea></label><p class="lab-small">Fica só neste navegador.</p>` : ''}</details>`).join('') : '<p class="lab-small">Nada encontrado. Tente outro termo.</p>';
   }
 
   /* ================= Módulo 4: Colar do Prontuário ================= */
@@ -201,16 +357,16 @@
       <p class="lab-small">Cole o texto do laudo ou da evolução. A extração é local, por expressões regulares fixas: nenhuma IA e nenhuma chamada de rede.</p>
       <label class="field"><span>Texto livre</span><textarea id="lab-paste" placeholder="${esc(EXEMPLO)}">${esc(S.pasteText || '')}</textarea></label>
       <div class="lab-row"><button type="button" class="btn" data-act="parse">Extrair e preencher a Bancada</button><button type="button" class="btn btn-ghost" data-act="exemplo">Usar exemplo</button></div>
-      ${p ? `<h3>${p.found.length ? 'Valores reconhecidos' : 'Nenhum valor reconhecido'}</h3>${p.found.length ? `<div class="lab-tablewrap"><table class="lab-table"><thead><tr><th>Campo</th><th>Trecho</th><th>Valor</th><th>Unidade</th></tr></thead><tbody>${p.found.map((f) => `<tr><td>${esc(L.FIELD[f.field].label)}</td><td>${esc(f.alias)} ${esc(f.raw)}</td><td>${esc(L.fmt(f.value, f.value % 1 === 0 ? 0 : 2))}</td><td>${esc(L.FIELD[f.field].unit)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      ${p ? `<h3>${p.found.length ? 'Valores reconhecidos' : 'Nenhum valor reconhecido'}</h3>${p.found.length ? `<div class="lab-tablewrap"><table class="lab-table"><thead><tr><th>Campo</th><th>Trecho</th><th>Valor</th><th>Unidade</th></tr></thead><tbody>${p.found.map((f) => `<tr><td>${esc((L.FIELD[f.field] || customLabel(f.field)).label)}</td><td>${esc(f.alias)} ${esc(f.raw)}</td><td>${esc(L.fmt(f.value, f.value % 1 === 0 ? 0 : 2))}</td><td>${esc((L.FIELD[f.field] || customLabel(f.field)).unit)}</td></tr>`).join('')}</tbody></table></div>` : ''}
       <p class="lab-small">Confira os valores e as unidades (assumidas: as da tabela acima). <button type="button" class="lab-seal" data-act="sub" data-sub="bancada">Ver na Bancada</button></p>` : ''}</section>`;
   }
   function extrair() {
     const t = document.getElementById('lab-paste').value;
     S.pasteText = t;
-    S.parsed = L.parseReport(t);
+    S.parsed = L.parseReport(t, PL.aliases(plugins()));
     const val = S.parsed.values;
     Object.keys(val).forEach((k) => {
-      if (k === 'gestante') S.raw.gestante = true; else if (k === 'sexo') S.raw.sexo = val[k]; else S.raw[k] = String(val[k]).replace('.', ',');
+      if (k === 'gestante' || k === 'picoM') S.raw[k] = true; else if (k === 'sexo') S.raw.sexo = val[k]; else S.raw[k] = String(val[k]).replace('.', ',');
     });
     renderColar();
   }
@@ -238,6 +394,7 @@
         <div class="lab-row"><button type="button" class="btn btn-ghost" data-act="import">Validar pacote</button><label class="btn btn-ghost" style="cursor:pointer">Abrir arquivo .json<input type="file" id="lab-file" accept=".json,application/json" hidden></label></div>
         <p class="lab-small" id="lab-msg" role="status">${esc(S.msg)}</p>
         <div id="lab-diff"></div></section>
+      <section class="lab-panel"><h2>Exames personalizados</h2><p class="lab-small">Cadastre novos exames e fórmulas sem mexer no código; exporte e importe em .json.</p><div class="lab-row"><button type="button" class="btn btn-ghost" data-act="exam-new">+ Adicionar Novo Exame / Índice</button></div></section>
       <section class="lab-panel"><h2>Editor de cutoffs locais</h2>
         <p class="lab-small">Ajuste valores ao kit do laboratório conveniado (ex.: limites superiores de AST, K+, LDH). Cada alteração fica registrada no changelog. Faixas fora do plausível são recusadas.</p>
         ${editor(r)}
@@ -354,6 +511,16 @@
     const act = b.dataset.act;
     if (act === 'sub') { S.sub = b.dataset.sub; render(); }
     else if (act === 'goto-gov') { S.sub = 'gov'; render(); }
+    else if (act === 'tool-open') { S.tool = b.dataset.id; S.toolRaw = {}; renderTool(); }
+    else if (act === 'tool-back') { S.tool = null; renderFluxos(); }
+    else if (act === 'tool-ex') { S.toolRaw = {}; Object.entries(TOOLS[S.tool].exemplos[+b.dataset.i][1]).forEach(([k, x]) => { S.toolRaw[k] = typeof x === 'number' ? String(x).replace('.', ',') : x; }); renderTool(); }
+    else if (act === 'tool-copy') { const ok = await copiar(S.toolNote); const pre = document.getElementById('lab-toolnote'); pre.hidden = false; pre.textContent = S.toolNote; b.textContent = ok ? 'Copiado' : 'Não foi possível copiar: selecione o texto abaixo'; }
+    else if (act === 'exam-new') { S.dlgEdit = null; S.dlgDraft = null; S.dlgMsg = ''; openDlg(); }
+    else if (act === 'exam-edit') { S.dlgEdit = b.dataset.id; S.dlgDraft = null; S.dlgMsg = ''; openDlg(); }
+    else if (act === 'exam-del') { if (confirm('Excluir este exame personalizado?')) { S.exams = S.exams.filter((x) => x.id !== b.dataset.id); delete S.raw[b.dataset.id]; persistExams(); S.dlgEdit = null; document.getElementById('lab-dlg').close(); render(); openDlg(); } }
+    else if (act === 'exam-save') salvarExame();
+    else if (act === 'exam-cancel') { S.dlgDraft = null; document.getElementById('lab-dlg').close(); }
+    else if (act === 'exam-export') { const blob = new Blob([PL.exportar(S.exams, today())], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'labcore-exames.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
     else if (act === 'fx-open') { const f = FX.byId(b.dataset.id); S.fx = { flow: f.id, node: f.start, ctx: {}, hist: [], error: '', raw: {} }; renderFluxos(); }
     else if (act === 'fx-choice') fxIr(b.dataset.v);
     else if (act === 'fx-next') fxIr(lerForm());
@@ -383,11 +550,15 @@
     const t = e.target;
     if (t.dataset.f) { S.raw[t.dataset.f] = t.value; calc(); }
     else if (t.dataset.b) { S.raw[t.dataset.b] = t.checked; calc(); }
+    else if (t.dataset.tf) { S.toolRaw[t.dataset.tf] = t.value; calcTool(); }
+    else if (t.dataset.ts) { S.toolRaw[t.dataset.ts] = t.value; calcTool(); }
+    else if (t.dataset.tb) { S.toolRaw[t.dataset.tb] = t.checked; calcTool(); }
     else if (t.id === 'lab-q') { S.enc.q = t.value; listaEnc(); }
     else if (t.dataset.fl) { S.raw.flags = Object.assign({}, S.raw.flags, { [t.dataset.fl]: t.checked }); calc(); }
   });
   root.addEventListener('change', (e) => {
-    if (e.target.dataset.edit) editar(e.target);
+    if (e.target.id === 'lab-dlg-file') { const f = e.target.files[0]; if (f) f.text().then(importarExames); }
+    else if (e.target.dataset.edit) editar(e.target);
     else if (e.target.dataset.reg) { S.regulacao[e.target.dataset.reg] = e.target.value; store.set('labcore_regulacao', S.regulacao); }
   });
 

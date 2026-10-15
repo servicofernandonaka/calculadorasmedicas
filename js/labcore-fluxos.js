@@ -408,5 +408,25 @@
     return L.join('\n');
   }
 
-  return { FLUXOS, byId, step, result, play, nota, readForm };
+  /* Registra um fluxograma vindo de CUSTOM_FLOWS_PLUGINS (ou de outro adendo). Valida a estrutura antes de aceitar. */
+  function registrar(flow) {
+    const erros = [];
+    if (!flow || typeof flow.id !== 'string' || !/^[a-z][a-z0-9_]*$/.test(flow.id)) erros.push('id inválido');
+    else if (byId(flow.id)) erros.push(`id já existe: ${flow.id}`);
+    if (!flow || !flow.titulo) erros.push('falta o título');
+    if (!flow || !flow.nodes || !flow.nodes[flow.start]) erros.push('nó inicial inexistente');
+    else Object.entries(flow.nodes).forEach(([id, n]) => {
+      if (n.t === 'choice') (n.opts || []).forEach((o) => { if (!flow.nodes[o.next]) erros.push(`${id} aponta para "${o.next}", que não existe`); });
+      else if (n.t === 'form') { if (typeof n.route !== 'function' || !Array.isArray(n.fields)) erros.push(`${id}: formulário sem route() ou fields`); }
+      else if (n.t === 'result') { if (!n.title) erros.push(`${id}: resultado sem título`); }
+      else erros.push(`${id}: tipo de nó desconhecido`);
+    });
+    if (erros.length) return { ok: false, erros };
+    flow.guideline = Array.isArray(flow.guideline) ? flow.guideline : [];
+    flow.resumo = flow.resumo || '';
+    FLUXOS.push(flow);
+    return { ok: true, erros: [] };
+  }
+
+  return { FLUXOS, byId, step, result, play, nota, readForm, registrar };
 });

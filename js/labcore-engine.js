@@ -35,6 +35,14 @@
     F('ast', 'AST (TGO)', 'U/L', 3, 20000, 'hepat'), F('alt', 'ALT (TGP)', 'U/L', 3, 20000, 'hepat'), F('ldh', 'LDH', 'U/L', 20, 20000, 'hepat'), F('folato', 'Folato', 'ng/mL', 0.5, 100, 'hepat'),
     F('ct', 'Colesterol total', 'mg/dL', 40, 1500, 'lipid'), F('hdl', 'HDL', 'mg/dL', 5, 200, 'lipid'), F('tg', 'Triglicerídeos', 'mg/dL', 20, 10000, 'lipid'),
     F('tsh', 'TSH', 'mUI/L', 0.001, 500, 'tireo'), F('t4l', 'T4 livre', 'ng/dL', 0.05, 20, 'tireo'),
+    /* Proteínas e hematologia avançada (adendo) */
+    F('pt', 'Proteínas totais', 'g/dL', 2, 15, 'prot'),
+    F('ht', 'Hematócrito', '%', 5, 70, 'hemato'), F('rdw', 'RDW', '%', 8, 40, 'hemato'), F('ret', 'Reticulócitos', '%', 0, 50, 'hemato'),
+    F('transf', 'Transferrina', 'mg/dL', 50, 700, 'hemato'), F('leuco', 'Leucócitos', '×10⁹/L', 0.1, 500, 'hemato'),
+    F('seg', 'Neutrófilos segmentados', '%', 0, 100, 'hemato'), F('bast', 'Bastões', '%', 0, 100, 'hemato'),
+    F('tp', 'Tempo de protrombina', 's', 5, 120, 'coag'), F('tpC', 'TP do controle', 's', 5, 60, 'coag'), F('isi', 'ISI do reagente', '', 0.5, 3, 'coag'),
+    F('inr', 'INR (se já informado)', '', 0.5, 15, 'coag'), F('ttpa', 'TTPa', 's', 15, 200, 'coag'), F('ttpaC', 'TTPa do controle', 's', 15, 60, 'coag'),
+    F('fibrin', 'Fibrinogênio', 'mg/dL', 20, 1500, 'coag'),
   ];
   const FIELD = Object.fromEntries(FIELDS.map((f) => [f.id, f]));
 
@@ -57,6 +65,7 @@
       if (x == null) { if (raw[f.id] != null && String(raw[f.id]).trim() !== '') warnings.push(`${f.label}: valor "${raw[f.id]}" não é um número.`); return; }
       if (f.id === 'plaq' && x > 1000) { notes.push(`Plaquetas ${fmt(x, 0)} /mm³ convertidas para ${fmt(x / 1000, 0)} ×10⁹/L.`); x = x / 1000; }
       if (f.id === 'rbc' && x > 1000) { notes.push(`Eritrócitos ${fmt(x, 0)} /mm³ convertidos para ${fmt(x / 1e6, 2)} ×10⁶/µL.`); x = x / 1e6; }
+      if (f.id === 'leuco' && x > 100) { notes.push(`Leucócitos ${fmt(x, 0)} /mm³ convertidos para ${fmt(x / 1000, 1)} ×10⁹/L.`); x = x / 1000; }
       if (f.id === 'albumina' && x > 10) { notes.push(`Albumina ${fmt(x, 1)} g/L convertida para ${fmt(x / 10, 1)} g/dL.`); x = x / 10; }
       if (x < f.min || x > f.max) { warnings.push(`${f.label} ${fmt(x, 2)} ${f.unit} fora da faixa plausível (${f.min} a ${f.max}); valor ignorado. Confira a unidade.`); return; }
       v[f.id] = x;
@@ -66,7 +75,7 @@
     else if (age != null) warnings.push(`Idade ${age} fora de 18 a 120 anos: as fórmulas deste módulo são para adultos; idade ignorada.`);
     v.sexo = raw.sexo === 'F' || raw.sexo === 'M' ? raw.sexo : null;
     v.gestante = !!raw.gestante;
-    ['dm', 'icc', 'persistente'].forEach((k) => { v[k] = !!raw[k]; });
+    ['dm', 'icc', 'persistente', 'picoM'].forEach((k) => { v[k] = !!raw[k]; });
     v.flags = Object.assign({ hemolise: false, lipemia: false, ictericia: false, biotina: false }, raw.flags || {});
     return { v, notes, warnings };
   }
@@ -205,10 +214,13 @@
       else sub = 'Indeterminado (no ponto de corte)';
       out.push({ id: 'mentzer', title: 'Índice de Mentzer', main: fmt(m, 1), sub, level, value: m, guideline: ['hemato'], details: ['Índice sugestivo, não diagnóstico: confirmar com ferritina/saturação e, se indicado, eletroforese de hemoglobina.'] });
     }
+    if (v.ctlf == null && v.transf != null) v.ctlf = v.transf * p['transf.factor'], v.ctlfEstimada = true;
     if (v.ferro != null && v.ctlf != null) {
       const t = (v.ferro / v.ctlf) * 100;
+      v.ist = t;
       const low = t < p['tsat.low'];
-      const det = ['Ferritina é reagente de fase aguda: pode estar normal ou alta em inflamação, infecção, doença hepática ou neoplasia mesmo com deficiência de ferro.'];
+      const det = v.ctlfEstimada ? [`CTLF estimada pela transferrina (${fmt(v.transf, 0)} × ${fmt(p['transf.factor'], 2)}).`] : [];
+      det.push('Ferritina é reagente de fase aguda: pode estar normal ou alta em inflamação, infecção, doença hepática ou neoplasia mesmo com deficiência de ferro.');
       if (v.ferritina != null) det.unshift(`Ferritina informada: ${fmt(v.ferritina, 0)} ng/mL.`);
       out.push({ id: 'tsat', title: 'Saturação de transferrina', main: `${fmt(t, 0)}%`, sub: low ? `Baixa (< ${fmt(p['tsat.low'], 0)}%)` : '', level: low ? 'mod' : 'info', value: t, guideline: ['hemato'], details: det });
     }
@@ -236,6 +248,103 @@
       out.push({ id: 'ag', title: 'Ânion gap sérico', main: `${fmt(x, 0)} mEq/L`, sub: '', level: 'info', value: x, guideline: ['eletrolitos'], details: ['Na − (Cl + HCO₃). Sem K+. Não corrigido para albumina; a faixa normal depende do método do laboratório.'] });
     }
     return out;
+  }
+
+
+  /* ---------- Adendo: proteínas, CRAB, IPR, Green & King, cinética do ferro, ANC, coagulograma, EDTA ---------- */
+  function proteinas(v, reg) {
+    if (v.pt == null || v.albumina == null) return null;
+    const p = gp(reg, 'proteinas');
+    const glob = v.pt - v.albumina;
+    if (glob <= 0) return { id: 'prot', title: 'Globulinas', main: '—', sub: 'Albumina ≥ proteínas totais: confira os valores', level: 'info', guideline: ['proteinas'], details: [] };
+    const ag = v.albumina / glob;
+    const alto = glob > p['glob.high'] || ag < p['ag.low'];
+    v.glob = glob; v.ag = ag;
+    return {
+      id: 'prot', title: 'Globulinas e relação A/G', main: `${fmt(glob, 1)} g/dL`, sub: `A/G ${fmt(ag, 2)}${alto ? ' · hiperglobulinemia' : ''}`, level: alto ? 'mod' : 'info', value: glob, ag, guideline: ['proteinas'],
+      details: [`Globulinas = proteínas totais − albumina; A/G = albumina / globulinas.`, alto ? `Globulinas > ${fmt(p['glob.high'], 1)} g/dL ou A/G < ${fmt(p['ag.low'], 1)}: solicitar eletroforese de proteínas séricas (EPS) com imunofixação se houver pico.` : 'Sem sinal de hiperglobulinemia pelos cortes do Registry.'],
+      recs: alto ? ['Solicitar eletroforese de proteínas séricas (EPS).'] : [],
+    };
+  }
+  /* Checklist CRAB: globulinas altas (ou pico M) + hipercalcemia, renal ou anemia → alerta prioritário. */
+  function crab(v, reg, tfge) {
+    const g = gp(reg, 'imwg'), p = gp(reg, 'proteinas');
+    const gatilho = (v.glob != null && v.glob > p['glob.high']) || v.picoM;
+    if (!gatilho) return null;
+    const c = [];
+    const caCorr = v.ca != null && v.albumina != null ? v.ca + gp(reg, 'eletrolitos')['ca.factor'] * (gp(reg, 'eletrolitos')['ca.albRef'] - v.albumina) : v.ca;
+    if (caCorr != null && caCorr > g['crab.ca']) c.push(`cálcio${v.albumina != null ? ' corrigido' : ''} ${fmt(caCorr, 1)} mg/dL (> ${fmt(g['crab.ca'], 1)})`);
+    if (v.cr != null && v.cr > g['crab.cr']) c.push(`creatinina ${fmt(v.cr, 1)} mg/dL (> ${fmt(g['crab.cr'], 1)})`);
+    else if (tfge != null && tfge < g['crab.crcl']) c.push(`TFGe ${fmt(tfge, 0)} mL/min/1,73 m² (< ${fmt(g['crab.crcl'], 0)})`);
+    if (v.hb != null && v.hb < g['crab.hb']) c.push(`hemoglobina ${fmt(v.hb, 1)} g/dL (< ${fmt(g['crab.hb'], 1)})`);
+    if (!c.length) return null;
+    return { level: 'high', title: 'Investigação hematológica prioritária (CRAB)', text: `${v.picoM ? 'Pico monoclonal presente' : `Globulinas ${fmt(v.glob, 1)} g/dL`} com ${c.join('; ')}. Pode ser mieloma múltiplo: pedir EPS com imunofixação, cadeias leves livres, B2-microglobulina e encaminhar com urgência à Hematologia. A TFGe é usada no lugar da depuração (IMWG usa a depuração de creatinina < 40 mL/min).` };
+  }
+  function ipr(v, reg) {
+    if (v.ret == null || v.ht == null) return null;
+    const p = gp(reg, 'hemato');
+    const crc = v.ret * (v.ht / p['crc.htRef']);
+    const fm = v.ht >= p['fm.ht1'] ? p['fm.v1'] : v.ht >= p['fm.ht2'] ? p['fm.v2'] : v.ht >= p['fm.ht3'] ? p['fm.v3'] : p['fm.v4'];
+    const x = crc / fm;
+    const hipo = x < p['ipr.cut'];
+    return {
+      id: 'ipr', title: 'Índice de Produção Reticulocitária (IPR)', main: fmt(x, 1), sub: hipo ? 'Anemia hipoproliferativa' : 'Anemia hiperproliferativa', level: 'mod', value: x, guideline: ['hemato'],
+      details: [`Reticulócitos corrigidos ${fmt(crc, 2)}% (reticulócitos × Ht/${fmt(p['crc.htRef'], 0)}); fator de maturação ${fmt(fm, 1)}.`, hipo ? 'Medula não responde de forma adequada: ferropenia, deficiência de B12/folato, doença crônica ou renal, aplasia ou infiltração medular.' : 'Medula responde: investigar hemólise (LDH, bilirrubina indireta, haptoglobina, Coombs direto, esfregaço) ou sangramento agudo.', 'Só tem sentido na presença de anemia.'],
+      recs: hipo ? ['Avaliar ferro, B12, folato, função renal e tireoide; considerar mielograma se não houver causa.'] : ['Pedir LDH, bilirrubina indireta, haptoglobina, Coombs direto e esfregaço; descartar sangramento.'],
+    };
+  }
+  function greenKing(v, reg) {
+    if (v.vcm == null || v.rdw == null || v.hb == null) return null;
+    const p = gp(reg, 'hemato');
+    const x = (v.vcm * v.vcm * v.rdw) / (100 * v.hb);
+    const micro = v.vcm < p['micro.vcm'];
+    const sub = !micro ? 'VCM não microcítico: índice sem aplicação' : x < p['green.cut'] ? 'Sugere talassemia' : x > p['green.cut'] ? 'Sugere ferropenia' : 'Indeterminado (no ponto de corte)';
+    return { id: 'green', title: 'Índice de Green & King', main: fmt(x, 1), sub, level: micro && x !== p['green.cut'] ? 'mod' : 'info', value: x, guideline: ['hemato'], details: ['(VCM² × RDW) / (100 × Hb). Índice sugestivo, não diagnóstico; confirmar com ferritina, saturação e eletroforese de hemoglobina.'] };
+  }
+  function ferroCin(v, reg) {
+    if (v.ferritina == null || v.ist == null) return null;
+    const p = gp(reg, 'hemato');
+    const alta = v.sexo === 'F' ? p['ferr.highF'] : v.sexo === 'M' ? p['ferr.highM'] : Math.min(p['ferr.highF'], p['ferr.highM']);
+    const low = v.ist < p['tsat.low'];
+    let sub, level = 'mod', rec;
+    if (v.ist > p['ist.high'] && v.ferritina > alta) { sub = 'Sobrecarga de ferro (investigar hemocromatose)'; level = 'high'; rec = 'Genotipagem HFE (C282Y/H63D), enzimas hepáticas, excluir álcool, transfusões e inflamação; encaminhar à Hepatologia/Hematologia.'; }
+    else if (v.ist > p['ist.high']) { sub = 'Saturação elevada com ferritina não alta'; rec = 'Repetir ferro e saturação em jejum; interferem ferro oral e coleta pós-prandial.'; }
+    else if (low && v.ferritina < p['ferr.def']) { sub = 'Ferropenia clássica'; rec = 'Repor ferro e investigar a causa (perda GI/menstrual, dieta, má absorção); reavaliar em semanas.'; }
+    else if (low && v.ferritina > p['ferr.inflam']) {
+      const ctlfBaixa = v.ctlf != null && v.ctlf < p['ctlf.low'];
+      sub = ctlfBaixa ? 'Anemia da inflamação' : 'Ferritina alta com IST baixa: inflamação, com CTLF não baixa (considerar ferropenia funcional mista)'; rec = 'Tratar a doença de base; ferro oral costuma não resolver; dosar PCR e, se dúvida, receptor solúvel de transferrina.';
+    }
+    else if (low) { sub = 'Zona intermediária: ferropenia possível com inflamação associada'; rec = 'Repetir com PCR e considerar prova terapêutica ou receptor solúvel de transferrina.'; }
+    else { sub = 'Sem padrão de ferropenia pela saturação'; level = 'low'; rec = 'Se há anemia microcítica, considerar talassemia (eletroforese de hemoglobina).'; }
+    return { id: 'ferro_cin', title: 'Cinética do ferro', main: `Ferritina ${fmt(v.ferritina, 0)} · IST ${fmt(v.ist, 0)}%`, sub, level, guideline: ['hemato'], details: ['Classificação por ferritina e saturação de transferrina (limites do Registry; limites de CTLF e de ferritina alta estão "a verificar").'], recs: [rec] };
+  }
+  function anc(v, reg) {
+    if (v.leuco == null || v.seg == null) return null;
+    const p = gp(reg, 'hemato');
+    const x = (v.leuco * (v.seg + (v.bast || 0))) / 100;
+    const sub = x < p['anc.sev'] ? 'Neutropenia grave' : x < p['anc.mod'] ? 'Neutropenia moderada' : x < p['anc.low'] ? 'Neutropenia leve' : 'Sem neutropenia';
+    return { id: 'anc', title: 'Neutrófilos absolutos (ANC)', main: `${fmt(x, 2)} ×10⁹/L`, sub, level: x < p['anc.low'] ? (x < p['anc.mod'] ? 'high' : 'mod') : 'info', value: x, guideline: ['hemato'], details: ['ANC = leucócitos × (segmentados + bastões) / 100. Neutropenia constitucional é comum em pessoas de ascendência africana (Duffy-nulo); correlacionar com a clínica.', 'Os graus de neutropenia estão "a verificar" no Registry.'], recs: x < p['anc.low'] ? ['Repetir com esfregaço; revisar fármacos e infecções virais; febre com neutropenia é urgência.'] : [] };
+  }
+  function coag(v) {
+    const out = [];
+    let inr = v.inr != null ? v.inr : null, nota = '';
+    if (inr == null && v.tp != null && v.tpC != null && v.isi != null) { inr = Math.pow(v.tp / v.tpC, v.isi); nota = `INR = (TP/TP controle)^ISI = (${fmt(v.tp, 1)}/${fmt(v.tpC, 1)})^${fmt(v.isi, 2)}.`; }
+    const rt = v.ttpa != null && v.ttpaC != null ? v.ttpa / v.ttpaC : null;
+    if (inr == null && rt == null && v.fibrin == null) return null;
+    const partes = [];
+    if (inr != null) partes.push(`INR ${fmt(inr, 2)}`);
+    if (rt != null) partes.push(`relação TTPa ${fmt(rt, 2)}`);
+    if (v.fibrin != null) partes.push(`fibrinogênio ${fmt(v.fibrin, 0)} mg/dL`);
+    return { id: 'coag', title: 'Coagulograma', main: partes.join(' · '), sub: '', level: 'info', value: inr, ratio: rt, guideline: [], details: [nota, 'Sem pontos de corte automáticos: a faixa normal depende do reagente e do laboratório. Padrões: TP/INR prolongado isolado (vitamina K, varfarina, hepatopatia, fator VII); TTPa prolongado isolado (hemofilia, von Willebrand, heparina, anticoagulante lúpico); ambos (via comum, hepatopatia, CIVD); fibrinogênio baixo reforça CIVD ou hepatopatia.'].filter(Boolean) };
+  }
+  function edta(v, reg) {
+    if (v.plaq == null) return null;
+    const p = gp(reg, 'hemato');
+    if (v.plaq >= p['pseudo.plq']) return null;
+    const anem = v.hb != null && v.hb < (v.sexo === 'M' ? p['anemia.hbM'] : p['anemia.hbF']);
+    const leucop = v.leuco != null && v.leuco < p['leuco.low'];
+    if (anem || leucop) return null;
+    return { level: 'mod', title: 'Possível pseudotrombocitopenia por EDTA', text: `Plaquetas ${fmt(v.plaq, 0)} ×10⁹/L isoladas, sem anemia nem leucopenia${v.hb == null || v.leuco == null ? ' (hemoglobina ou leucócitos não informados: confirme)' : ''}. Solicite nova contagem em tubo de citrato de sódio (corrigir a diluição) e revisão de lâmina para agregados plaquetários antes de investigar ou tratar.` };
   }
 
   /* ---------- filtros pré-analíticos ---------- */
@@ -278,7 +387,13 @@
     push(lipidos(v, reg));
     hematimetria(v, reg).forEach(push);
     metabolico(v, reg).forEach(push);
+    push(proteinas(v, reg));
+    push(ipr(v, reg)); push(greenKing(v, reg)); push(ferroCin(v, reg)); push(anc(v, reg)); push(coag(v));
     const alerts = preAnalitico(v, reg);
+    const tfgeIt = items.find((i) => i.id === 'tfge');
+    [crab(v, reg, tfgeIt ? tfgeIt.value : null), edta(v, reg)].forEach((x) => { if (x) alerts.push(x); });
+    const globAlto = items.find((i) => i.id === 'prot' && i.level === 'mod');
+    if (globAlto) alerts.push({ level: 'mod', title: 'Hiperglobulinemia', text: 'Globulinas elevadas ou relação A/G invertida: solicitar eletroforese de proteínas séricas (EPS).' });
     items.forEach((it) => { if (it.alerta) alerts.push(it.alerta); });
     if (v.cr != null && (v.idade == null || !v.sexo)) warnings.push('TFGe precisa de idade e sexo biológico.');
     if (v.ast != null && v.alt != null && v.plaq != null && v.idade == null) warnings.push('FIB-4 precisa da idade.');
@@ -301,7 +416,7 @@
       L.push('Índices calculados:');
       a.items.forEach((it) => {
         const g = (it.guideline || []).map((id) => selo(reg, id)).join(' ');
-        L.push(`- ${it.title}: ${it.main}${it.sub ? ' (' + it.sub + ')' : ''} ${g}`);
+        L.push(`- ${it.title}: ${it.main}${it.sub ? ' (' + it.sub + ')' : ''} ${g || it.selo || ''}`.trimEnd());
       });
     }
     if (a.alerts.length) { L.push('Alertas:'); a.alerts.forEach((x) => L.push(`- ${x.title}: ${x.text}`)); }
@@ -325,13 +440,18 @@
     ca: ['calcio', 'ca'], albumina: ['albumina', 'alb'], ast: ['ast', 'tgo'], alt: ['alt', 'tgp'], ldh: ['ldh'],
     folato: ['folato', 'acido folico'], ct: ['colesterol total', 'ct', 'col'], hdl: ['hdl'], tg: ['triglicerides', 'triglicerideos', 'trig', 'tg'],
     tsh: ['tsh'], t4l: ['t4 livre', 't4l', 'ft4'],
+    pt: ['proteinas totais', 'prot totais', 'proteina total', 'ptn'], ht: ['hematocrito', 'htc', 'hct', 'ht'], rdw: ['rdw'], ret: ['reticulocitos', 'retic', 'ret'],
+    transf: ['transferrina'], leuco: ['leucocitos', 'leuco', 'leuc', 'wbc'], seg: ['segmentados', 'seg'], bast: ['bastoes', 'bast'],
+    tpC: ['tp controle', 'controle tp'], tp: ['tempo de protrombina', 'tp'], isi: ['isi'], inr: ['inr', 'rni'],
+    ttpaC: ['ttpa controle', 'controle ttpa'], ttpa: ['tempo de tromboplastina parcial ativada', 'ttpa', 'ptt'], fibrin: ['fibrinogenio'],
   };
   const CONTAGEM = { plaq: 1, rbc: 1 };
-  function parseReport(texto) {
+  function parseReport(texto, extra) {
     const t = semAcento(String(texto || ''));
     const values = {}, found = [];
     const pares = [];
     Object.entries(ALIASES).forEach(([id, al]) => al.forEach((a) => pares.push([id, a])));
+    Object.entries(extra || {}).forEach(([id, al]) => (al || []).forEach((a) => { const x = semAcento(String(a)).trim(); if (x) pares.push([id, x]); }));
     pares.sort((x, y) => y[1].length - x[1].length);
     const usados = [];
     pares.forEach(([id, alias]) => {
@@ -356,6 +476,7 @@
     if (/\b(feminino|fem|mulher|sexo\s*[:=]?\s*f)\b/.test(t)) values.sexo = 'F';
     else if (/\b(masculino|masc|homem|sexo\s*[:=]?\s*m)\b/.test(t)) values.sexo = 'M';
     if (/\b(gestante|gravida)\b/.test(t)) values.gestante = true;
+    if (/\b(pico monoclonal|componente m)\b/.test(t) && !/\b(sem|ausencia de|nao ha) (pico|componente)/.test(t)) values.picoM = true;
     return { values, found };
   }
 
