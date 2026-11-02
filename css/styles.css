@@ -39,6 +39,9 @@
   --shadow: 0 1px 2px rgba(15, 34, 48, .05), 0 2px 8px rgba(15, 34, 48, .04);
   --shadow-lg: 0 2px 4px rgba(15, 34, 48, .06), 0 12px 28px rgba(15, 34, 48, .10);
   --radius: 16px;
+  --ease-hig: cubic-bezier(.25, .1, .25, 1);
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
   color-scheme: light;
 }
 
@@ -674,6 +677,43 @@ th { background: var(--surface-2); }
 #view-mental details > summary { cursor:pointer; font-size:.92rem; font-weight:600; min-height:44px; display:flex; align-items:center; }
 #view-mental .sm-foot { font-size:.8125rem; color:var(--muted); border-top:1px solid var(--border); padding-top:12px; margin:0; }
 @media (max-width:900px) { #view-mental .sm-layout { grid-template-columns:minmax(0,1fr); } #view-mental .sm-form-panel { position:static; max-height:none; } }
+
+/* ---------- Saúde mental: ajustes Apple HIG (teste) ---------- */
+/* Raio concêntrico: painel/cartão 16px (--radius) > bloco aninhado 14px > opção/campo 12px */
+#view-mental .sm-block,
+#view-mental .sm-warn,
+#view-mental .sm-grp { border-radius: 14px; }
+#view-mental .sm-opt span,
+#view-mental .sm-check,
+#view-mental .sm-field input,
+#view-mental .sm-field select { border-radius: 12px; }
+
+/* Transições com a curva de easing padrão da Apple, e feedback de toque (scale) nos elementos interativos */
+#view-mental .sm-opt span,
+#view-mental .sm-check,
+#view-mental .sm-grp > summary,
+#view-mental details > summary,
+#view-mental .sm-actions .btn {
+  transition: transform var(--duration-instant) var(--ease-hig),
+              border-color var(--duration-fast) var(--ease-hig),
+              background var(--duration-fast) var(--ease-hig),
+              box-shadow var(--duration-fast) var(--ease-hig);
+}
+#view-mental .sm-opt:active span,
+#view-mental .sm-check:active,
+#view-mental .sm-actions .btn:active { transform: scale(.97); }
+
+/* Estado selecionado com leve profundidade (em vez de só a borda colorida) */
+#view-mental .sm-opt input:checked + span,
+#view-mental .sm-check:has(input:checked) { box-shadow: 0 1px 3px rgba(15, 34, 48, .08); }
+
+/* Anel de foco consistente com o padrão HIG (halo suave em vez de contorno seco) */
+#view-mental .sm-opt input:focus-visible + span,
+#view-mental .sm-check:has(input:focus-visible),
+#view-mental .sm-field input:focus-visible,
+#view-mental .sm-field select:focus-visible {
+  outline: none; box-shadow: 0 0 0 4px var(--primary-soft);
+}
 
 
 /* ---------- Leitura crítica (aba) ---------- */
