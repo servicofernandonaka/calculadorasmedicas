@@ -703,10 +703,6 @@ th { background: var(--surface-2); }
 #view-mental .sm-check:active,
 #view-mental .sm-actions .btn:active { transform: scale(.97); }
 
-/* Estado selecionado com leve profundidade (em vez de só a borda colorida) */
-#view-mental .sm-opt input:checked + span,
-#view-mental .sm-check:has(input:checked) { box-shadow: 0 1px 3px rgba(15, 34, 48, .08); }
-
 /* Anel de foco consistente com o padrão HIG (halo suave em vez de contorno seco) */
 #view-mental .sm-opt input:focus-visible + span,
 #view-mental .sm-check:has(input:focus-visible),
