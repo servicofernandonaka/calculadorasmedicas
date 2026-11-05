@@ -288,7 +288,7 @@
           <li>A metformina pode causar enjoo ou diarreia no começo; tomar junto ou logo após a refeição costuma ajudar. Não pare sem falar com o médico.</li>
           <li>Alguns remédios mais novos também <strong>protegem o coração e os rins</strong>, além de baixar a glicose.</li>
           <li><strong>Precisar de insulina não é castigo nem sinal de fracasso</strong>: o diabetes muda com o tempo e a insulina é um tratamento seguro e eficaz.</li>
-          <li>Se usa insulina, aprenda a aplicar, a fazer rodízio dos locais de aplicação e a guardar o frasco ou caneta (geladeira, longe do congelador).</li>
+          <li>Se usa insulina, aprenda a aplicar, a fazer rodízio dos locais e a guardar o frasco ou a caneta: veja o tópico <em>Aplicação de insulina</em>.</li>
         </ul>
         <h3>Exames de rotina</h3>
         <ul>
@@ -296,6 +296,191 @@
           <li>Uma vez por ano: <strong>exame de fundo de olho</strong>, exames de urina e sangue para os rins, colesterol e <strong>exame dos pés</strong>.</li>
           <li>Vacinas em dia: gripe, pneumonia, covid-19 e hepatite B.</li>
         </ul>`,
+    },
+    {
+      id: 'dm-insulina',
+      guide: 'dm',
+      sources: 'Diretriz da Sociedade Brasileira de Diabetes (SBD), edição 2024–2025 — técnica de aplicação de insulina; Recomendações FITTER para a técnica de injeção (Mayo Clin Proc 2016); Ministério da Saúde — Cuidado à pessoa com diabetes (Cadernos de Atenção Básica nº 36).',
+      icon: 'drop',
+      title: 'Aplicação de insulina: locais e modo de aplicar',
+      keywords: 'insulina aplicar aplicação caneta seringa agulha locais rodízio barriga braço coxa nádega prega nph regular guardar geladeira descarte lipo caroço',
+      html: `
+        <p class="lead">A insulina é aplicada na <strong>gordura logo abaixo da pele</strong> (tecido subcutâneo), e não no músculo.
+        Aplicar do jeito certo e <strong>trocar o local a cada vez</strong> faz a insulina agir como esperado e evita caroços e hipoglicemias.</p>
+
+        <h3>Onde aplicar</h3>
+        <figure class="edu-fig">
+          <svg viewBox="0 0 340 300" role="img" aria-labelledby="fig-ins-locais">
+            <g class="f-body">
+              <circle cx="85" cy="30" r="18"/><rect x="78" y="46" width="14" height="10" rx="3"/>
+              <rect x="55" y="54" width="60" height="104" rx="14"/>
+              <rect x="35" y="58" width="18" height="98" rx="9"/><rect x="117" y="58" width="18" height="98" rx="9"/>
+              <rect x="57" y="152" width="26" height="132" rx="12"/><rect x="87" y="152" width="26" height="132" rx="12"/>
+              <circle cx="255" cy="30" r="18"/><rect x="248" y="46" width="14" height="10" rx="3"/>
+              <rect x="225" y="54" width="60" height="104" rx="14"/>
+              <rect x="205" y="58" width="18" height="98" rx="9"/><rect x="287" y="58" width="18" height="98" rx="9"/>
+              <rect x="227" y="152" width="26" height="132" rx="12"/><rect x="257" y="152" width="26" height="132" rx="12"/>
+            </g>
+            <path class="f-thin" d="M255 128v30"/>
+            <g class="f-site">
+              <ellipse cx="85" cy="118" rx="24" ry="20"/>
+              <rect x="60" y="180" width="20" height="50" rx="8"/><rect x="90" y="180" width="20" height="50" rx="8"/>
+              <rect x="207" y="72" width="14" height="42" rx="7"/><rect x="289" y="72" width="14" height="42" rx="7"/>
+              <ellipse cx="241" cy="140" rx="11" ry="9"/><ellipse cx="269" cy="140" rx="11" ry="9"/>
+            </g>
+            <circle class="f-skip" cx="85" cy="118" r="8"/><circle class="f-dot" cx="85" cy="118" r="2.5"/>
+            <g class="f-mark">
+              <circle cx="85" cy="92" r="10"/><text x="85" y="97">1</text>
+              <circle cx="214" cy="58" r="10"/><text x="214" y="63">2</text>
+              <circle cx="70" cy="244" r="10"/><text x="70" y="249">3</text>
+              <circle cx="241" cy="166" r="10"/><text x="241" y="171">4</text>
+            </g>
+          </svg>
+          <figcaption id="fig-ins-locais"><strong>Frente (à esquerda) e costas (à direita).</strong> Em destaque, os locais de aplicação:
+            <ol class="fig-legend">
+              <li><strong>Barriga (abdômen)</strong>: a insulina age mais rápido aqui. Fique a <strong>dois dedos de distância do umbigo</strong>, sem aplicar em volta dele.</li>
+              <li><strong>Parte de trás do braço</strong>, no meio entre o ombro e o cotovelo. É mais fácil quando outra pessoa aplica.</li>
+              <li><strong>Coxas</strong>, na frente e na lateral (lado de fora), no meio entre a virilha e o joelho, longe da parte de dentro da coxa.</li>
+              <li><strong>Nádegas</strong>, na parte de cima e do lado de fora. É o local de ação mais lenta.</li>
+            </ol>
+          </figcaption>
+        </figure>
+
+        <h3>Rodízio: troque o local a cada aplicação</h3>
+        <figure class="edu-fig">
+          <svg viewBox="0 0 320 200" role="img" aria-labelledby="fig-ins-rodizio">
+            <defs><marker id="seta-rod" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="f-arrowhead" d="M0 0 10 5 0 10z"/></marker></defs>
+            <ellipse class="f-body" cx="160" cy="100" rx="140" ry="84"/>
+            <path class="f-thin" d="M160 20v56M160 124v56M24 100h112M184 100h112"/>
+            <circle class="f-skip" cx="160" cy="100" r="22"/><circle class="f-dot" cx="160" cy="100" r="4"/>
+            <g class="f-used">
+              <circle cx="104" cy="56" r="5"/><circle cx="124" cy="56" r="5"/><circle cx="84" cy="74" r="5"/><circle cx="104" cy="74" r="5"/>
+            </g>
+            <circle class="f-next" cx="124" cy="74" r="7"/>
+            <g class="f-free">
+              <circle cx="196" cy="56" r="5"/><circle cx="216" cy="56" r="5"/><circle cx="236" cy="74" r="5"/><circle cx="216" cy="74" r="5"/>
+              <circle cx="196" cy="126" r="5"/><circle cx="216" cy="144" r="5"/><circle cx="236" cy="126" r="5"/>
+              <circle cx="104" cy="126" r="5"/><circle cx="124" cy="144" r="5"/><circle cx="84" cy="126" r="5"/>
+            </g>
+            <path class="f-arrow" d="M120 34 Q160 14 200 34" marker-end="url(#seta-rod)"/>
+            <path class="f-arrow" d="M276 80 Q290 100 276 120" marker-end="url(#seta-rod)"/>
+            <path class="f-arrow" d="M200 166 Q160 186 120 166" marker-end="url(#seta-rod)"/>
+            <path class="f-arrow" d="M44 120 Q30 100 44 80" marker-end="url(#seta-rod)"/>
+          </svg>
+          <figcaption id="fig-ins-rodizio">
+            <strong>Exemplo na barriga:</strong> divida o local em <strong>4 partes</strong> e use uma parte por semana, seguindo as setas.
+            Dentro da parte da semana, afaste cada picada <strong>cerca de 1 dedo (1 a 2 cm)</strong> da anterior.
+            Os pontos cheios são picadas já feitas, o ponto com borda é a próxima, e o círculo em volta do umbigo fica sem picadas.
+          </figcaption>
+        </figure>
+        <ul>
+          <li>Não volte ao mesmo ponto antes de cerca de <strong>2 semanas</strong>.</li>
+          <li>Para cada horário, use sempre a <strong>mesma região</strong> (por exemplo, barriga de manhã e coxa à noite) e troque só o ponto dentro dela. Assim o efeito da insulina fica mais parecido de um dia para o outro.</li>
+          <li><strong>Não aplique</strong> em caroços, manchas, cicatrizes, pintas, feridas ou áreas roxas.</li>
+          <li>Apalpe os locais com frequência. Uma região <strong>endurecida ou "fofa" e saltada</strong> (lipo-hipertrofia) absorve mal a insulina: mostre à equipe de saúde e deixe de aplicar ali até melhorar.</li>
+        </ul>
+
+        <h3>Conheça a caneta</h3>
+        <figure class="edu-fig">
+          <svg viewBox="0 0 360 120" role="img" aria-labelledby="fig-ins-caneta">
+            <path class="f-needle" d="M6 70h22"/>
+            <rect class="f-pen" x="28" y="62" width="16" height="16" rx="3"/>
+            <rect class="f-pen" x="44" y="54" width="236" height="32" rx="14"/>
+            <rect class="f-cart" x="64" y="61" width="104" height="18" rx="5"/>
+            <rect class="f-window" x="196" y="60" width="44" height="20" rx="4"/>
+            <text class="f-num" x="218" y="75">10</text>
+            <rect class="f-pen" x="280" y="50" width="16" height="40" rx="4"/>
+            <rect class="f-pen" x="296" y="58" width="30" height="24" rx="7"/>
+            <g class="f-thin"><path d="M17 70V34M116 61V34M218 60V34M311 58V34"/></g>
+            <g class="f-mark">
+              <circle cx="17" cy="22" r="10"/><text x="17" y="27">1</text>
+              <circle cx="116" cy="22" r="10"/><text x="116" y="27">2</text>
+              <circle cx="218" cy="22" r="10"/><text x="218" y="27">3</text>
+              <circle cx="311" cy="22" r="10"/><text x="311" y="27">4</text>
+            </g>
+          </svg>
+          <figcaption id="fig-ins-caneta">
+            <ol class="fig-legend">
+              <li><strong>Agulha</strong>, que é trocada a cada aplicação.</li>
+              <li><strong>Refil (carpule)</strong>, que guarda a insulina.</li>
+              <li><strong>Visor da dose</strong>, que mostra as unidades escolhidas.</li>
+              <li><strong>Seletor e botão</strong>: gire para escolher a dose e aperte para aplicar.</li>
+            </ol>
+          </figcaption>
+        </figure>
+
+        <h3>Passo a passo com a caneta</h3>
+        <ol>
+          <li><strong>Lave as mãos</strong> com água e sabão. Em casa, a pele limpa basta; se usar álcool, espere secar antes de aplicar.</li>
+          <li>Confira o <strong>nome da insulina</strong>, a validade e o aspecto. Insulina transparente deve estar límpida.</li>
+          <li>Se a insulina for <strong>leitosa (NPH ou mistura)</strong>, misture antes: role a caneta entre as palmas das mãos e vire-a de cabeça para baixo devagar, cerca de 20 vezes, até ficar uniforme. <strong>Não sacuda.</strong></li>
+          <li>Coloque uma <strong>agulha nova</strong> e retire as duas tampas da agulha.</li>
+          <li><strong>Teste a caneta</strong>: selecione 2 unidades, aponte a agulha para cima, dê leves batidas e aperte o botão. Deve sair uma gota na ponta. Se não sair, repita.</li>
+          <li>Gire o seletor até a <strong>dose indicada</strong> pelo seu médico.</li>
+          <li>Introduza a agulha <strong>reta (90 graus)</strong> na pele, de uma vez, e aperte o botão até o fim.</li>
+          <li><strong>Conte até 10</strong> com o botão ainda apertado e só depois retire a agulha. Isso evita que a insulina vaze.</li>
+          <li>Retire a agulha da caneta, descarte-a no recipiente rígido e tampe a caneta.</li>
+        </ol>
+
+        <h3>Agulha e prega na pele</h3>
+        <figure class="edu-fig">
+          <svg viewBox="0 0 360 200" role="img" aria-labelledby="fig-ins-prega">
+            <rect class="f-muscle" x="0" y="150" width="170" height="40" rx="4"/>
+            <rect class="f-fat" x="0" y="100" width="170" height="50"/>
+            <rect class="f-skin" x="0" y="90" width="170" height="10"/>
+            <rect class="f-pen" x="75" y="34" width="20" height="56" rx="5"/>
+            <path class="f-needle" d="M85 90v28"/>
+            <rect class="f-muscle" x="190" y="150" width="170" height="40" rx="4"/>
+            <path class="f-fat" d="M190 100h40c14 0 18-46 45-46s31 46 45 46h40v50H190z"/>
+            <path class="f-skinline" d="M190 95h40c14 0 18-46 45-46s31 46 45 46h40"/>
+            <ellipse class="f-finger" cx="236" cy="72" rx="11" ry="20"/><ellipse class="f-finger" cx="314" cy="72" rx="11" ry="20"/>
+            <rect class="f-pen" x="266" y="0" width="18" height="40" rx="5"/>
+            <path class="f-needle" d="M275 40v36"/>
+          </svg>
+          <figcaption id="fig-ins-prega">
+            <strong>Camadas da pele:</strong> <span class="sw sw-skin"></span> pele, <span class="sw sw-fat"></span> gordura (onde a insulina deve ficar) e
+            <span class="sw sw-muscle"></span> músculo.
+            <strong>À esquerda:</strong> agulha curta, de 4 mm, aplicada reta e sem prega.
+            <strong>À direita:</strong> prega na pele, para quem usa agulha de 6 mm ou mais, seringa, é muito magro ou é criança.
+          </figcaption>
+        </figure>
+        <ul>
+          <li>Para a maioria dos adultos, a <strong>agulha de 4 mm</strong> é a mais indicada: aplique reto (90 graus), sem prega.</li>
+          <li>Com agulhas de <strong>6 mm ou mais</strong>, ou com seringa, faça uma <strong>prega</strong> com o polegar e o indicador, aplique, conte até 10, retire a agulha e só então solte a prega.</li>
+          <li>Não aperte a prega com força, para não empurrar a insulina para o músculo.</li>
+          <li><strong>Use uma agulha nova a cada aplicação.</strong> Agulha reutilizada perde a ponta, dói mais e aumenta o risco de caroços.</li>
+        </ul>
+
+        <h3>Se usar seringa e frasco</h3>
+        <ol>
+          <li>Limpe a borracha do frasco com algodão e álcool.</li>
+          <li>Puxe para a seringa uma quantidade de <strong>ar igual à dose</strong> e injete esse ar dentro do frasco.</li>
+          <li>Vire o frasco de cabeça para baixo e puxe a dose. Bolhas de ar: dê leves batidas na seringa e empurre o ar de volta.</li>
+          <li>Se o médico pediu para <strong>misturar NPH e Regular na mesma seringa</strong>: injete o ar primeiro no frasco da NPH e depois no da Regular, puxe primeiro a <strong>Regular (transparente)</strong> e depois a <strong>NPH (leitosa)</strong>. Assim a NPH não contamina o frasco da Regular.</li>
+          <li>Aplique com prega e conte até 10 antes de retirar.</li>
+        </ol>
+        <p class="note">Use seringas com agulha curta (6 mm) sempre que encontrar. A escala da seringa precisa ser de insulina (U-100).</p>
+
+        <h3>Como guardar a insulina</h3>
+        <div class="grid-cards">
+          <div class="mini-card"><strong>Fechada (reserva)</strong><span>Na geladeira, entre 2 e 8 °C, na prateleira do meio ou na gaveta de verduras. Nunca no congelador nem na porta.</span></div>
+          <div class="mini-card"><strong>Em uso</strong><span>Em temperatura ambiente (até 30 °C), longe do sol e do calor, pelo prazo da bula (em geral, 4 semanas). Anote a data em que abriu.</span></div>
+          <div class="mini-card"><strong>Viagem e transporte</strong><span>Em bolsa térmica, sem encostar diretamente no gelo. Leve na bagagem de mão em viagens de avião.</span></div>
+          <div class="mini-card"><strong>Jogue fora se</strong><span>Congelou, ficou no sol ou no calor, passou da validade ou mudou de aspecto (grumos ou cor diferente).</span></div>
+        </div>
+
+        <h3>Descarte de agulhas e seringas</h3>
+        <p>Coloque agulhas, seringas e lancetas usadas em um <strong>recipiente rígido e com tampa</strong> (por exemplo, um frasco grosso de amaciante).
+        Quando estiver cheio até 2/3, feche bem e <strong>entregue na unidade de saúde</strong>. Não jogue no lixo comum nem no vaso sanitário.</p>
+
+        <div class="alert-box">
+          <strong>Atenção</strong>
+          <ul>
+            <li>Nunca mude a dose por conta própria, a não ser que o seu médico tenha ensinado como ajustar.</li>
+            <li>Tremor, suor frio, fome ou confusão podem ser hipoglicemia: veja o tópico <em>Hipoglicemia e dias de doença</em>.</li>
+            <li>Leve sua caneta ou seringa às consultas e peça para a equipe <strong>ver você aplicando</strong> e examinar os locais.</li>
+          </ul>
+        </div>`,
     },
     {
       id: 'dm-alimentacao',
