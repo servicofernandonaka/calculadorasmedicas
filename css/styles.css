@@ -472,6 +472,58 @@ a { color: var(--primary); }
 .edu-content .mini-card span { font-size: .92em; }
 .edu-content .edu-footer { font-size: 1rem; }
 .edu-content .sources { font-size: .8125rem; color: var(--muted); margin-top: 1.5em; border-top: 1px solid var(--border); padding-top: .75em; }
+
+/* Ilustrações dos guias do paciente (SVG inline; cores por tokens, claras e escuras) */
+:root {
+  --fig-body: #f6e4d4; --fig-line: #8a6f5c; --fig-skin: #e9a98f; --fig-fat: #fbe3a0; --fig-muscle: #e59a9a;
+  --fig-pen: #dfe8ee; --fig-pen-line: #4b5d68; --fig-site: #0f766e; --fig-ink: #13232b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fig-body: #4a3b31; --fig-line: #c9ab95; --fig-skin: #9a5f4c; --fig-fat: #6e5a26; --fig-muscle: #7d3a3a;
+    --fig-pen: #2b3c45; --fig-pen-line: #b9cbd4; --fig-site: #2dd4bf; --fig-ink: #e4eef1;
+  }
+}
+:root[data-theme="dark"] {
+  --fig-body: #4a3b31; --fig-line: #c9ab95; --fig-skin: #9a5f4c; --fig-fat: #6e5a26; --fig-muscle: #7d3a3a;
+  --fig-pen: #2b3c45; --fig-pen-line: #b9cbd4; --fig-site: #2dd4bf; --fig-ink: #e4eef1;
+}
+.edu-fig { margin: 1em 0 1.25em; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-2); break-inside: avoid; }
+.edu-fig svg { display: block; width: 100%; max-width: 440px; height: auto; margin: 0 auto 10px; }
+.edu-fig figcaption { font-size: .95em; }
+.edu-fig .fig-legend { margin: .5em 0 0; padding-left: 1.4em; }
+.edu-fig .f-body, .edu-fig .f-body * { fill: var(--fig-body); stroke: var(--fig-line); stroke-width: 2; }
+.edu-fig .f-thin { fill: none; stroke: var(--fig-line); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.edu-fig .f-site { fill: var(--fig-site); fill-opacity: .38; stroke: var(--fig-site); stroke-width: 2; }
+.edu-fig .f-skip { fill: var(--fig-body); stroke: var(--fig-line); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.edu-fig .f-dot { fill: var(--fig-line); }
+.edu-fig .f-mark circle { fill: var(--fig-ink); }
+.edu-fig .f-mark text { fill: var(--surface); font-size: 14px; font-weight: 700; text-anchor: middle; font-family: inherit; }
+.edu-fig .f-used circle { fill: var(--fig-site); }
+.edu-fig .f-free circle { fill: none; stroke: var(--fig-line); stroke-width: 1.5; }
+.edu-fig .f-next { fill: var(--surface); stroke: var(--fig-site); stroke-width: 3; }
+.edu-fig .f-arrow { fill: none; stroke: var(--fig-ink); stroke-width: 2.5; }
+.edu-fig .f-arrowhead { fill: var(--fig-ink); }
+.edu-fig .f-pen { fill: var(--fig-pen); stroke: var(--fig-pen-line); stroke-width: 2; }
+.edu-fig .f-cart { fill: var(--fig-site); fill-opacity: .3; stroke: var(--fig-pen-line); stroke-width: 1.5; }
+.edu-fig .f-window { fill: var(--surface); stroke: var(--fig-pen-line); stroke-width: 2; }
+.edu-fig .f-num { fill: var(--fig-ink); font-size: 14px; font-weight: 700; text-anchor: middle; font-family: inherit; }
+.edu-fig .f-needle { fill: none; stroke: var(--fig-pen-line); stroke-width: 3; stroke-linecap: round; }
+.edu-fig .f-skin { fill: var(--fig-skin); }
+.edu-fig .f-skinline { fill: none; stroke: var(--fig-skin); stroke-width: 10; }
+.edu-fig .f-fat { fill: var(--fig-fat); }
+.edu-fig .f-muscle { fill: var(--fig-muscle); }
+.edu-fig .f-finger { fill: var(--fig-body); stroke: var(--fig-line); stroke-width: 2; }
+.edu-fig .sw { display: inline-block; width: .9em; height: .9em; border-radius: 3px; vertical-align: -.1em; border: 1px solid var(--fig-line); }
+.edu-fig .sw-skin { background: var(--fig-skin); } .edu-fig .sw-fat { background: var(--fig-fat); } .edu-fig .sw-muscle { background: var(--fig-muscle); }
+@media print {
+  :root, :root[data-theme], :root:not([data-theme="light"]) {
+    --fig-body: #f6e4d4; --fig-line: #555; --fig-skin: #e9a98f; --fig-fat: #fbe3a0; --fig-muscle: #e59a9a;
+    --fig-pen: #eee; --fig-pen-line: #333; --fig-site: #0f766e; --fig-ink: #000;
+  }
+  .edu-fig { background: #fff; border-color: #888; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .edu-fig svg { max-width: 9cm; }
+}
 .print-only { display: none; }
 .edu-title { display: flex; align-items: center; gap: 10px; }
 .edu-title .icon { color: var(--primary); }
