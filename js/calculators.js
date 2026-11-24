@@ -864,6 +864,55 @@
     ref: 'Kamath PS et al. Hepatology 2001; Wiesner R et al. Gastroenterology 2003; Kim WR et al. N Engl J Med 2008 (MELD-Na).',
   });
 
+  C.push({
+    id: 'fib4',
+    name: 'FIB-4 (fibrose hepática na esteatose)',
+    short: 'Estratifica o risco de fibrose avançada na doença hepática esteatótica (MASLD/MASH).',
+    tabs: ['clinica'],
+    category: 'Hepatologia',
+    keywords: 'fib4 fib-4 fibrose esteatose esteato-hepatite masld mash nafld nash gordura no fígado fígado gorduroso hepatopatia metabólica diabetes obesidade elastografia',
+    fields: [
+      { id: 'idade', label: 'Idade', type: 'number', unit: 'anos', min: 18, max: 100, step: 1 },
+      { id: 'ast', label: 'AST (TGO)', type: 'number', unit: 'U/L', min: 1, max: 5000, step: 1 },
+      { id: 'alt', label: 'ALT (TGP)', type: 'number', unit: 'U/L', min: 1, max: 5000, step: 1 },
+      { id: 'plaq', label: 'Plaquetas', type: 'number', unit: 'mil/mm³', min: 5, max: 1500, step: 1 },
+    ],
+    compute(v) {
+      const val = (v.idade * v.ast) / (v.plaq * Math.sqrt(v.alt));
+      const main = 'FIB-4 ' + fmt(val, 2);
+      const old = v.idade >= 65;
+      const lo = old ? 2.0 : 1.3, hi = 2.67;
+      const faixa = old ? '65 anos ou mais: baixo < 2,0; alto > 2,67.' : '35 a 64 anos: baixo < 1,3; alto > 2,67.';
+      const cautela = 'Menos confiável em hepatite aguda, consumo excessivo de álcool, plaquetopenia de outra causa ou aminotransferases muito elevadas.';
+      if (v.idade < 35) {
+        return {
+          main, sub: 'Inconclusivo: FIB-4 não é validado abaixo de 35 anos', level: 'info',
+          details: 'Se houver risco metabólico, avalie a fibrose por elastografia ou outro método. ' + cautela,
+        };
+      }
+      if (val < lo) {
+        return {
+          main, sub: 'Baixo risco de fibrose avançada', level: 'low',
+          scale: { step: 1, labels: ['Baixo', 'Indeterminado', 'Alto'] },
+          details: faixa + ' Manter o controle dos fatores metabólicos e repetir o FIB-4 a cada 1 a 2 anos em quem tem diabetes tipo 2 ou fatores de risco. ' + cautela,
+        };
+      }
+      if (val > hi) {
+        return {
+          main, sub: 'Alto risco de fibrose avançada (F3–F4)', level: 'high',
+          scale: { step: 3, labels: ['Baixo', 'Indeterminado', 'Alto'] },
+          details: faixa + ' Encaminhar à hepatologia e confirmar com elastografia; rastrear complicações da cirrose conforme a avaliação especializada. ' + cautela,
+        };
+      }
+      return {
+        main, sub: 'Indeterminado: solicitar elastografia hepática', level: 'mod',
+        scale: { step: 2, labels: ['Baixo', 'Indeterminado', 'Alto'] },
+        details: faixa + ' Próximo passo: elastografia hepática (VCTE/FibroScan) ou, se indisponível, ELF. Elastografia < 8 kPa: baixo risco; ≥ 12 kPa: risco alto, encaminhar. ' + cautela,
+      };
+    },
+    ref: 'Sterling RK et al. Hepatology 2006;43:1317-25 (fórmula). Shah AG et al. Clin Gastroenterol Hepatol 2009 (cortes 1,3 e 2,67). McPherson S et al. Am J Gastroenterol 2017 (corte 2,0 a partir de 65 anos). AASLD Practice Guidance on MASLD (Rinella ME et al., Hepatology 2023) e EASL-EASD-EASO CPG MASLD (J Hepatol 2024).',
+  });
+
   /* ============================== CIRÚRGICA ============================== */
 
   C.push({
