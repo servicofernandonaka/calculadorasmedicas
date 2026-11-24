@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const REGRAS={
-  "versao": "0.6.0",
+  "versao": "0.7.0",
   "atualizado_em": "2026-10-09",
   "aviso": "Regras conferidas em 09/10/2026 contra as fontes listadas em cada regra. Nivel 'primaria' = pagina ou documento da propria instituicao foi aberto; 'secundaria' = so resumo de noticia ou portal; 'nao_conferida' = sem fonte aberta. Apoio a decisao: nao substitui o julgamento clinico nem o protocolo local.",
   "regras": [
@@ -536,6 +536,125 @@ const REGRAS={
       "observacoes": []
     },
     {
+      "id": "fibrose_hepatica_masld",
+      "categoria": "rastreamento",
+      "nome": "Fibrose hepática na esteatose (MASLD): FIB-4",
+      "teste": "FIB-4 (idade, AST, ALT e plaquetas). Indeterminado: elastografia hepática; alto (acima de 2,67): encaminhar à hepatologia. Os cortes mudam com a idade; a calculadora já os aplica",
+      "calc": "fib4",
+      "intervalo_anos": 2,
+      "exclui_se": [],
+      "revisar_a_cada_dias": 180,
+      "elegibilidade": [
+        {
+          "idade_min": 18,
+          "categoria": "indicado",
+          "fatores_algum": [
+            "dm"
+          ]
+        },
+        {
+          "idade_min": 18,
+          "categoria": "indicado",
+          "fatores_algum": [
+            "prediabetes"
+          ]
+        },
+        {
+          "idade_min": 18,
+          "categoria": "indicado",
+          "fatores_todos": [
+            "obesidade"
+          ],
+          "fatores_algum": [
+            "has",
+            "hdl_baixo",
+            "tg_alto"
+          ]
+        },
+        {
+          "idade_min": 18,
+          "categoria": "indicado",
+          "fatores_todos": [
+            "sobrepeso_obesidade",
+            "has"
+          ]
+        },
+        {
+          "idade_min": 18,
+          "categoria": "indicado",
+          "fatores_todos": [
+            "sobrepeso_obesidade",
+            "hdl_baixo"
+          ]
+        },
+        {
+          "idade_min": 18,
+          "categoria": "indicado",
+          "fatores_todos": [
+            "sobrepeso_obesidade",
+            "tg_alto"
+          ]
+        },
+        {
+          "idade_min": 18,
+          "categoria": "indicado",
+          "fatores_todos": [
+            "has",
+            "hdl_baixo"
+          ]
+        },
+        {
+          "idade_min": 18,
+          "categoria": "indicado",
+          "fatores_todos": [
+            "has",
+            "tg_alto"
+          ]
+        },
+        {
+          "idade_min": 18,
+          "categoria": "indicado",
+          "fatores_todos": [
+            "hdl_baixo",
+            "tg_alto"
+          ]
+        }
+      ],
+      "fontes": [
+        {
+          "nome": "AASLD. Practice Guidance on the clinical assessment and management of NAFLD (Rinella ME et al.). Hepatology 2023;77(5):1797-1835",
+          "tipo": "primaria",
+          "ano": 2023,
+          "link": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10735173/",
+          "nota": "Texto completo lido (PMC). Tabela 7 e declarações: rastreio populacional geral não é recomendado; diabetes tipo 2, obesidade com complicações metabólicas, história familiar de cirrose ou álcool acima de leve devem ser rastreados para fibrose avançada; “in patients with pre-DM, T2DM, or 2 or more metabolic risk factors (or imaging evidence of hepatic steatosis), primary risk assessment with FIB-4 should be repeated every 1–2 years”. FIB-4 ≥ 1,3: elastografia (VCTE), MRE ou ELF."
+        },
+        {
+          "nome": "EASL–EASD–EASO. Clinical Practice Guidelines on the management of MASLD. J Hepatol 2024;81(3):492-542",
+          "tipo": "secundaria",
+          "ano": 2024,
+          "link": "https://pubmed.ncbi.nlm.nih.gov/38851997/",
+          "nota": "Só o resumo (PubMed) foi lido: busca ativa de fibrose com testes não invasivos em quem tem fatores de risco cardiometabólicos, enzimas hepáticas alteradas ou esteatose na imagem, “particularly in the presence of type 2 diabetes (T2D) or obesity with additional metabolic risk factor(s)”; abordagem em etapas, FIB-4 e depois elastografia."
+        }
+      ],
+      "conferencia": {
+        "nivel": "primaria",
+        "data": "2026-11-24",
+        "pendencias": [
+          "ADA Standards of Care 2025 (seção 4, MASLD) não foi lido: o texto completo não abriu.",
+          "Os fatores do app são aproximações: “sobrepeso ou obesidade” usa IMC (a diretriz também aceita circunferência abdominal), HDL < 35 e triglicerídeos > 250 são mais restritos que os critérios cardiometabólicos (HDL ≤ 40/50; TG ≥ 150).",
+          "Esteatose na imagem, enzimas hepáticas alteradas, história familiar de cirrose e consumo de álcool não estão entre os fatores do app: nesses casos, indique o FIB-4 também."
+        ]
+      },
+      "divergencias": [
+        "AASLD 2023 inclui pré-diabetes e qualquer combinação de 2 ou mais fatores metabólicos; EASL 2024 destaca diabetes tipo 2 ou obesidade com outro fator metabólico. O app segue a AASLD, que é mais ampla."
+      ],
+      "observacoes": [
+        "Repetir a cada 1 a 2 anos enquanto o FIB-4 for baixo (AASLD 2023); o app marca como pendente após 2 anos.",
+        "FIB-4 não é validado abaixo de 35 anos: nessa idade, prefira elastografia se houver suspeita de fibrose.",
+        "Rastreio populacional geral de esteatose não é recomendado."
+      ]
+    },
+    {
       "id": "lipoproteina_a",
       "categoria": "rastreamento",
       "nome": "Lipoproteína(a), dosagem única",
@@ -979,7 +1098,7 @@ function avaliar(paciente, regras, hoje) {
     const conf = r.conferencia;
     const dias = diasEntre(hoje, conf.data);
     const base = {
-      id: r.id, categoria: r.categoria, nome: r.nome, teste: r.teste ?? null,
+      id: r.id, categoria: r.categoria, nome: r.nome, teste: r.teste ?? null, calc: r.calc ?? null,
       fontes: r.fontes.map((f) => ({ nome: f.nome, tipo: f.tipo, ano: f.ano, link: f.link, nota: f.nota })),
       conferencia: conf.nivel, data_conferencia: conf.data, pendencias: conf.pendencias,
       divergencias: r.divergencias || [], observacoes: r.observacoes || [],
@@ -1098,7 +1217,7 @@ function cardHtml(i){
   const obs=i.observacoes.length?`<p class="ms-meta" style="margin-top:10px"><b>Observações</b></p><ul class="ms-bullets">${i.observacoes.map(o=>`<li>${esc(o)}</li>`).join('')}</ul>`:'';
   const pend=i.pendencias.length?`<p class="ms-meta" style="margin-top:10px"><b>O que ainda falta conferir</b></p><ul class="ms-bullets">${i.pendencias.map(o=>`<li>${esc(o)}</li>`).join('')}</ul>`:'';
   return `<article class="ms-item ms-${cls}"><div class="ms-item-head"><h4>${esc(i.nome)}</h4><span class="ms-pill ms-${cls}">${rot}</span><span class="ms-tag">${i.categoria==='vacina'?'Vacina':'Rastreamento'}</span></div>`+
-   (i.teste?`<p class="ms-test">${esc(i.teste)}</p>`:'')+
+   (i.teste?`<p class="ms-test">${esc(i.teste)}</p>`:'')+(i.calc&&/^[a-z0-9_]+$/.test(i.calc)?`<p class="ms-test"><a href="#calc/${i.calc}">Abrir a calculadora</a></p>`:'')+
    `<p class="ms-meta">${esc(intervaloTxt(i))} · conferido em ${fmtData(i.data_conferencia)}</p>`+
    `<label class="ms-last">Último feito há <input type="number" inputmode="decimal" min="0" max="120" step="0.5" data-last="${i.id}" value="${ult===undefined||ult===null?'':ult}" aria-label="Anos desde o último, ${esc(i.nome)}"> anos <span class="muted">(vazio = nunca ou não sei)</span></label>`+
    div+sus+aviso+
