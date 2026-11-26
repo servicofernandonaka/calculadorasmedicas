@@ -19,6 +19,7 @@
     mental: { title: 'Saúde mental', sub: '' },
     leitura: { title: 'Leitura crítica', sub: '' },
     labcore: { title: 'LabCore APS', sub: '' },
+    pedidos: { title: 'Pedidos de exames', sub: '' },
   };
   // Ícone e tom de cor por categoria (cartões e cabeçalho da calculadora)
   const CAT_STYLE = {
@@ -85,7 +86,7 @@
     state.tab = tab;
     // A cor e a ilustração do cabeçalho acompanham a especialidade
     document.documentElement.dataset.tab = tab;
-    $(tab === 'educacao' ? '#edu-art' : tab === 'rastreio' ? '#ras-art' : tab === 'mental' ? '#men-art' : tab === 'leitura' ? '#lei-art' : tab === 'labcore' ? '#lab-art' : '#calc-art').innerHTML = window.ART(tab);
+    $(tab === 'educacao' ? '#edu-art' : tab === 'rastreio' ? '#ras-art' : tab === 'mental' ? '#men-art' : tab === 'leitura' ? '#lei-art' : tab === 'labcore' ? '#lab-art' : tab === 'pedidos' ? '#ped-art' : '#calc-art').innerHTML = window.ART(tab);
     $$('.tab[data-tab]').forEach((b) => {
       if (b.dataset.tab === tab) {
         b.setAttribute('aria-current', 'page');
@@ -93,15 +94,16 @@
         b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       } else b.removeAttribute('aria-current');
     });
-    const isEdu = tab === 'educacao', isRas = tab === 'rastreio', isMen = tab === 'mental', isLei = tab === 'leitura', isLab = tab === 'labcore';
-    $('#view-calcs').hidden = isEdu || isRas || isMen || isLei || isLab;
+    const isEdu = tab === 'educacao', isRas = tab === 'rastreio', isMen = tab === 'mental', isLei = tab === 'leitura', isLab = tab === 'labcore', isPed = tab === 'pedidos';
+    $('#view-calcs').hidden = isEdu || isRas || isMen || isLei || isLab || isPed;
+    $('#view-pedidos').hidden = !isPed;
     $('#view-edu').hidden = !isEdu;
     $('#view-rastreio').hidden = !isRas;
     $('#view-mental').hidden = !isMen;
     $('#view-leitura').hidden = !isLei;
     $('#view-labcore').hidden = !isLab;
     if (isEdu) renderEdu();
-    else if (isRas || isMen || isLei || isLab) { /* MedScreening e Saúde mental já estão montados */ }
+    else if (isRas || isMen || isLei || isLab || isPed) { /* MedScreening e Saúde mental já estão montados */ }
     else { state.category = null; renderCalcs(); }
   }
 
@@ -548,7 +550,7 @@
 
     $('#search').addEventListener('input', (e) => {
       state.query = e.target.value;
-      if ((state.tab === 'educacao' || state.tab === 'rastreio' || state.tab === 'mental' || state.tab === 'leitura' || state.tab === 'labcore') && state.query) setTab('clinica');
+      if ((state.tab === 'educacao' || state.tab === 'rastreio' || state.tab === 'mental' || state.tab === 'leitura' || state.tab === 'labcore' || state.tab === 'pedidos') && state.query) setTab('clinica');
       renderCalcs();
     });
 

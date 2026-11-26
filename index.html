@@ -39,6 +39,7 @@
         <a class="tab" href="#mental" data-tab="mental"><span data-icon="brain"></span>Saúde mental</a>
         <a class="tab" href="#leitura" data-tab="leitura"><span data-icon="clipboard"></span>Leitura crítica</a>
         <a class="tab" href="#labcore" data-tab="labcore"><span data-icon="activity"></span>LabCore APS</a>
+        <a class="tab" href="#pedidos" data-tab="pedidos"><span data-icon="file"></span>Pedidos de exames</a>
         <a class="tab" href="#educacao" data-tab="educacao"><span data-icon="book"></span>Paciente</a>
       </nav>
     </div>
@@ -171,6 +172,29 @@
     </section>
 
 
+    <section id="view-pedidos" class="view" hidden>
+      <div class="hero view-head">
+        <div id="ped-art" class="hero-art"></div>
+        <div class="hero-text">
+          <p class="eyebrow">Regulação</p>
+          <h1>Pedido de exames especiais</h1>
+          <p class="hero-sub">Escolha o exame, marque os critérios que o paciente cumpre e copie a justificativa pronta para o prontuário. Mostra o que costuma gerar devolução ou glosa antes de enviar.</p>
+        </div>
+      </div>
+      <p class="pd-notice"><strong>Apoio ao preenchimento, para profissionais de saúde.</strong> Marque só o que consta no atendimento: o texto reproduz o que você marcou e não substitui o protocolo de regulação do seu município nem a avaliação clínica. Nenhum dado é enviado ou guardado: tudo é montado neste navegador. Não digite nome nem documento do paciente.</p>
+      <div class="pd-layout">
+        <section class="pd-panel pd-form-panel" aria-labelledby="pd-t-form">
+          <h2 id="pd-t-form">Pedido</h2>
+          <div id="pd-form"></div>
+        </section>
+        <section class="pd-results" aria-label="Texto do pedido">
+          <p id="pd-status" class="sr-only" role="status" aria-live="polite"></p>
+          <div id="pd-resultado"></div>
+          <p class="pd-foot" id="pd-rodape"></p>
+        </section>
+      </div>
+    </section>
+
     <section id="view-labcore" class="view" hidden>
       <div class="hero view-head">
         <div id="lab-art" class="hero-art"></div>
@@ -296,6 +320,9 @@
   <script src="js/leituracritica.js"></script>
   <script src="js/leituracritica2.js"></script>
   <script src="js/labcore.js"></script>
+  <script src="js/pedidos-engine.js"></script>
+  <script src="js/pedidos-dados.js"></script>
+  <script src="js/pedidos.js"></script>
   <script src="js/app.js"></script>
   <script src="js/ai.js"></script>
   <script src="js/pep-bridge.js"></script>
