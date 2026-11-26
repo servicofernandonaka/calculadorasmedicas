@@ -8,8 +8,18 @@ const E = require('../js/pedidos-engine.js');
 
 const ex = (id) => D.exames.find((x) => x.id === id);
 const crit = (e) => E.todosCriterios(e);
-const base = { idade: 58, sexo: 'M', prioridade: 'eletivo' };
-const pedido = (exame, extra) => E.montar(D, Object.assign({ exame, cid: ex(exame).cids[0][0] }, base, extra));
+const base = { idade: 58, sexo: 'M', prioridade: 'P2', solicitante: 'outro', quadro: 'Quadro clínico de teste.' };
+// Campos que o protocolo de Barueri torna obrigatórios: os testes os preenchem, exceto quando é isso que se testa
+const GERAIS = { exame_fisico: 'Sem alterações relevantes.', historico: 'Sem tratamento prévio.', dados_prioridade: 'Sintomas progressivos.' };
+const FICHA = { ambiente: 'amb', asa: 'II', peso: '80 kg, 1,70 m, IMC 27,7', antitromb: 'não usa', alergias: 'nega' };
+const POR_EXAME = {
+  eda: FICHA, colonoscopia: Object.assign({ antecedentes: 'Sem antecedentes relevantes.' }, FICHA), eco: { ecg: 'Ritmo sinusal' }, ergometrico: { tempo_conduta: 'Dor há 3 meses, em investigação.' },
+  holter: { ecg: 'Normal' }, mapa: { ecg: 'Normal' }, tc_cranio: { rx: 'Sem alterações' }, tc_abdome: { rx_abdome: 'Sem alterações' },
+};
+const pedido = (exame, extra) => {
+  const x = extra || {};
+  return E.montar(D, Object.assign({ exame, cid: ex(exame).cids[0][0] }, base, x, { campos: Object.assign({}, GERAIS, POR_EXAME[exame] || {}, x.campos || {}) }));
+};
 
 /* ---------- integridade do catálogo ---------- */
 test('exames do catálogo, cada um com sistema, nome, CIDs, fontes e conferência', () => {
@@ -30,10 +40,10 @@ test('ids de critérios são únicos em todo o catálogo', () => {
   for (const e of D.exames) for (const c of crit(e)) { assert.ok(!vistos.has(c.id), 'repetido: ' + c.id); vistos.add(c.id); }
 });
 
-test('toda fonte tem nome, link https, nota e referência curta', () => {
+test('toda fonte tem nome, nota e referência curta; link https (ou fonte local sem link)', () => {
   for (const e of D.exames) for (const [k, f] of Object.entries(e.fontes)) {
     assert.ok(f.nome && f.nota && f.curta, `${e.id}/${k}`);
-    assert.match(f.link, /^https:\/\//, `${e.id}/${k}`);
+    if (f.tipo === 'local') assert.equal(f.link, null, `${e.id}/${k}`); else assert.match(f.link, /^https:\/\//, `${e.id}/${k}`);
   }
 });
 
@@ -111,10 +121,10 @@ test('texto da EDA por disfagia: cabeçalho, critérios marcados, referência e 
   const r = pedido('eda', { cid: 'R13', criterios: ['eda_disfagia'], quadro: 'Disfagia progressiva há 2 meses' });
   assert.equal(r.pronto, true);
   assert.match(r.texto, /^SOLICITAÇÃO: Endoscopia digestiva alta/);
-  assert.match(r.texto, /Prioridade: Eletiva/);
+  assert.match(r.texto, /Prioridade: P2 \(amarelo\)/);
   assert.match(r.texto, /sexo masculino, 58 anos/);
   assert.match(r.texto, /R13 - Disfagia/);
-  assert.match(r.texto, /Quadro clínico: Disfagia progressiva há 2 meses\./);
+  assert.match(r.texto, /Justificativa clínica: Disfagia progressiva há 2 meses\./);
   assert.match(r.texto, /- Disfagia\./);
   assert.match(r.texto, /Referência: ACG 2022 \(DRGE\)\./);
   assert.ok(!/perda de peso/i.test(r.texto), 'não pode incluir o que não foi marcado');
@@ -377,4 +387,189 @@ test('toda tomografia tem o grupo de contraste e a exigência de creatinina', ()
     assert.ok(e.campos.some((c) => c.id === 'creatinina' && c.exigidoQuando), id);
     for (const f of ['acrnkf', 'esur', 'esur_hs', 'acog']) assert.ok(e.fontes[f], `${id}: fonte ${f}`);
   }
+});
+
+/* ---------- regulação de Barueri (protocolos, diretrizes e ficha enviados pelo usuário) ---------- */
+test('protocolo de Barueri 2024: número de indicações de cada exame, conforme o PDF', () => {
+  const esperado = { eda: 15, colonoscopia: 16, eco: 18, ergometrico: 14, holter: 11, mapa: 7, tc_cranio: 13, tc_torax: 15, tc_abdome: 10, tc_pelve: 4, psg: 10 };
+  for (const [id, n] of Object.entries(esperado)) {
+    const doProtocolo = crit(ex(id)).filter((c) => c.fonte === 'barueri' && /^p_/.test(c.grupo));
+    assert.equal(doProtocolo.length, n, id);
+    assert.ok(doProtocolo.every((c) => c.v === true));
+  }
+});
+
+test('protocolo de Barueri 2024: profissionais solicitantes de cada exame, conforme o PDF', () => {
+  const esperado = {
+    eda: ['GASTRO', 'ORL', 'REUMA', 'SAD', 'VASCULAR'],
+    colonoscopia: ['GASTRO', 'GERIATRA', 'MAP', 'PROCTO'],
+    eco: ['CARDIO', 'HEMATO', 'MAP', 'NEURO', 'PNEUMO', 'REUMA', 'VASCULAR'],
+    ergometrico: ['CARDIO', 'MAP'],
+    holter: ['CARDIO', 'NEURO', 'SAD'],
+    mapa: ['CARDIO', 'MAP', 'NEFRO', 'NEURO', 'VASCULAR'],
+    tc_cranio: ['ENDOCRINO', 'GERIATRA', 'INFECTO', 'MAP_GIN', 'NEURO', 'ORTO'],
+    tc_torax: ['CARDIO', 'DERMA', 'MAP', 'NEURO', 'ORTO', 'PNEUMO', 'REUMA'],
+    tc_abdome: ['DERMA', 'ENDOCRINO', 'GASTRO', 'HEMATO', 'MAP', 'NEFRO', 'PROCTO', 'REUMA', 'URO'],
+    tc_pelve: ['FISIATRA', 'GINECO', 'HEMATO', 'MAP', 'URO'],
+    psg: ['CARDIO', 'DENTISTA', 'NEURO', 'ORL', 'PNEUMO', 'SAD'],
+  };
+  for (const [id, lista] of Object.entries(esperado)) assert.deepEqual([...ex(id).solicitantes].sort(), lista, id);
+  for (const e of D.exames) for (const k of e.solicitantes) assert.ok(D.chavesRotulos[k], `${e.id}: ${k}`);
+  for (const s of D.solicitantes) for (const k of s.chaves) assert.ok(D.chavesRotulos[k], s.v);
+});
+
+test('cada exame cita o protocolo de Barueri como fonte local, sem link', () => {
+  for (const e of D.exames) {
+    assert.equal(e.fontes.barueri.tipo, 'local', e.id);
+    assert.equal(e.fontes.barueri.link, null, e.id);
+  }
+  assert.ok(ex('eda').fontes.ficha && ex('colonoscopia').fontes.ficha);
+});
+
+test('o MAP não consta como solicitante de EDA, Holter e polissonografia; consta em colonoscopia, eco, MAPA e tomografias', () => {
+  const aviso = (exame, quem) => pedido(exame, { solicitante: quem, criterios: [crit(ex(exame)).find((c) => /^p_/.test(c.grupo)).id] }).avisos.find((a) => a.id === 'solicitante');
+  for (const id of ['eda', 'holter', 'psg']) {
+    const a = aviso(id, 'map');
+    assert.ok(a, id);
+    assert.match(a.texto, /Barueri/);
+    assert.match(a.texto, /não consta/);
+  }
+  assert.match(aviso('eda', 'map').texto, /Gastroenterologista/);
+  for (const id of ['colonoscopia', 'eco', 'mapa', 'ergometrico', 'tc_torax', 'tc_abdome', 'tc_pelve']) assert.ok(!aviso(id, 'map'), id);
+  assert.ok(!aviso('eda', 'gastro'));
+  assert.ok(!aviso('holter', 'cardio'));
+  assert.ok(!aviso('eda', 'outro'), 'outro profissional não recebe aviso');
+});
+
+test('tomografia de crânio (sela túrcica): MAP clínico não consta; MAP ginecologista consta', () => {
+  const crit1 = ['tcc_p_trauma'];
+  assert.ok(pedido('tc_cranio', { solicitante: 'map', criterios: crit1 }).avisos.some((a) => a.id === 'solicitante'));
+  assert.ok(!pedido('tc_cranio', { solicitante: 'map_gin', criterios: crit1 }).avisos.some((a) => a.id === 'solicitante'));
+  assert.ok(!pedido('tc_cranio', { solicitante: 'neuro', criterios: crit1 }).avisos.some((a) => a.id === 'solicitante'));
+  assert.match(ex('tc_cranio').notaProtocolo, /sela túrcica/);
+});
+
+test('profissional solicitante, prioridade, justificativa e campos gerais são obrigatórios', () => {
+  const r = E.montar(D, { exame: 'eco', idade: 50, sexo: 'F', cid: 'R06.0', criterios: ['eco_p_dispneia'] });
+  for (const t of [/solicitante/i, /prioridade/i, /justificativa clínica/i, /exame físico/i, /histórico terapêutico/i, /dados objetivos/i, /ECG/]) assert.ok(r.faltas.some((f) => t.test(f)), String(t));
+  assert.equal(pedido('eco', { solicitante: '' , criterios: ['eco_p_dispneia'] }).pronto, false);
+  assert.equal(pedido('eco', { quadro: '', criterios: ['eco_p_dispneia'] }).pronto, false);
+  assert.equal(pedido('eco', { prioridade: 'P9', criterios: ['eco_p_dispneia'] }).pronto, false);
+  assert.equal(pedido('eco', { criterios: ['eco_p_dispneia'] }).pronto, true);
+});
+
+test('prioridades de Barueri: P1, P2, P3 e PE; P1 e PE trazem lembrete; o texto traz a prioridade e o solicitante', () => {
+  assert.deepEqual(Object.keys(D.prioridades), ['P1', 'P2', 'P3', 'PE']);
+  assert.match(D.prioridades.P1, /vermelho/); assert.match(D.prioridades.P2, /amarelo/); assert.match(D.prioridades.P3, /verde/);
+  const p1 = pedido('eco', { prioridade: 'P1', criterios: ['eco_p_sopro'] });
+  assert.ok(p1.avisos.some((a) => a.id === 'prioridade' && /reclassificar/.test(a.texto)));
+  assert.ok(pedido('eco', { prioridade: 'PE', criterios: ['eco_p_sopro'] }).avisos.some((a) => a.id === 'prioridade' && /CROSS/.test(a.texto)));
+  assert.ok(!pedido('eco', { prioridade: 'P3', criterios: ['eco_p_sopro'] }).avisos.some((a) => a.id === 'prioridade'));
+  const r = pedido('eco', { prioridade: 'P2', solicitante: 'cardio', criterios: ['eco_p_sopro'] });
+  assert.match(r.texto, /Prioridade: P2 \(amarelo\)/);
+  assert.match(r.texto, /Profissional solicitante: Cardiologista\./);
+  assert.match(r.texto, /Exame físico: Sem alterações relevantes\./);
+  assert.match(r.texto, /Dados objetivos que fundamentam a prioridade: Sintomas progressivos\./);
+  assert.match(r.texto, /Referência: Protocolo de Barueri 2024\./);
+});
+
+test('indicação só de diretriz, sem nenhuma do protocolo, avisa risco de devolução; com a do protocolo, não', () => {
+  const so = pedido('eco', { criterios: ['eco_fa'] });
+  assert.ok(so.avisos.some((a) => a.id === 'eco-sem-protocolo' && /cancelado/.test(a.texto)));
+  assert.ok(!pedido('eco', { criterios: ['eco_fa', 'eco_p_sopro'] }).avisos.some((a) => a.id === 'eco-sem-protocolo'));
+  // sem critério nenhum, só a pendência de marcar
+  assert.ok(!pedido('eco', { criterios: [] }).avisos.some((a) => a.id === 'eco-sem-protocolo'));
+});
+
+test('tomografia de pelve: dor pélvica não é indicação do protocolo; ultrassom de pelve é obrigatório', () => {
+  const dor = pedido('tc_pelve', { sexo: 'F', idade: 30, cid: 'R10.2', criterios: ['tc_p_dor_aguda'], campos: { us: 'Sem alterações', bhcg: 'Negativo' } });
+  assert.ok(dor.avisos.some((a) => a.id === 'tcp-sem-protocolo' && /não lista dor pélvica/.test(a.texto)));
+  const tumor = pedido('tc_pelve', { cid: 'R19.0', criterios: ['tcp_p_tumor'] });
+  assert.ok(tumor.faltas.some((f) => /ultrassom de pelve/i.test(f)));
+  assert.equal(pedido('tc_pelve', { cid: 'R19.0', criterios: ['tcp_p_tumor'], campos: { us: 'Massa anexial de 6 cm' } }).pronto, true);
+});
+
+test('radiografia: tórax (PA e perfil) e abdome exigidas; o rastreamento de pulmão não exige radiografia', () => {
+  assert.ok(pedido('tc_torax', { cid: 'R91', criterios: ['tct_p_nodulo'] }).faltas.some((f) => /radiografia de tórax PA e perfil/.test(f)));
+  assert.equal(pedido('tc_torax', { cid: 'R91', criterios: ['tct_p_nodulo'], campos: { rx: 'Nódulo de 8 mm em LSD, 10/11/2026' } }).pronto, true);
+  assert.equal(pedido('tc_torax', { idade: 62, cid: 'Z12.2', criterios: ['tc_t_rastreio'], campos: { tabagismo: '30 maços-ano, parou há 5 anos' } }).pronto, true);
+  assert.ok(pedido('tc_torax', { idade: 62, cid: 'Z12.2', criterios: ['tc_t_rastreio'], campos: { tabagismo: '30 maços-ano' } }).avisos.some((a) => a.id === 'tct-rast-sus' && /não consta no protocolo de Barueri/.test(a.texto)));
+  const sem = E.montar(D, Object.assign({ exame: 'tc_abdome', cid: 'R19.0', criterios: ['tca_p_tumor'], campos: GERAIS }, base));
+  assert.ok(sem.faltas.some((f) => /radiografia simples de abdome/.test(f)));
+  assert.equal(pedido('tc_cranio', { cid: 'R51', criterios: ['tcc_p_cefaleia'], campos: { rx: '' } }).pronto, false, 'crânio exige radiografia simples com laudo');
+});
+
+test('MAPA: situações em que o protocolo não recomenda bloqueiam o texto', () => {
+  for (const c of ['m_c_fa', 'm_c_mov', 'm_c_manguito']) {
+    const r = pedido('mapa', { cid: 'I10', criterios: ['m_p_limitrofe', c], campos: { pa: '138/88 em 2 consultas' } });
+    assert.equal(r.bloqueado, true, c);
+    assert.match(r.avisos.find((a) => a.nivel === 'alto').texto, /MRPA/);
+  }
+  assert.equal(pedido('mapa', { cid: 'I10', criterios: ['m_p_limitrofe'], campos: { pa: '138/88 em 2 consultas' } }).pronto, true);
+  // as indicações só de MAPA (hipotensão, disautonomia) não recebem o lembrete de que a MRPA serve
+  assert.ok(!pedido('mapa', { cid: 'I10', criterios: ['m_p_hipotensao'], campos: { pa: '90/60' } }).avisos.some((a) => a.id === 'm-mrpa'));
+});
+
+test('ergométrico: o protocolo exige anamnese, tempo de evolução e conduta; SVE conta como ECG limitante', () => {
+  assert.ok(pedido('ergometrico', { cid: 'I25.9', criterios: ['te_p_dac'], campos: { ecg: 'Normal', tempo_conduta: '' } }).faltas.some((f) => /tempo de evolução/.test(f)));
+  const r = pedido('ergometrico', { cid: 'I25.9', criterios: ['te_p_dac', 'te_c_ecg'], campos: { ecg: 'SVE com sobrecarga' } });
+  assert.equal(r.bloqueado, true, 'DAC + ECG limitante bloqueia');
+  assert.match(crit(ex('ergometrico')).find((c) => c.id === 'te_c_ecg').rotulo, /SVE/);
+});
+
+test('Holter: o ECG é pré-requisito do protocolo', () => {
+  assert.ok(pedido('holter', { solicitante: 'cardio', cid: 'R00.2', criterios: ['h_p_ritmo'], campos: { ecg: '' } }).faltas.some((f) => /ECG/.test(f)));
+  assert.equal(pedido('holter', { solicitante: 'cardio', cid: 'R00.2', criterios: ['h_p_ritmo'] }).pronto, true);
+});
+
+/* ---------- ficha de endoscopia e colonoscopia (ASA, medicação e preparo) ---------- */
+test('EDA e colonoscopia exigem ambiente, ASA, peso, anticoagulantes e alergias; o texto traz o ASA', () => {
+  for (const id of ['eda', 'colonoscopia']) {
+    const crit_ = id === 'eda' ? ['eda_p_disp60'] : ['col_p_hdb'];
+    const sem = pedido(id, { solicitante: 'gastro', criterios: crit_, campos: { asa: '', ambiente: '', peso: '', antitromb: '', alergias: '' } });
+    for (const t of [/ambulatorial ou em ambiente hospitalar/, /ASA/, /peso, altura e IMC/, /anticoagulante ou antiagregante/, /alergias/]) assert.ok(sem.faltas.some((f) => t.test(f)), `${id}: ${t}`);
+    const ok = pedido(id, { idade: 62, solicitante: 'gastro', criterios: crit_ });
+    assert.equal(ok.pronto, true, id);
+    assert.match(ok.texto, /Ambiente do exame: Ambulatorial\./);
+    assert.match(ok.texto, /Classificação ASA estimada \(estratificação, sem finalidade anestésica\): ASA II: doença sistêmica leve e controlada\./);
+    assert.match(ok.texto, /Anticoagulantes ou antiagregantes: não usa\./);
+  }
+});
+
+test('ficha: ASA III pede avaliação pré-anestésica, ASA IV vai ao hospital, e hospitalar com ASA I ou II pede justificativa', () => {
+  const r = (campos) => pedido('eda', { solicitante: 'gastro', criterios: ['eda_p_disp60'], campos }).avisos;
+  assert.ok(r({ asa: 'III' }).some((a) => a.id === 'eda-asa3' && a.nivel === 'info' && /pré-anestésica/.test(a.texto)));
+  assert.ok(r({ asa: 'IV' }).some((a) => a.id === 'eda-asa4' && a.nivel === 'atencao' && /hospitalar/.test(a.texto)));
+  assert.ok(r({ asa: 'II', ambiente: 'hosp' }).some((a) => a.id === 'eda-asa-amb'));
+  assert.ok(!r({ asa: 'II', ambiente: 'amb' }).some((a) => /^eda-asa/.test(a.id)));
+  assert.ok(!r({ asa: 'IV', ambiente: 'hosp' }).some((a) => a.id === 'eda-asa-amb'));
+});
+
+test('ficha: avaliação funcional e orientação do paciente entram no texto; orientações de preparo aparecem', () => {
+  const r = pedido('colonoscopia', { solicitante: 'map', criterios: ['col_p_hdb', 'col_ff_apneia', 'col_ff_claustro', 'col_orientado'] });
+  assert.match(r.texto, /Contexto e cuidados:/);
+  assert.match(r.texto, /- Apneia do sono, refluxo ou obesidade grave\./);
+  assert.match(r.texto, /- Paciente orientado quanto ao preparo, ao risco-benefício e às orientações gerais do exame\./);
+  assert.ok(ex('eda').orientacoes.some((t) => /8 horas/.test(t)) && ex('eda').orientacoes.some((t) => /21 dias/.test(t)));
+  assert.ok(ex('colonoscopia').orientacoes.some((t) => /preparo intestinal/.test(t)) && ex('colonoscopia').orientacoes.some((t) => /ferro/.test(t)));
+  assert.equal(ex('mapa').orientacoes, undefined);
+});
+
+test('EDA: exames da anemia exigidos na investigação de anemia; IBP no refluxo (2 meses) e na dispepsia (8 semanas)', () => {
+  const an = pedido('eda', { solicitante: 'gastro', cid: 'D50.9', criterios: ['eda_p_anemia'] });
+  assert.ok(an.faltas.some((f) => /hemoglobina, VCM, ferro e ferritina e PSO/.test(f)));
+  assert.equal(pedido('eda', { solicitante: 'gastro', cid: 'D50.9', criterios: ['eda_p_anemia'], campos: { anemia: 'Hb 9,1; VCM 74; ferritina 8 (10/11/2026)' } }).pronto, true);
+  assert.ok(pedido('eda', { solicitante: 'gastro', cid: 'K21.9', criterios: ['eda_p_drge'] }).faltas.some((f) => /2 meses em dose plena/.test(f)));
+  assert.ok(pedido('eda', { solicitante: 'gastro', cid: 'K30', criterios: ['eda_p_disp_refrat'], campos: { ibp: 'Omeprazol 40 mg por 8 semanas' } }).faltas.some((f) => /H\. pylori/.test(f)));
+});
+
+test('colonoscopia: o protocolo aceita rastreio acima de 50 anos a cada 5 anos; o FIT vira lembrete, não bloqueio', () => {
+  const r = pedido('colonoscopia', { idade: 62, solicitante: 'map', cid: 'Z12.1', criterios: ['col_p_semqueixa'], campos: { anosDesde: '3' } });
+  assert.ok(r.avisos.some((a) => /^intervalo-col_p_semqueixa/.test(a.id)), 'exame há 3 anos, intervalo de 5 do protocolo');
+  assert.ok(!pedido('colonoscopia', { idade: 62, solicitante: 'map', cid: 'Z12.1', criterios: ['col_p_semqueixa'], campos: { anosDesde: '6' } }).avisos.some((a) => /^intervalo-/.test(a.id)));
+  assert.ok(pedido('colonoscopia', { idade: 45, solicitante: 'map', cid: 'Z12.1', criterios: ['col_p_prev_50'] }).avisos.some((a) => a.id === 'col-prev50-idade'));
+  assert.ok(pedido('colonoscopia', { idade: 38, solicitante: 'map', cid: 'Z12.1', criterios: ['col_p_prev_fam'] }).avisos.some((a) => a.id === 'col-prevfam-idade'));
+  const fit = pedido('colonoscopia', { idade: 62, solicitante: 'map', cid: 'Z12.1', criterios: ['col_rastreio_direto'] }).avisos.find((a) => a.id === 'col-sus-fit');
+  assert.equal(fit.nivel, 'info');
+  assert.match(fit.texto, /Barueri/);
 });
