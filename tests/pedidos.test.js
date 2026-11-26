@@ -405,7 +405,7 @@ test('protocolo de Barueri 2024: profissionais solicitantes de cada exame, confo
     colonoscopia: ['GASTRO', 'GERIATRA', 'MAP', 'PROCTO'],
     eco: ['CARDIO', 'HEMATO', 'MAP', 'NEURO', 'PNEUMO', 'REUMA', 'VASCULAR'],
     ergometrico: ['CARDIO', 'MAP'],
-    holter: ['CARDIO', 'NEURO', 'SAD'],
+    holter: ['CARDIO', 'MAP', 'NEURO', 'SAD'], // o protocolo de 2024 não lista o MAP; a regulação informou que o MAP pode pedir Holter
     mapa: ['CARDIO', 'MAP', 'NEFRO', 'NEURO', 'VASCULAR'],
     tc_cranio: ['ENDOCRINO', 'GERIATRA', 'INFECTO', 'MAP_GIN', 'NEURO', 'ORTO'],
     tc_torax: ['CARDIO', 'DERMA', 'MAP', 'NEURO', 'ORTO', 'PNEUMO', 'REUMA'],
@@ -426,9 +426,9 @@ test('cada exame cita o protocolo de Barueri como fonte local, sem link', () => 
   assert.ok(ex('eda').fontes.ficha && ex('colonoscopia').fontes.ficha);
 });
 
-test('o MAP não consta como solicitante de Holter e polissonografia; consta em EDA (por informação da regulação), colonoscopia, eco, MAPA e tomografias', () => {
+test('o MAP não consta como solicitante de polissonografia; consta em EDA e Holter (por informação da regulação), colonoscopia, eco, MAPA e tomografias', () => {
   const aviso = (exame, quem) => pedido(exame, { solicitante: quem, criterios: [crit(ex(exame)).find((c) => /^p_/.test(c.grupo)).id] }).avisos.find((a) => a.id === 'solicitante');
-  for (const id of ['holter', 'psg']) {
+  for (const id of ['psg']) {
     const a = aviso(id, 'map');
     assert.ok(a, id);
     assert.match(a.texto, /Barueri/);
@@ -436,10 +436,11 @@ test('o MAP não consta como solicitante de Holter e polissonografia; consta em 
     assert.match(a.texto, /\(2024\)/);
     assert.match(a.texto, /pode ter sido atualizado/);
   }
-  assert.match(aviso('holter', 'map').texto, /Cardiologista/);
-  for (const id of ['eda', 'colonoscopia', 'eco', 'mapa', 'ergometrico', 'tc_torax', 'tc_abdome', 'tc_pelve']) assert.ok(!aviso(id, 'map'), id);
+  assert.match(aviso('psg', 'map').texto, /Pneumologista/);
+  for (const id of ['eda', 'holter', 'colonoscopia', 'eco', 'mapa', 'ergometrico', 'tc_torax', 'tc_abdome', 'tc_pelve']) assert.ok(!aviso(id, 'map'), id);
   assert.ok(!aviso('eda', 'gastro'));
   assert.ok(ex('eda').solicitantesNota && /MAP pode solicitar/.test(ex('eda').solicitantesNota));
+  assert.ok(ex('holter').solicitantesNota && /MAP pode solicitar/.test(ex('holter').solicitantesNota));
   assert.ok(!aviso('holter', 'cardio'));
   assert.ok(!aviso('eda', 'outro'), 'outro profissional não recebe aviso');
 });

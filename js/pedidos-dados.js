@@ -524,7 +524,7 @@
     cids: [['R00.2', 'Palpitações'], ['R55', 'Síncope e colapso'], ['I49.9', 'Arritmia cardíaca, não especificada'], ['I48', 'Flutter e fibrilação atrial'],
       ['I63.9', 'Infarto cerebral, não especificado'], ['I49.3', 'Despolarização ventricular prematura'], ['I49.1', 'Despolarização atrial prematura']],
     fontes: {
-      barueri: fonteProt('Holter 24 horas', 'Indicações, pré-requisitos (história clínica, exame físico e ECG) e profissionais solicitantes (cardiologista, neurologista e médicos do SAD; o MAP não consta).'),
+      barueri: fonteProt('Holter 24 horas', 'Indicações, pré-requisitos (história clínica, exame físico e ECG) e profissionais solicitantes (cardiologista, neurologista e médicos do SAD). O protocolo (2024) não lista o MAP, mas, segundo a regulação, o MAP pode pedir o Holter.'),
       fa: F('Diretrizes Brasileiras de Fibrilação Atrial 2025. Arq Bras Cardiol 2025', PMC('PMC13400077'), 'Diretrizes Brasileiras de Fibrilação Atrial 2025',
         'Texto completo lido. Quadro 4: ECG e Holter de 24 a 72 h na avaliação de AVC isquêmico ou embolia sistêmica com fatores de risco para FA (Classe I, nível B); monitorização prolongada no AVC criptogênico (IIa, B); o Holter quantifica a frequência média em 24 h.'),
       jhrs: F('Consenso JHRS/JCS 2025 sobre o uso apropriado de ECG ambulatorial e vestível. J Arrhythm 2025', PMC('PMC12099069'), 'Consenso JHRS/JCS 2025',
@@ -558,7 +558,8 @@
       ] },
     ],
     contra: [],
-    solicitantes: ['CARDIO', 'NEURO', 'SAD'],
+    solicitantes: ['MAP', 'CARDIO', 'NEURO', 'SAD'],
+    solicitantesNota: 'O protocolo de 2024 não lista o MAP para o Holter; segundo a regulação, o MAP pode solicitar. Os demais profissionais são os do protocolo.',
     campos: [
       { id: 'sintoma', rotulo: 'Sintoma, frequência e duração dos episódios', rotuloNoTexto: 'Sintomas', tipo: 'area',
         exigidoQuando: { criterioAlgum: ['h_sintoma_diario', 'h_p_sincope'] }, exigidoMsg: 'Descreva o sintoma, a frequência e a duração dos episódios.' },
