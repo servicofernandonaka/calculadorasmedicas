@@ -50,7 +50,7 @@
         : `<input type="text"${c.tipo === 'numero' ? ' inputmode="decimal"' : ''} data-campo="${esc(c.id)}" autocomplete="off">`) +
       (c.dica ? `<small class="pd-dica">${esc(c.dica)}</small>` : '') + '</label>';
     const campos = (ex.campos || []).concat(D.camposGerais || []).map(campoHtml).join('');
-    const quem = (ex.solicitantes && ex.solicitantes.length) ? `<details class="pd-nao"><summary>Quem pode solicitar (protocolo de ${esc(D.municipio || 'regulação')})</summary><ul>${ex.solicitantes.map((k) => `<li>${esc(ROTULOS[k] || k)}</li>`).join('')}</ul></details>` : '';
+    const quem = (ex.solicitantes && ex.solicitantes.length) ? `<details class="pd-nao"><summary>Quem pode solicitar (protocolo de ${esc(D.municipio || 'regulação')})</summary><ul>${ex.solicitantes.map((k) => `<li>${esc(ROTULOS[k] || k)}</li>`).join('')}</ul>${ex.solicitantesNota ? `<p class="pd-dica">${esc(ex.solicitantesNota)}</p>` : ''}</details>` : '';
     const orient = (ex.orientacoes && ex.orientacoes.length) ? `<details class="pd-nao" open><summary>Orientações de preparo (ficha de ${esc(D.municipio || 'regulação')})</summary><ul>${ex.orientacoes.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></details>` : '';
     const naoInd = (ex.naoIndicado && ex.naoIndicado.length) ? `<details class="pd-nao"><summary>Quando o pedido costuma ser negado ou não é indicado</summary><ul>${ex.naoIndicado.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></details>` : '';
     const nota = ex.notaProtocolo ? `<p class="pd-dica pd-nota-prot">${esc(ex.notaProtocolo)}</p>` : '';

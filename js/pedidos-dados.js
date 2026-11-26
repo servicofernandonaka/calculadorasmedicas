@@ -71,7 +71,7 @@
       ['K92.0', 'Hematêmese'], ['K92.1', 'Melena'], ['K92.2', 'Hemorragia gastrointestinal, não especificada'], ['K25.9', 'Úlcera gástrica'],
       ['K74.6', 'Outras cirroses do fígado e as não especificadas'], ['K76.6', 'Hipertensão portal'], ['R11', 'Náusea e vômitos']],
     fontes: {
-      barueri: fonteProt('Endoscopia digestiva alta - adulto', 'Indicações, pré-requisitos (anamnese, exame físico, exames e tratamentos realizados, hemograma e ferro na anemia, informar antiagregante ou anticoagulante) e profissionais solicitantes.'),
+      barueri: fonteProt('Endoscopia digestiva alta - adulto', 'Indicações, pré-requisitos (anamnese, exame físico, exames e tratamentos realizados, hemograma e ferro na anemia, informar antiagregante ou anticoagulante) e profissionais solicitantes. O protocolo (2024) não lista o MAP como solicitante, mas, segundo a regulação, o MAP pode pedir a endoscopia.'),
       ficha: FONTE_FICHA,
       katz: F('Katz PO et al. ACG Clinical Guideline for the Diagnosis and Management of Gastroesophageal Reflux Disease. Am J Gastroenterol 2022;117(1):27-56', PMC('PMC8754510'), 'ACG 2022 (DRGE)',
         'Texto completo lido. Endoscopia quando sintomas típicos não respondem a 8 semanas de IBP ou voltam ao suspender (recomendação forte); como primeiro exame na disfagia e em outros sinais de alarme, como perda de peso e sangramento (forte); dor torácica sem pirose depois de afastar doença cardíaca (condicional).'),
@@ -147,7 +147,8 @@
       ] },
     ],
     contra: [C('eda_anticoag', 'Em uso de anticoagulante ou antiagregante', { fonte: 'abraham', frase: 'Em uso de anticoagulante ou antiagregante' })].concat(fichaContra('eda')),
-    solicitantes: ['GASTRO', 'ORL', 'REUMA', 'VASCULAR', 'SAD'],
+    solicitantes: ['MAP', 'GASTRO', 'ORL', 'REUMA', 'VASCULAR', 'SAD'],
+    solicitantesNota: 'O protocolo de 2024 não lista o MAP para a endoscopia digestiva alta; segundo a regulação, o MAP pode solicitar. Os demais profissionais são os do protocolo.',
     orientacoes: ORIENT_EDA,
     campos: [
       { id: 'ibp', rotulo: 'Tratamento com IBP (dose, tempo de uso e resposta)', rotuloNoTexto: 'Tratamento prévio com IBP',
@@ -1191,7 +1192,7 @@
     ficha: FONTE_FICHA,
   };
 
-  return { versao: '0.2.0', atualizadoEm: '2026-11-26', municipio: 'Barueri (SP)', chavesRotulos, solicitantes, prioridades, prioridadesDetalhe,
+  return { versao: '0.2.1', atualizadoEm: '2026-11-26', municipio: 'Barueri (SP)', protocoloAno: 2024, chavesRotulos, solicitantes, prioridades, prioridadesDetalhe,
     prioridadesDica: 'Urgências e emergências vão aos prontos-socorros; as agendas abrem com no mínimo 60 dias de antecedência.',
     avisosPrioridade: {
       P1: 'A P1 pede dados objetivos que a sustentem: o médico regulador pode reclassificar a prioridade se o detalhamento clínico e os exames não a justificarem (Diretrizes de Barueri, 2025). Urgência e emergência vão ao pronto-socorro.',
