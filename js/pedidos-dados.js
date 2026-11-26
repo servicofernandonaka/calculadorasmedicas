@@ -6,6 +6,8 @@
      NÃO foi conferido no texto de uma diretriz. A tela mostra essa diferença.
    - "intervaloMin" (anos) em critérios de seguimento: o motor avisa se o exame anterior é mais recente.
    - Regras (campo "regras") bloqueiam ("alto") ou avisam ("atencao", "info"); ver js/pedidos-engine.js.
+   Regulação local: os protocolos de Barueri (SP) enviados pelo usuário (Exames de Apoio Diagnóstico 2024, Diretrizes da Regulação Ambulatorial de setembro de 2025 e a ficha de endoscopia e colonoscopia) são fontes "locais" (sem link):
+   indicações, pré-requisitos e profissionais solicitantes de cada exame vêm deles. Critérios "p_*" são os do protocolo.
    Os CID-10 são sugestões: confirme no seu sistema.
    Dados conferidos em 26/11/2026 (leituras via NCBI/PMC). Nenhum critério foi escrito de memória sem a marca v: false. */
 (function (root, factory) {
@@ -19,7 +21,47 @@
   const ids = (ex, ...gs) => ex.grupos.filter((g) => gs.includes(g.id)).flatMap((g) => g.criterios.map((c) => c.id));
   const PMC = (id) => 'https://pmc.ncbi.nlm.nih.gov/articles/' + id + '/';
   const PUBMED = (id) => 'https://pubmed.ncbi.nlm.nih.gov/' + id + '/';
-  const OBS_ANTICOAG = 'Informe o fármaco, a dose e a indicação. O ACG-CAG 2022 sugere manter a varfarina em procedimento eletivo, suspender o anticoagulante direto temporariamente (1 a 2 dias) e, na dupla antiagregação, suspender o inibidor de P2Y12 mantendo o AAS. A conduta é do endoscopista junto com o médico que prescreveu.';
+  const OBS_ANTICOAG = 'A ficha de Barueri orienta suspender anticoagulantes em geral 7 dias antes do exame e medicamentos como Mounjaro e Ozempic 21 dias antes. A ACG-CAG 2022 sugere, em procedimento eletivo, manter a varfarina, suspender o anticoagulante direto por 1 a 2 dias e, na dupla antiagregação, suspender o inibidor de P2Y12 mantendo o AAS. A conduta é do endoscopista junto com o médico que prescreveu: informe o fármaco, a dose e a indicação e siga o protocolo local.';
+
+  /* ---------- Regulação de Barueri (SP): fontes locais, ficha de endoscopia/colonoscopia ---------- */
+  const LOC = (nome, curta, nota) => F(nome, null, curta, nota, 'local');
+  const PROT_NOME = 'Prefeitura de Barueri. Protocolos de Regulação do Acesso da Rede de Atenção Básica e Especializada Ambulatorial: Exames de Apoio Diagnóstico, 2024';
+  const fonteProt = (exame, nota) => LOC(`${PROT_NOME} (${exame})`, 'Protocolo de Barueri 2024', 'Lido no PDF fornecido pelo usuário. ' + (nota || 'Indicações, pré-requisitos e profissionais solicitantes deste exame.'));
+  const FONTE_FICHA = LOC('Prefeitura de Barueri. Ficha de avaliação clínica para indicação de endoscopia e colonoscopia (regulação ambulatorial)', 'Ficha de Barueri (endoscopia e colonoscopia)',
+    'Lida no arquivo fornecido pelo usuário (apenas o texto; as macros do .docm não foram executadas). ASA I e II: ambulatorial; ASA III: avaliação pré-anestésica; ASA IV: hospitalar. A justificativa deve trazer os requisitos do critério ASA, a medicação, as alergias, a avaliação funcional e as orientações de preparo.');
+  const ASA_OPC = [['I', 'ASA I: paciente saudável, sem doença sistêmica'], ['II', 'ASA II: doença sistêmica leve e controlada'], ['III', 'ASA III: doença sistêmica moderada, com limitação funcional'], ['IV', 'ASA IV: doença grave, com risco constante à vida']];
+  const camposFicha = () => [
+    { id: 'ambiente', rotulo: 'Ambiente do exame', tipo: 'escolha', opcoes: [['amb', 'Ambulatorial'], ['hosp', 'Em ambiente hospitalar']], rotuloNoTexto: 'Ambiente do exame', obrigatorio: true, exigidoMsg: 'Informe se o exame é ambulatorial ou em ambiente hospitalar (ficha de Barueri).' },
+    { id: 'asa', rotulo: 'Classificação ASA estimada (só estratificação, sem finalidade anestésica)', tipo: 'escolha', opcoes: ASA_OPC.map(([v, t]) => [v, t, t]), rotuloNoTexto: 'Classificação ASA estimada (estratificação, sem finalidade anestésica)',
+      obrigatorio: true, exigidoMsg: 'Informe a classificação ASA estimada: a ficha de Barueri pede que a justificativa traga os requisitos do critério ASA.' },
+    { id: 'peso', rotulo: 'Peso, altura e IMC', rotuloNoTexto: 'Peso, altura e IMC', obrigatorio: true, exigidoMsg: 'Informe peso, altura e IMC (ficha de Barueri).' },
+    { id: 'antitromb', rotulo: 'Anticoagulante ou antiagregante (AAS, clopidogrel, varfarina etc.): nome e dose, ou "não usa"', rotuloNoTexto: 'Anticoagulantes ou antiagregantes', obrigatorio: true,
+      exigidoMsg: 'Informe se usa anticoagulante ou antiagregante (nome e dose) ou escreva "não usa": o protocolo de Barueri pede essa informação.' },
+    { id: 'alergias', rotulo: 'Alergias conhecidas (medicamentos, látex, anestésicos), ou "nega"', rotuloNoTexto: 'Alergias', obrigatorio: true, exigidoMsg: 'Informe as alergias conhecidas (medicamentos, látex, anestésicos) ou escreva "nega".' },
+    { id: 'cronicas', rotulo: 'Doenças crônicas conhecidas', rotuloNoTexto: 'Doenças crônicas' },
+    { id: 'medicamentos', rotulo: 'Medicamentos de uso contínuo', rotuloNoTexto: 'Medicamentos de uso contínuo' },
+    { id: 'reacao', rotulo: 'Reação prévia a anestesia ou sedação (sim ou não; qual)', rotuloNoTexto: 'Reação prévia a anestesia ou sedação' },
+  ];
+  const fichaContra = (p) => [
+    C(`${p}_ff_orgao`, 'Doença cardíaca, pulmonar, renal ou hepática importante', { fonte: 'ficha' }),
+    C(`${p}_ff_apneia`, 'Apneia do sono, refluxo ou obesidade grave', { fonte: 'ficha' }),
+    C(`${p}_ff_sangr`, 'Histórico de sangramento digestivo ou anemia', { fonte: 'ficha' }),
+    C(`${p}_ff_disfagia`, 'Dificuldade para deglutir ou disfagia', { fonte: 'ficha' }),
+    C(`${p}_ff_claustro`, 'Claustrofobia ou ansiedade acentuada (para sedação)', { fonte: 'ficha' }),
+    C(`${p}_ff_gest`, 'Gestante ou suspeita de gravidez', { fonte: 'ficha' }),
+    C(`${p}_orientado`, 'Paciente orientado sobre preparo, risco-benefício e orientações gerais', { fonte: 'ficha', frase: 'Paciente orientado quanto ao preparo, ao risco-benefício e às orientações gerais do exame' }),
+  ];
+  const regrasFicha = (p) => [
+    { id: `${p}-asa3`, nivel: 'info', se: { campo: { id: 'asa', valorIn: ['III'] } },
+      aviso: 'ASA III: precisa de avaliação pré-anestésica. Pode ser encaminhado ao ambulatório, e o anestesista libera ou não o exame ambulatorial (ficha de Barueri).' },
+    { id: `${p}-asa4`, nivel: 'atencao', se: { campo: { id: 'asa', valorIn: ['IV'] } },
+      aviso: 'ASA IV: direcione para o ambiente hospitalar (ficha de Barueri). Os recursos hospitalares têm espera maior que os ambulatoriais, mas o direcionamento correto evita perda de cota e cancelamento do exame.' },
+    { id: `${p}-asa-amb`, nivel: 'info', se: { campo: [{ id: 'ambiente', valorIn: ['hosp'] }, { id: 'asa', valorIn: ['I', 'II'] }] },
+      aviso: 'ASA I e II são a condição para o exame ambulatorial, e o ambiente hospitalar tem espera maior (ficha de Barueri). Justifique o pedido hospitalar.' },
+  ];
+  const ORIENT_EDA = ['Jejum absoluto de 8 horas antes do exame.', 'Suspender anticoagulantes em geral 7 dias antes; medicamentos como Mounjaro e Ozempic, 21 dias antes.',
+    'Acompanhante maior de 18 anos é obrigatório.', 'O preparo pode variar conforme o estabelecimento agendado: o paciente segue a orientação recebida no agendamento.'];
+  const ORIENT_COLON = ORIENT_EDA.concat(['Dieta leve nos dias que antecedem o exame e preparo intestinal (fundamental): seguir as orientações do equipamento, dadas na data do agendamento.', 'Suspender medicamentos com ferro a critério médico.']);
 
   /* ================= Digestivo ================= */
   const eda = {
@@ -29,6 +71,8 @@
       ['K92.0', 'Hematêmese'], ['K92.1', 'Melena'], ['K92.2', 'Hemorragia gastrointestinal, não especificada'], ['K25.9', 'Úlcera gástrica'],
       ['K74.6', 'Outras cirroses do fígado e as não especificadas'], ['K76.6', 'Hipertensão portal'], ['R11', 'Náusea e vômitos']],
     fontes: {
+      barueri: fonteProt('Endoscopia digestiva alta - adulto', 'Indicações, pré-requisitos (anamnese, exame físico, exames e tratamentos realizados, hemograma e ferro na anemia, informar antiagregante ou anticoagulante) e profissionais solicitantes.'),
+      ficha: FONTE_FICHA,
       katz: F('Katz PO et al. ACG Clinical Guideline for the Diagnosis and Management of Gastroesophageal Reflux Disease. Am J Gastroenterol 2022;117(1):27-56', PMC('PMC8754510'), 'ACG 2022 (DRGE)',
         'Texto completo lido. Endoscopia quando sintomas típicos não respondem a 8 semanas de IBP ou voltam ao suspender (recomendação forte); como primeiro exame na disfagia e em outros sinais de alarme, como perda de peso e sangramento (forte); dor torácica sem pirose depois de afastar doença cardíaca (condicional).'),
       shaheen: F('Shaheen NJ et al. ACG Clinical Guideline: Diagnosis and Management of Barrett\'s Esophagus. Am J Gastroenterol 2022;117(4):559-587', PMC('PMC10259184'), 'ACG 2022 (Barrett)',
@@ -41,28 +85,46 @@
         'Texto completo lido (recomendações 11 a 14A: varfarina, ponte, anticoagulantes diretos, dupla antiagregação).'),
     },
     grupos: [
-      { id: 'alarme', rotulo: 'Sinais de alarme', dica: 'Descreva datas e valores no quadro clínico: o pedido fica mais forte com dado objetivo.', criterios: [
+      { id: 'p_disp', rotulo: 'Protocolo de Barueri: dispepsia', criterios: [
+        C('eda_p_disp_refrat', 'Dispepsia sem melhora com tratamento clínico otimizado, incluindo IBP por 8 semanas e erradicação do H. pylori', { fonte: 'barueri' }),
+        C('eda_p_disp60', '60 anos ou mais com dispepsia recente de causa desconhecida', { fonte: 'barueri' }),
+        C('eda_p_disp_alarme', 'Dispepsia com sinal de alarme: vômitos, sangramento ou anemia, massa abdominal ou perda de peso não intencional, disfagia', { fonte: 'barueri' }),
+        C('eda_p_disp_antitromb', 'Dispepsia em quem precisa iniciar antiplaquetário ou anticoagulante, ou já usa anticoagulante oral e tem sintomas dispépticos', { fonte: 'barueri' }),
+      ] },
+      { id: 'p_drge', rotulo: 'Protocolo de Barueri: refluxo e esôfago', criterios: [
+        C('eda_p_drge', 'Refluxo não controlado com tratamento otimizado (medidas comportamentais e IBP em dose plena) por 2 meses', { fonte: 'barueri' }),
+        C('eda_p_barrett', 'Acompanhamento de esôfago de Barrett', { fonte: 'barueri' }),
+      ] },
+      { id: 'p_outras', rotulo: 'Protocolo de Barueri: suspeita de neoplasia e outras', criterios: [
+        C('eda_p_neo', 'Suspeita de neoplasia do aparelho digestivo: disfagia esofágica, odinofagia, emagrecimento, vômitos persistentes, sangramento gastrointestinal crônico, anemia ferropriva sem causa presumível ou massa epigástrica', { fonte: 'barueri' }),
+        C('eda_p_anemia', 'Investigação de anemia ferropriva', { fonte: 'barueri' }),
+        C('eda_p_ulcera', 'Controle de úlcera gástrica (8 a 12 semanas depois do tratamento de erradicação do H. pylori)', { fonte: 'barueri' }),
+        C('eda_p_metaplasia', 'Seguimento de metaplasia intestinal', { fonte: 'barueri' }),
+        C('eda_p_varizes', 'Avaliação de hipertensão portal (varizes esofágicas)', { fonte: 'barueri' }),
+        C('eda_p_gastroplastia', 'Pré-operatório de gastroplastia', { fonte: 'barueri' }),
+        C('eda_p_diarreia', 'Investigação de diarreia crônica e/ou doença celíaca', { fonte: 'barueri' }),
+        C('eda_p_vomitos', 'Vômitos persistentes de causa desconhecida', { fonte: 'barueri' }),
+        C('eda_p_esclerose', 'Esclerose sistêmica', { fonte: 'barueri' }),
+      ] },
+      { id: 'alarme', rotulo: 'Diretrizes (reforço): sinais de alarme', dica: 'Descreva datas e valores no quadro clínico: o pedido fica mais forte com dado objetivo.', criterios: [
         C('eda_disfagia', 'Disfagia', { fonte: 'katz', detalhe: 'Endoscopia como primeiro exame (ACG 2022)' }),
         C('eda_peso', 'Perda de peso involuntária', { fonte: 'katz', detalhe: 'Informe quanto e em quanto tempo' }),
         C('eda_sangramento', 'Sangramento digestivo alto (hematêmese ou melena)', { fonte: 'katz' }),
         C('eda_vomitos', 'Vômitos persistentes', { fonte: 'katz' }),
         C('eda_anemia', 'Anemia ferropriva', { fonte: 'katz', detalhe: 'Como sinal de alarme. Anexe hemograma e ferritina' }),
       ] },
-      { id: 'drge', rotulo: 'Doença do refluxo', criterios: [
+      { id: 'drge', rotulo: 'Diretrizes (reforço): doença do refluxo', criterios: [
         C('eda_drge_refrataria', 'Refluxo típico sem resposta a 8 semanas de IBP, ou que volta ao suspender', { fonte: 'katz',
           frase: 'Sintomas típicos de doença do refluxo sem resposta adequada ao teste terapêutico com IBP por 8 semanas (ou recidiva ao suspender o IBP)' }),
         C('eda_dor_toracica', 'Dor torácica sem pirose, depois de afastar causa cardíaca', { fonte: 'katz',
           frase: 'Dor torácica sem pirose, com avaliação cardíaca adequada que afastou doença cardíaca' }),
       ] },
-      { id: 'dispepsia', rotulo: 'Dispepsia', criterios: [
+      { id: 'dispepsia', rotulo: 'Diretrizes (reforço): dispepsia', criterios: [
         C('eda_disp_60', 'Dispepsia em paciente com 60 anos ou mais', { fonte: 'moayyedi', frase: 'Dispepsia em paciente com 60 anos ou mais (investigação de lesão orgânica)' }),
         C('eda_disp_risco', 'Dispepsia com risco aumentado de câncer gástrico (história familiar ou origem em região de alto risco)', { fonte: 'moayyedi',
           frase: 'Dispepsia em paciente com risco aumentado de câncer gástrico (história familiar positiva ou origem em região de alto risco)' }),
-        C('eda_disp_refrataria', 'Dispepsia que não melhorou com teste e tratamento do H. pylori e com IBP', { fonte: 'moayyedi', v: false,
-          detalhe: 'Pedido muito comum, mas o resumo da diretriz não define a endoscopia nesse cenário',
-          frase: 'Dispepsia sem resposta ao teste e tratamento do H. pylori e ao IBP' }),
       ] },
-      { id: 'barrett', rotulo: 'Esôfago de Barrett', criterios: [
+      { id: 'barrett', rotulo: 'Diretrizes (reforço): esôfago de Barrett', criterios: [
         C('eda_barrett_rastreio', 'Rastreio de Barrett: refluxo crônico (marque abaixo os fatores de risco)', { fonte: 'shaheen', frase: 'Sintomas crônicos de refluxo (rastreio de esôfago de Barrett, com os fatores de risco abaixo)' }),
         C('eda_barrett_curto', 'Barrett sem displasia, segmento menor que 3 cm: vigilância a cada 5 anos', { fonte: 'shaheen', intervaloMin: 5, intervaloFonte: 'ACG 2022 (Barrett)',
           frase: 'Esôfago de Barrett sem displasia, segmento menor que 3 cm: vigilância endoscópica a cada 5 anos' }),
@@ -77,30 +139,28 @@
         C('eda_bf_obes', 'Obesidade', { fonte: 'shaheen', frase: 'Fator de risco para Barrett: obesidade' }),
         C('eda_bf_fam', 'Parente de 1º grau com Barrett ou adenocarcinoma de esôfago', { fonte: 'shaheen', frase: 'Fator de risco para Barrett: parente de 1º grau com Barrett ou adenocarcinoma de esôfago' }),
       ] },
-      { id: 'cirrose', rotulo: 'Cirrose e hipertensão portal (rastreio de varizes)', criterios: [
+      { id: 'cirrose', rotulo: 'Diretrizes (reforço): cirrose e hipertensão portal', criterios: [
         C('eda_cirr_compens', 'Cirrose compensada sem condições de usar betabloqueador, com elastografia ≥ 20 kPa ou plaquetas ≤ 150 mil/mm³', { fonte: 'baveno',
           frase: 'Cirrose compensada, sem indicação de iniciar betabloqueador não seletivo (contraindicação ou intolerância), com elastografia ≥ 20 kPa ou plaquetas ≤ 150 mil/mm³ (rastreio de varizes esofagogástricas)' }),
         C('eda_cirr_ascite', 'Cirrose com ascite, sem uso de betabloqueador', { fonte: 'baveno', frase: 'Cirrose com ascite, sem uso de betabloqueador (rastreio de varizes esofagogástricas)' }),
         C('eda_cirr_trombose', 'Trombose portal sem recanalização (EDA em até 6 meses do episódio)', { fonte: 'baveno', frase: 'Trombose portal sem recanalização (rastreio de varizes em até 6 meses do episódio agudo)' }),
       ] },
-      { id: 'outras', rotulo: 'Outras indicações usuais', criterios: [
-        C('eda_anemia_inv', 'Anemia ferropriva sem causa identificada (investigação)', { v: false }),
-        C('eda_ulcera', 'Controle de cicatrização de úlcera gástrica', { v: false }),
-        C('eda_celiaca', 'Sorologia positiva para doença celíaca (biópsia duodenal)', { v: false }),
-      ] },
     ],
-    contra: [C('eda_anticoag', 'Em uso de anticoagulante ou antiagregante', { fonte: 'abraham', frase: 'Em uso de anticoagulante ou antiagregante' })],
+    contra: [C('eda_anticoag', 'Em uso de anticoagulante ou antiagregante', { fonte: 'abraham', frase: 'Em uso de anticoagulante ou antiagregante' })].concat(fichaContra('eda')),
+    solicitantes: ['GASTRO', 'ORL', 'REUMA', 'VASCULAR', 'SAD'],
+    orientacoes: ORIENT_EDA,
     campos: [
       { id: 'ibp', rotulo: 'Tratamento com IBP (dose, tempo de uso e resposta)', rotuloNoTexto: 'Tratamento prévio com IBP',
-        exigidoQuando: { criterioAlgum: ['eda_drge_refrataria', 'eda_disp_refrataria'] }, exigidoMsg: 'Informe o IBP usado: dose, tempo de uso e resposta (o teste terapêutico é de 8 semanas).' },
+        exigidoQuando: { criterioAlgum: ['eda_drge_refrataria', 'eda_p_disp_refrat', 'eda_p_drge'] }, exigidoMsg: 'Informe o IBP usado: dose, tempo de uso e resposta (o protocolo pede 8 semanas na dispepsia e 2 meses em dose plena no refluxo).' },
       { id: 'hp', rotulo: 'H. pylori: teste e tratamento realizados', rotuloNoTexto: 'H. pylori',
-        exigidoQuando: { criterioAlgum: ['eda_disp_refrataria'] }, exigidoMsg: 'Informe o teste e o tratamento do H. pylori realizados.' },
+        exigidoQuando: { criterioAlgum: ['eda_p_disp_refrat', 'eda_p_ulcera'] }, exigidoMsg: 'Informe o teste e o tratamento do H. pylori realizados.' },
+      { id: 'anemia', rotulo: 'Hemoglobina, VCM, ferro, ferritina e PSO (valores e datas)', rotuloNoTexto: 'Exames da anemia', exigidoQuando: { criterioAlgum: ['eda_p_anemia', 'eda_anemia'] },
+        exigidoMsg: 'Na investigação de anemia, o protocolo pede hemoglobina, VCM, ferro e ferritina e PSO (valores e datas).' },
       { id: 'cardio', rotulo: 'Avaliação cardíaca realizada (exames e resultado)', rotuloNoTexto: 'Avaliação cardíaca',
         exigidoQuando: { criterio: ['eda_dor_toracica'] }, exigidoMsg: 'Informe a avaliação cardíaca que afastou doença cardíaca.' },
       { id: 'anosDesde', rotulo: 'Anos desde a última endoscopia', rotuloNoTexto: 'Última endoscopia há (anos)', tipo: 'numero',
         exigidoQuando: { criterioAlgum: ['eda_barrett_curto', 'eda_barrett_longo'] }, exigidoMsg: 'Informe há quantos anos foi a última endoscopia (vigilância de Barrett).' },
-      { id: 'previo', rotulo: 'Endoscopia ou outro exame anterior (data e resultado)', rotuloNoTexto: 'Exame anterior' },
-    ],
+    ].concat(camposFicha()),
     regras: [
       { id: 'eda-disp60-jovem', nivel: 'atencao', se: { criterio: ['eda_disp_60'], idadeMenor: 60 },
         aviso: 'O critério marcado vale para 60 anos ou mais. Em paciente mais jovem, precisa de outro critério (sinal de alarme, risco aumentado de câncer gástrico ou falha do tratamento).' },
@@ -111,6 +171,9 @@
       { id: 'eda-barrett-mulher', nivel: 'info', se: { criterio: ['eda_barrett_rastreio'], sexo: 'F' },
         aviso: 'O rastreio de Barrett em mulher tem baixo rendimento; a ACG 2022 admite considerá-lo só com vários fatores de risco.' },
       { id: 'eda-anticoag', nivel: 'info', se: { criterio: ['eda_anticoag'] }, aviso: OBS_ANTICOAG },
+      { id: 'eda-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_disp', 'p_drge', 'p_outras'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
+      ...regrasFicha('eda'),
     ],
     naoIndicado: [
       'Refluxo típico (azia e regurgitação) sem sinais de alarme: a conduta inicial é teste terapêutico com IBP por 8 semanas, sem endoscopia de entrada (ACG 2022).',
@@ -136,6 +199,8 @@
       ['R19.4', 'Modificação do hábito intestinal'], ['K63.5', 'Pólipo do cólon'], ['Z12.1', 'Exame especial de rastreamento de neoplasia do intestino'],
       ['Z80.0', 'História familiar de neoplasia maligna dos órgãos digestivos'], ['K51.9', 'Colite ulcerativa, não especificada'], ['K50.9', 'Doença de Crohn, não especificada']],
     fontes: {
+      barueri: fonteProt('Colonoscopia', 'Indicações (incluindo avaliação preventiva acima de 50 anos e exame sem queixas a cada 5 anos), pré-requisitos (história clínica com antecedentes pessoais e familiares; exame físico) e profissionais solicitantes.'),
+      ficha: FONTE_FICHA,
       gupta: F('Gupta S et al. Recommendations for Follow-Up After Colonoscopy and Polypectomy: US Multi-Society Task Force on Colorectal Cancer. Gastroenterology 2020;158:1131', PMC('PMC7672705'), 'US Multi-Society Task Force 2020 (vigilância)',
         'Texto completo lido (Tabelas 4 e 5). Intervalos para risco médio e exame de alta qualidade (completo até o ceco e com bom preparo). Não valem para doença inflamatória intestinal, síndromes hereditárias nem câncer prévio.'),
       uspstf: F('USPSTF. Colorectal Cancer: Screening. JAMA 2021;325:1965 (PMID 34003218)', 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening', 'USPSTF 2021',
@@ -147,23 +212,40 @@
       abraham: eda.fontes.abraham,
     },
     grupos: [
-      { id: 'rastreio', rotulo: 'Rastreamento', criterios: [
+      { id: 'p_diag', rotulo: 'Protocolo de Barueri: indicações clínicas', criterios: [
+        C('col_p_hdb', 'Hemorragia digestiva baixa', { fonte: 'barueri' }),
+        C('col_p_dii', 'Doença inflamatória intestinal', { fonte: 'barueri' }),
+        C('col_p_diarreia', 'Diarreia crônica ou constipação', { fonte: 'barueri' }),
+        C('col_p_massa', 'Massa tumoral de cólon', { fonte: 'barueri' }),
+        C('col_p_divert', 'Doença diverticular do cólon', { fonte: 'barueri' }),
+        C('col_p_polipos', 'Pólipos do cólon', { fonte: 'barueri' }),
+        C('col_p_corpo', 'Corpo estranho ou dor retal', { fonte: 'barueri' }),
+        C('col_p_angio', 'Doença vascular: angiodisplasia', { fonte: 'barueri' }),
+        C('col_p_actinica', 'Retite actínica', { fonte: 'barueri' }),
+        C('col_p_esquisto', 'Esquistossomose retal', { fonte: 'barueri' }),
+        C('col_p_massa_abd', 'Massa abdominal intracavitária', { fonte: 'barueri' }),
+        C('col_p_dolico', 'Dolicocólon', { fonte: 'barueri' }),
+        C('col_p_congenita', 'Patologias congênitas anorretais', { fonte: 'barueri' }),
+      ] },
+      { id: 'p_prev', rotulo: 'Protocolo de Barueri: avaliação preventiva', criterios: [
+        C('col_p_prev_fam', '40 anos ou mais com história familiar de neoplasia de ovário, mama ou útero (avaliação preventiva)', { fonte: 'barueri' }),
+        C('col_p_prev_50', 'Mais de 50 anos (avaliação preventiva)', { fonte: 'barueri' }),
+        C('col_p_semqueixa', 'Sem queixas, acima de 50 anos: exame a cada 5 anos', { fonte: 'barueri', intervaloMin: 5, intervaloFonte: 'protocolo de Barueri 2024' }),
+      ] },
+      { id: 'rastreio', rotulo: 'Diretrizes (reforço): rastreamento', criterios: [
         C('col_fit_pos', 'Teste imunoquímico fecal (FIT) positivo', { fonte: 'conitec', frase: 'Teste imunoquímico fecal (FIT) positivo no rastreamento do câncer colorretal' }),
         C('col_rastreio_direto', 'Rastreamento em assintomático de risco médio, sem FIT prévio', { fonte: 'uspstf',
           detalhe: 'No SUS o rastreamento começa pelo FIT (veja o aviso)', frase: 'Rastreamento do câncer colorretal em paciente assintomático de risco médio' }),
       ] },
-      { id: 'sintomas', rotulo: 'Sintomas e achados', criterios: [
-        C('col_hematoquezia', 'Sangramento retal (hematoquezia)', { v: false }),
+      { id: 'sintomas', rotulo: 'Outros sintomas (ainda sem conferência)', criterios: [
         C('col_ida', 'Anemia ferropriva sem causa identificada', { v: false }),
         C('col_habito', 'Mudança persistente do hábito intestinal', { v: false }),
-        C('col_massa', 'Massa palpável ou achado de imagem suspeito', { v: false }),
       ] },
-      { id: 'risco', rotulo: 'Risco aumentado', criterios: [
+      { id: 'risco', rotulo: 'Risco aumentado (ainda sem conferência)', criterios: [
         C('col_fam', 'Parente de 1º grau com câncer colorretal', { v: false, detalhe: 'Informe parentesco e idade ao diagnóstico' }),
         C('col_sindrome', 'Síndrome hereditária (Lynch, polipose) confirmada ou suspeita', { v: false }),
-        C('col_dii', 'Doença inflamatória intestinal (vigilância após 8 anos de doença)', { v: false }),
       ] },
-      { id: 'vig', rotulo: 'Vigilância: adenomas (US Multi-Society Task Force 2020)', dica: 'Informe, abaixo, quantos anos se passaram desde o exame anterior.', criterios: [
+      { id: 'vig', rotulo: 'Diretrizes (reforço): vigilância de adenomas (US Multi-Society Task Force 2020)', dica: 'Informe, abaixo, quantos anos se passaram desde o exame anterior.', criterios: [
         col_vig('col_vig_normal', 'Exame anterior normal, completo e com bom preparo', 'gupta', 10, '10 anos'),
         col_vig('col_vig_12', '1 a 2 adenomas tubulares menores que 10 mm', 'gupta', 7, '7 a 10 anos'),
         col_vig('col_vig_34', '3 a 4 adenomas tubulares menores que 10 mm', 'gupta', 3, '3 a 5 anos'),
@@ -174,7 +256,7 @@
         col_vig('col_vig_mais10', 'Mais de 10 adenomas em um exame', 'gupta', 1, '1 ano'),
         col_vig('col_vig_piece', 'Ressecção em fragmentos (piecemeal) de adenoma de 20 mm ou mais', 'gupta', 0.5, '6 meses'),
       ] },
-      { id: 'vig_serr', rotulo: 'Vigilância: pólipos serrilhados', criterios: [
+      { id: 'vig_serr', rotulo: 'Diretrizes (reforço): vigilância de pólipos serrilhados', criterios: [
         col_vig('col_vig_hiper', 'Até 20 pólipos hiperplásicos menores que 10 mm no reto ou sigmoide', 'gupta', 10, '10 anos'),
         col_vig('col_vig_ssp12', '1 a 2 pólipos serrilhados sésseis menores que 10 mm', 'gupta', 5, '5 a 10 anos'),
         col_vig('col_vig_ssp34', '3 a 4 pólipos serrilhados sésseis menores que 10 mm', 'gupta', 3, '3 a 5 anos'),
@@ -183,7 +265,9 @@
         col_vig('col_vig_sspd', 'Pólipo serrilhado séssil com displasia', 'gupta', 3, '3 anos'),
       ] },
     ],
-    contra: [C('col_anticoag', 'Em uso de anticoagulante ou antiagregante', { fonte: 'abraham' })],
+    contra: [C('col_anticoag', 'Em uso de anticoagulante ou antiagregante', { fonte: 'abraham' })].concat(fichaContra('col')),
+    solicitantes: ['MAP', 'GASTRO', 'PROCTO', 'GERIATRA'],
+    orientacoes: ORIENT_COLON,
     campos: [
       { id: 'fit', rotulo: 'FIT: data e resultado', rotuloNoTexto: 'FIT', exigidoQuando: { criterio: ['col_fit_pos'] }, exigidoMsg: 'Informe a data e o resultado do FIT.' },
       { id: 'anosDesde', rotulo: 'Anos desde o exame anterior', rotuloNoTexto: 'Exame anterior há (anos)', tipo: 'numero',
@@ -191,10 +275,19 @@
       { id: 'achados', rotulo: 'Achados do exame anterior (data, número, tamanho e histologia dos pólipos; preparo e se chegou ao ceco)', rotuloNoTexto: 'Colonoscopia anterior',
         tipo: 'area', exigidoQuando: { criterioAlgum: 'VIG' }, exigidoMsg: 'Descreva o exame anterior: data, pólipos (número, tamanho, histologia) e qualidade.' },
       { id: 'familia', rotulo: 'Parentesco e idade ao diagnóstico do familiar', rotuloNoTexto: 'Familiar com câncer colorretal', exigidoQuando: { criterio: ['col_fam'] }, exigidoMsg: 'Informe o parentesco e a idade do familiar ao diagnóstico.' },
-    ],
+      { id: 'antecedentes', rotulo: 'Antecedentes pessoais e familiares relacionados à patologia', rotuloNoTexto: 'Antecedentes pessoais e familiares', tipo: 'area', obrigatorio: true,
+        exigidoMsg: 'O protocolo de Barueri pede história clínica detalhada com antecedentes pessoais e familiares relacionados à patologia.' },
+    ].concat(camposFicha()),
     regras: [
-      { id: 'col-sus-fit', nivel: 'atencao', se: { criterio: ['col_rastreio_direto'], idadeMaior: 44 },
-        aviso: 'No SUS, o rastreamento de risco médio de 50 a 75 anos começa pelo FIT bienal; a colonoscopia entra se o FIT for positivo (Conitec 2026, versão preliminar; Portaria SAES/MS 4.642/2026). Colonoscopia direta, sem FIT, pode ser devolvida.' },
+      { id: 'col-sus-fit', nivel: 'info', se: { criterio: ['col_rastreio_direto'], idadeMaior: 44 },
+        aviso: 'O protocolo de Barueri (2024) aceita colonoscopia de rastreio acima de 50 anos, a cada 5 anos. Já o Ministério da Saúde incluiu o FIT no SUS (Portaria SAES/MS 4.642/2026) e a Conitec propõe FIT primeiro, com colonoscopia se positivo (versão preliminar, 2026). Confirme com a microrregulação se o município já adotou o FIT.' },
+      { id: 'col-prev50-idade', nivel: 'atencao', se: { criterioAlgum: ['col_p_prev_50', 'col_p_semqueixa'], idadeMenor: 51 },
+        aviso: 'O protocolo de Barueri fala em mais de 50 anos para a avaliação preventiva e para o exame sem queixas.' },
+      { id: 'col-prevfam-idade', nivel: 'atencao', se: { criterio: ['col_p_prev_fam'], idadeMenor: 40 },
+        aviso: 'O protocolo de Barueri fala em 40 anos ou mais para a avaliação preventiva com história familiar.' },
+      { id: 'col-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_diag', 'p_prev'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
+      ...regrasFicha('col'),
       { id: 'col-idade-jovem', nivel: 'atencao', se: { criterio: ['col_rastreio_direto'], idadeMenor: 45 },
         aviso: 'Abaixo de 45 anos o rastreamento de risco médio não está indicado (USPSTF 2021 começa aos 45).' },
       { id: 'col-idade-idoso', nivel: 'info', se: { criterio: ['col_rastreio_direto'], idadeMaior: 75 },
@@ -224,6 +317,7 @@
       ['I48', 'Flutter e fibrilação atrial'], ['I10', 'Hipertensão essencial (primária)'], ['I05.0', 'Estenose mitral'], ['I34.0', 'Insuficiência (da valva) mitral'],
       ['I35.0', 'Estenose (da valva) aórtica'], ['I35.1', 'Insuficiência (da valva) aórtica'], ['Z95.2', 'Presença de prótese de valva cardíaca'], ['R55', 'Síncope e colapso'], ['I25.9', 'Doença isquêmica crônica do coração, não especificada']],
     fontes: {
+      barueri: fonteProt('Ecocardiograma transtorácico adulto e pediátrico', 'Indicações, pré-requisitos (história clínica, exame físico, radiografia simples conforme o caso e ECG) e profissionais solicitantes.'),
       scc: SCC,
       fa: F('Diretrizes Brasileiras de Fibrilação Atrial 2025. Arq Bras Cardiol 2025', PMC('PMC13400077'), 'Diretrizes Brasileiras de Fibrilação Atrial 2025', 'Texto completo lido. Quadro 3: ecocardiograma transtorácico na primeira avaliação (Classe I, nível A).'),
       has: F('Diretrizes Brasileiras de Hipertensão Arterial 2025. Arq Bras Cardiol 2025 (PMID 41294179)', PMC('PMC13671149'), 'Diretrizes Brasileiras de Hipertensão Arterial 2025', 'Texto completo lido. Capítulo 4: avaliação de lesão de órgão-alvo em todo paciente no diagnóstico (inclui ecocardiograma); em criança e adolescente, antes do tratamento medicamentoso.'),
@@ -232,18 +326,34 @@
       barachi: F('Barachi LB et al. Análise da adequação de pedidos de ecocardiograma transtorácico. Arq Bras Cardiol 2012 (PMID 23117553)', PUBMED('23117553'), 'Barachi 2012', 'Só o resumo foi lido: 7,8% dos pedidos ambulatoriais eram Classe III; o check-up em assintomático é citado como Classe III.', 'secundaria'),
     },
     grupos: [
-      { id: 'clinica', rotulo: 'Sintomas e suspeita clínica', criterios: [
+      { id: 'p_eco', rotulo: 'Protocolo de Barueri: indicações', criterios: [
+        C('eco_p_sopro', 'Sopros à ausculta cardíaca', { fonte: 'barueri' }),
+        C('eco_p_has', 'Hipertensão arterial', { fonte: 'barueri' }),
+        C('eco_p_valv', 'Avaliação de valvopatias (inclui prolapso da valva mitral)', { fonte: 'barueri' }),
+        C('eco_p_valv_trat', 'Avaliação do resultado do tratamento de valvopatia', { fonte: 'barueri' }),
+        C('eco_p_dor', 'Investigação de dor torácica', { fonte: 'barueri' }),
+        C('eco_p_arritmia', 'Investigação de arritmias cardíacas', { fonte: 'barueri' }),
+        C('eco_p_dac', 'Avaliação de doença arterial coronariana', { fonte: 'barueri' }),
+        C('eco_p_miocardiopatia', 'Miocardiopatias', { fonte: 'barueri' }),
+        C('eco_p_pericardio', 'Doenças do pericárdio', { fonte: 'barueri' }),
+        C('eco_p_dispneia', 'Dispneia de origem cardíaca', { fonte: 'barueri' }),
+        C('eco_p_sincope', 'Investigação de síncope', { fonte: 'barueri' }),
+        C('eco_p_avc', 'AVC', { fonte: 'barueri' }),
+        C('eco_p_tumor', 'Tumores cardíacos', { fonte: 'barueri' }),
+        C('eco_p_congenita', 'Doenças cardíacas congênitas', { fonte: 'barueri' }),
+        C('eco_p_aorta', 'Doenças da aorta', { fonte: 'barueri' }),
+        C('eco_p_tep', 'Investigação de tromboembolismo pulmonar', { fonte: 'barueri' }),
+        C('eco_p_esclerose', 'Esclerose sistêmica', { fonte: 'barueri' }),
+        C('eco_p_lupica', 'Miocardite lúpica', { fonte: 'barueri' }),
+      ] },
+      { id: 'clinica', rotulo: 'Diretrizes (reforço): sintomas e suspeita clínica', criterios: [
         C('eco_dispneia_dor', 'Dor torácica ou dispneia com suspeita de doença valvar, hipertrofia, cardiomiopatia ou derrame pericárdico', { fonte: 'scc',
           frase: 'Dor torácica ou dispneia com suspeita de diagnóstico diferencial cardíaco (doença valvar, hipertrofia, cardiomiopatia ou derrame pericárdico)' }),
         C('eco_scc', 'Suspeita de síndrome coronariana crônica: função do ventrículo esquerdo e estratificação', { fonte: 'scc',
           frase: 'Suspeita de síndrome coronariana crônica, para avaliar função global e segmentar do ventrículo esquerdo e refinar a estratificação de risco' }),
-        C('eco_ic', 'Suspeita de insuficiência cardíaca (dispneia, edema, BNP ou NT-proBNP elevado)', { v: false }),
-        C('eco_sopro', 'Sopro cardíaco com suspeita de relevância (diastólico, de 3/6 ou mais, contínuo ou com sintomas)', { v: false }),
-        C('eco_sincope', 'Síncope com suspeita de causa cardíaca', { v: false }),
-        C('eco_avc', 'AVC isquêmico ou embolia sistêmica sem causa definida', { v: false }),
         C('eco_quimio', 'Antes ou durante tratamento cardiotóxico (quimioterapia)', { v: false }),
       ] },
-      { id: 'condicoes', rotulo: 'Doenças conhecidas', criterios: [
+      { id: 'condicoes', rotulo: 'Diretrizes (reforço): doenças conhecidas', criterios: [
         C('eco_fa', 'Fibrilação atrial: avaliação inicial', { fonte: 'fa', frase: 'Fibrilação atrial, para avaliação inicial (ecocardiograma na primeira avaliação)' }),
         C('eco_has', 'Hipertensão arterial: avaliação de lesão de órgão-alvo no diagnóstico', { fonte: 'has', frase: 'Hipertensão arterial, para avaliação de lesão de órgão-alvo (hipertrofia ventricular esquerda) no diagnóstico' }),
         C('eco_has_crianca', 'Hipertensão em criança ou adolescente, antes do tratamento medicamentoso', { fonte: 'has' }),
@@ -268,15 +378,19 @@
       ] },
     ],
     contra: [],
+    solicitantes: ['MAP', 'CARDIO', 'HEMATO', 'REUMA', 'NEURO', 'PNEUMO', 'VASCULAR'],
     campos: [
       { id: 'anosDesde', rotulo: 'Anos desde o último ecocardiograma', rotuloNoTexto: 'Último ecocardiograma há (anos)', tipo: 'numero',
         exigidoQuando: { criterioAlgum: 'SEG' }, exigidoMsg: 'Informe há quantos anos foi o último ecocardiograma.' },
       { id: 'ultimo', rotulo: 'Último ecocardiograma (data, fração de ejeção e gravidade da lesão)', rotuloNoTexto: 'Ecocardiograma anterior', tipo: 'area',
         exigidoQuando: { criterioAlgum: 'SEG_VALV' }, exigidoMsg: 'Descreva o ecocardiograma anterior: data, fração de ejeção e gravidade da lesão valvar.' },
       { id: 'sintomas', rotulo: 'Sintomas e classe funcional', rotuloNoTexto: 'Sintomas e classe funcional' },
-      { id: 'exames', rotulo: 'ECG, BNP ou radiografia realizados (resultado)', rotuloNoTexto: 'Exames complementares' },
+      { id: 'ecg', rotulo: 'ECG (data e resultado)', rotuloNoTexto: 'ECG', obrigatorio: true, exigidoMsg: 'O protocolo de Barueri pede o ECG: informe data e resultado.' },
+      { id: 'rx', rotulo: 'Radiografia de tórax, conforme o caso (data e resultado)', rotuloNoTexto: 'Radiografia de tórax' },
     ],
     regras: [
+      { id: 'eco-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_eco'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
       { id: 'eco-seg-escopo', nivel: 'info', se: { criterioAlgum: 'SEG' },
         aviso: 'Intervalos da coluna da SBC da diretriz de 2020. Na insuficiência mitral moderada o texto cita ecocardiograma a cada 2 anos e o quadro, 1 a 2 anos; o motor usa 1 ano como piso.' },
     ],
@@ -296,12 +410,29 @@
       ['E11.9', 'Diabetes mellitus não insulino-dependente, sem complicações'], ['I10', 'Hipertensão essencial (primária)'], ['R00.2', 'Palpitações'], ['I49.9', 'Arritmia cardíaca, não especificada'],
       ['Z95.5', 'Presença de implante e enxerto de angioplastia coronariana'], ['Z13.6', 'Exame especial de rastreamento de doenças cardiovasculares']],
     fontes: {
+      barueri: fonteProt('Teste de esforço ou teste ergométrico', 'Indicações e profissionais solicitantes (MAP e cardiologista). Pré-requisito: justificativa clínica com anamnese detalhada, exame físico compatível, tempo de evolução e conduta assumida até o momento.'),
       ergo: F('Carvalho T et al. Diretriz Brasileira de Ergometria em População Adulta 2024. Arq Bras Cardiol 2024', PMC('PMC11656589'), 'Diretriz Brasileira de Ergometria 2024',
         'Texto completo lido. Tabelas 1 e 2 (indicações, com grau de recomendação e nível de evidência), Quadro 1 (contraindicações absolutas) e Tabela 10 (relativas).'),
       scc: SCC,
     },
     grupos: [
-      { id: 'dac', rotulo: 'Doença arterial coronariana (sintomáticos)', criterios: [
+      { id: 'p_te', rotulo: 'Protocolo de Barueri: indicações', criterios: [
+        C('te_p_angina', 'Angina do peito', { fonte: 'barueri' }),
+        C('te_p_dor', 'Dor torácica', { fonte: 'barueri' }),
+        C('te_p_arritmia', 'Diagnóstico de arritmias', { fonte: 'barueri' }),
+        C('te_p_has', 'Hipertensão arterial', { fonte: 'barueri' }),
+        C('te_p_st', 'ECG com alteração do segmento ST sugestiva de isquemia, que não impeça a interpretação (não vale BRE, WPW, marca-passo nem SVE)', { fonte: 'barueri' }),
+        C('te_p_dac', 'Doença arterial coronariana', { fonte: 'barueri' }),
+        C('te_p_mp', 'Marca-passo ventricular, para avaliar a resposta ao esforço', { fonte: 'barueri' }),
+        C('te_p_iam', 'Infarto agudo do miocárdio', { fonte: 'barueri' }),
+        C('te_p_valv', 'Valvopatias', { fonte: 'barueri' }),
+        C('te_p_posrevasc', 'Pós-operatório de revascularização do miocárdio ou angioplastia', { fonte: 'barueri' }),
+        C('te_p_hf', 'História familiar de coronariopatia', { fonte: 'barueri' }),
+        C('te_p_capacidade', 'Avaliação da capacidade funcional', { fonte: 'barueri' }),
+        C('te_p_atleta', 'Avaliação cardiológica em atletas', { fonte: 'barueri' }),
+        C('te_p_preop', 'Pré-operatório de cirurgia não cardíaca', { fonte: 'barueri' }),
+      ] },
+      { id: 'dac', rotulo: 'Diretrizes (reforço): doença arterial coronariana (sintomáticos)', criterios: [
         C('te_prob_inter', 'Probabilidade pré-teste intermediária de DAC (inclui BRD ou infra de ST < 1 mm no ECG de repouso)', { fonte: 'ergo', detalhe: 'Classe I, nível A', frase: 'Probabilidade pré-teste intermediária de doença arterial coronariana (Classe I, nível A)' }),
         C('te_dor_baixo', 'Dor torácica em paciente estável de baixo risco, sem isquemia no ECG e com marcadores de necrose normais', { fonte: 'ergo', detalhe: 'Classe I, nível A', frase: 'Dor torácica em paciente estável de baixo risco, sem sinais de isquemia no ECG e com marcadores de necrose normais (Classe I, nível A)' }),
         C('te_dm_sint', 'Diabético sintomático, com ECG de repouso interpretável', { fonte: 'ergo', detalhe: 'Classe I, nível B', frase: 'Paciente diabético sintomático com ECG de repouso interpretável, para investigação de DAC (Classe I, nível B)' }),
@@ -311,7 +442,7 @@
         C('te_posrevasc', 'Pós-revascularização, sintomático ou assintomático', { fonte: 'ergo', detalhe: 'Classe IIa' }),
         C('te_preop', 'Pré-operatório de risco intermediário ou alto', { fonte: 'ergo', detalhe: 'Classe IIa, nível C' }),
       ] },
-      { id: 'assint', rotulo: 'Sem sintomas', criterios: [
+      { id: 'assint', rotulo: 'Diretrizes (reforço): sem sintomas', criterios: [
         C('te_hf_precoce', 'História familiar de DAC precoce (mulheres < 65 anos, homens < 55 anos): ao menos um teste até os 40 anos', { fonte: 'ergo', detalhe: 'Classe I, nível B' }),
         C('te_morte_subita', 'Morte súbita em familiar de 1º grau', { fonte: 'ergo', detalhe: 'Classe IIa, nível B' }),
         C('te_3fatores', 'Três ou mais fatores de risco clássicos', { fonte: 'ergo', detalhe: 'Classe IIa, nível B' }),
@@ -320,7 +451,7 @@
         C('te_ocupacao', 'Ocupação de alto risco (piloto, motorista profissional, militar, policial, bombeiro)', { fonte: 'ergo', detalhe: 'Classe IIa, nível B' }),
         C('te_atividade60', 'Pré-participação em atividade física recreativa, a partir dos 60 anos', { fonte: 'ergo', detalhe: 'Classe IIa, nível C' }),
       ] },
-      { id: 'outros', rotulo: 'Hipertensão, arritmia e valvopatia', criterios: [
+      { id: 'outros', rotulo: 'Diretrizes (reforço): hipertensão, arritmia e valvopatia', criterios: [
         C('te_has_sint', 'Hipertenso sintomático com ECG normal, para investigar DAC', { fonte: 'ergo', detalhe: 'Classe I, nível B' }),
         C('te_arritmia_esf', 'Palpitação, síncope, pré-síncope ou mal-estar relacionado ao esforço', { fonte: 'ergo', detalhe: 'Classe I, nível B' }),
         C('te_arritmia_assint', 'Arritmia assintomática detectada, para avaliar o comportamento ao esforço', { fonte: 'ergo', detalhe: 'Classe I, nível B' }),
@@ -328,7 +459,7 @@
       ] },
     ],
     contra: [
-      C('te_c_ecg', 'ECG de repouso com BRE, WPW, ritmo de marca-passo, infra de ST ≥ 1 mm ou uso de digitálico', { detalhe: 'Não recomendado para diagnóstico de DAC (Classe III)' }),
+      C('te_c_ecg', 'ECG de repouso com BRE, WPW, ritmo de marca-passo, SVE, infra de ST ≥ 1 mm ou uso de digitálico', { detalhe: 'Não recomendado para diagnóstico de DAC (Classe III; o protocolo de Barueri também cita a SVE)' }),
       C('te_c_iam', 'IAM com menos de 5 dias ou complicado', { detalhe: 'Contraindicação absoluta' }),
       C('te_c_angina', 'Angina instável', { detalhe: 'Contraindicação absoluta' }),
       C('te_c_arritmia', 'Arritmia não controlada ou bloqueio AV de alto risco (Mobitz II, 2:1, avançado, total)', { detalhe: 'Contraindicação absoluta' }),
@@ -350,14 +481,18 @@
       C('te_r_avc', 'AVC ou AIT há menos de 2 meses', { detalhe: 'Contraindicação relativa' }),
       C('te_r_gravidez', 'Gravidez', { detalhe: 'Contraindicação relativa: não recomendado como exame de rotina' }),
     ],
+    solicitantes: ['MAP', 'CARDIO'],
     contraConfirmacao: 'Contraindicações absolutas e relativas ao teste ergométrico revisadas: nenhuma presente',
     campos: [
       { id: 'ecg', rotulo: 'ECG de repouso: data e achados (interpretável?)', rotuloNoTexto: 'ECG de repouso', exigidoQuando: { criterioAlgum: 'DAC' },
         exigidoMsg: 'Informe o ECG de repouso (data e achados): ele define se o teste só com ECG serve para diagnóstico de DAC.' },
       { id: 'medicacoes', rotulo: 'Medicações em uso (digitálico, betabloqueador)', rotuloNoTexto: 'Medicações em uso' },
-      { id: 'previo', rotulo: 'Teste anterior ou outro exame cardiológico (data e resultado)', rotuloNoTexto: 'Exame anterior' },
+      { id: 'tempo_conduta', rotulo: 'Anamnese detalhada, tempo de evolução e conduta assumida até o momento', rotuloNoTexto: 'Anamnese, tempo de evolução e conduta', tipo: 'area', obrigatorio: true,
+        exigidoMsg: 'O protocolo de Barueri pede justificativa com anamnese detalhada, tempo de evolução e a conduta assumida até o momento.' },
     ],
     regras: [
+      { id: 'te-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_te'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
       { id: 'te-absoluta', nivel: 'alto', se: { criterioAlgum: ['te_c_iam', 'te_c_angina', 'te_c_arritmia', 'te_c_ea', 'te_c_ic', 'te_c_embolia', 'te_c_perimio', 'te_c_aorta', 'te_c_pa', 'te_c_aguda', 'te_c_pulm', 'te_c_metab', 'te_c_incapaz'] },
         aviso: 'Há contraindicação absoluta marcada (Diretriz Brasileira de Ergometria 2024, Quadro 1). Não solicite o teste agora: trate ou estabilize a condição, ou considere outro exame.' },
       { id: 'te-ecg-diag', nivel: 'alto', se: { criterio: ['te_c_ecg'], criterioAlgum: 'DIAG' },
@@ -381,13 +516,14 @@
     ] },
   };
   // Marcadores de grupos para regras: "DAC", "ASSINT", "DIAG" viram listas de ids
-  const ergoDiag = ['te_prob_inter', 'te_dor_baixo', 'te_dm_sint', 'te_3fatores', 'te_framingham', 'te_hf_precoce'];
+  const ergoDiag = ['te_prob_inter', 'te_dor_baixo', 'te_dm_sint', 'te_3fatores', 'te_framingham', 'te_hf_precoce', 'te_p_angina', 'te_p_dor', 'te_p_dac', 'te_p_hf'];
 
   const holter = {
     id: 'holter', sistema: 'Cardiovascular', nome: 'Holter de 24 horas (eletrocardiograma ambulatorial)', nomeCurto: 'Holter 24 horas',
     cids: [['R00.2', 'Palpitações'], ['R55', 'Síncope e colapso'], ['I49.9', 'Arritmia cardíaca, não especificada'], ['I48', 'Flutter e fibrilação atrial'],
       ['I63.9', 'Infarto cerebral, não especificado'], ['I49.3', 'Despolarização ventricular prematura'], ['I49.1', 'Despolarização atrial prematura']],
     fontes: {
+      barueri: fonteProt('Holter 24 horas', 'Indicações, pré-requisitos (história clínica, exame físico e ECG) e profissionais solicitantes (cardiologista, neurologista e médicos do SAD; o MAP não consta).'),
       fa: F('Diretrizes Brasileiras de Fibrilação Atrial 2025. Arq Bras Cardiol 2025', PMC('PMC13400077'), 'Diretrizes Brasileiras de Fibrilação Atrial 2025',
         'Texto completo lido. Quadro 4: ECG e Holter de 24 a 72 h na avaliação de AVC isquêmico ou embolia sistêmica com fatores de risco para FA (Classe I, nível B); monitorização prolongada no AVC criptogênico (IIa, B); o Holter quantifica a frequência média em 24 h.'),
       jhrs: F('Consenso JHRS/JCS 2025 sobre o uso apropriado de ECG ambulatorial e vestível. J Arrhythm 2025', PMC('PMC12099069'), 'Consenso JHRS/JCS 2025',
@@ -399,21 +535,33 @@
         C('h_freq_sem', 'Sintomas a cada 1 ou 2 semanas', { fonte: 'jhrs', frase: 'Sintomas a cada 1 a 2 semanas' }),
         C('h_freq_rara', 'Sintomas raros (menos de 1 vez por mês)', { fonte: 'jhrs', frase: 'Sintomas raros (menos de 1 vez por mês)' }),
       ] },
-      { id: 'ind', rotulo: 'Indicação', criterios: [
+      { id: 'p_h', rotulo: 'Protocolo de Barueri: indicações', criterios: [
+        C('h_p_ritmo', 'Investigação do ritmo cardíaco', { fonte: 'barueri' }),
+        C('h_p_extras', 'Quantificação de extrassístoles ventriculares ou supraventriculares', { fonte: 'barueri' }),
+        C('h_p_iam', 'Avaliação do ritmo pós-infarto agudo do miocárdio', { fonte: 'barueri' }),
+        C('h_p_icc', 'Insuficiência cardíaca congestiva', { fonte: 'barueri' }),
+        C('h_p_has', 'Hipertensão arterial', { fonte: 'barueri' }),
+        C('h_p_miocardiopatia', 'Miocardiopatias', { fonte: 'barueri' }),
+        C('h_p_hve', 'Hipertrofia ventricular esquerda', { fonte: 'barueri' }),
+        C('h_p_arritmias', 'Arritmias', { fonte: 'barueri' }),
+        C('h_p_valv', 'Valvopatias', { fonte: 'barueri' }),
+        C('h_p_coronaria', 'Insuficiência coronariana', { fonte: 'barueri' }),
+        C('h_p_sincope', 'Síncope', { fonte: 'barueri' }),
+      ] },
+      { id: 'ind', rotulo: 'Diretrizes (reforço): indicação', criterios: [
         C('h_sintoma_diario', 'Palpitação, pré-síncope ou síncope com episódios diários', { fonte: 'jhrs', frase: 'Palpitação, pré-síncope ou síncope com episódios diários, em que o Holter de 24 horas tem chance de registrar o evento' }),
         C('h_avc', 'AVC isquêmico ou embolia sistêmica com fatores de risco para fibrilação atrial', { fonte: 'fa', detalhe: 'Classe I, nível B' }),
         C('h_avc_cripto', 'AVC isquêmico criptogênico (a diretriz prefere monitorização prolongada)', { fonte: 'fa', detalhe: 'Classe IIa, nível B, para monitor de eventos externo ou implantável' }),
         C('h_fa_fc', 'Fibrilação atrial em controle de frequência: frequência cardíaca média em 24 h', { fonte: 'fa' }),
-        C('h_sincope_arr', 'Síncope sem causa definida e com suspeita de arritmia', { v: false }),
-        C('h_extrassistoles', 'Extrassístoles frequentes ou arritmia ventricular conhecida (quantificar a carga)', { v: false }),
         C('h_antiarritmico', 'Avaliar resposta a antiarritmico ou pós-ablação', { v: false }),
       ] },
     ],
     contra: [],
+    solicitantes: ['CARDIO', 'NEURO', 'SAD'],
     campos: [
       { id: 'sintoma', rotulo: 'Sintoma, frequência e duração dos episódios', rotuloNoTexto: 'Sintomas', tipo: 'area',
-        exigidoQuando: { criterioAlgum: ['h_sintoma_diario', 'h_sincope_arr'] }, exigidoMsg: 'Descreva o sintoma, a frequência e a duração dos episódios.' },
-      { id: 'ecg', rotulo: 'ECG de repouso (data e resultado)', rotuloNoTexto: 'ECG de repouso' },
+        exigidoQuando: { criterioAlgum: ['h_sintoma_diario', 'h_p_sincope'] }, exigidoMsg: 'Descreva o sintoma, a frequência e a duração dos episódios.' },
+      { id: 'ecg', rotulo: 'ECG de repouso (data e resultado)', rotuloNoTexto: 'ECG de repouso', obrigatorio: true, exigidoMsg: 'O protocolo de Barueri pede o ECG: informe data e resultado.' },
       { id: 'eco', rotulo: 'Ecocardiograma ou outra avaliação estrutural (resultado)', rotuloNoTexto: 'Avaliação estrutural' },
       { id: 'medicacoes', rotulo: 'Medicações em uso', rotuloNoTexto: 'Medicações em uso' },
     ],
@@ -422,7 +570,9 @@
         aviso: 'Com sintomas menos frequentes que diários, o Holter de 24 h tem baixo rendimento: o consenso JHRS/JCS 2025 sugere patch (a cada 1 a 2 semanas), monitor de eventos externo (menos de 1 vez por mês) ou implantável (mais raro). Justifique a escolha do Holter ou considere outro monitor.' },
       { id: 'h-avc-cripto', nivel: 'atencao', se: { criterio: ['h_avc_cripto'] },
         aviso: 'No AVC criptogênico, a diretriz brasileira de FA 2025 sugere monitorização prolongada com monitor de eventos externo ou implantável (IIa, B), não Holter de 24 horas.' },
-      { id: 'h-sem-freq', nivel: 'info', se: { criterioAlgum: ['h_sintoma_diario', 'h_sincope_arr'], semGrupo: ['freq'] },
+      { id: 'h-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_h'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
+      { id: 'h-sem-freq', nivel: 'info', se: { criterioAlgum: ['h_sintoma_diario', 'h_p_sincope'], semGrupo: ['freq'] },
         aviso: 'Informe a frequência dos sintomas: é o dado que justifica o Holter de 24 horas em vez de outro monitor.' },
     ],
     naoIndicado: [
@@ -440,11 +590,21 @@
     id: 'mapa', sistema: 'Cardiovascular', nome: 'Monitorização ambulatorial da pressão arterial de 24 horas (MAPA)', nomeCurto: 'MAPA 24 horas',
     cids: [['I10', 'Hipertensão essencial (primária)'], ['R03.0', 'Valor elevado da pressão arterial, sem diagnóstico de hipertensão']],
     fontes: {
+      barueri: fonteProt('MAPA', 'Indicações, nota de situações em que não é recomendado, pré-requisitos (história clínica, exame físico detalhado, ECG com laudo e teste ergométrico, se houver) e profissionais solicitantes.'),
       has: F('Diretrizes Brasileiras de Hipertensão Arterial 2025. Arq Bras Cardiol 2025 (PMID 41294179)', PMC('PMC13671149'), 'Diretrizes Brasileiras de Hipertensão Arterial 2025',
         'Texto completo lido. Quadro 3.5 (indicações da MAPA e da MRPA), Quadro 3.4 (valores de referência) e recomendações por população (resistente, diabetes, idosos, diálise, crianças).'),
     },
     grupos: [
-      { id: 'dx', rotulo: 'Diagnóstico (Quadro 3.5 da diretriz)', criterios: [
+      { id: 'p_m', rotulo: 'Protocolo de Barueri: indicações', criterios: [
+        C('m_p_sintomas', 'Sintomas ou sinais atribuídos à hipertensão (palpitações, cefaleia occipital, dispneia, fadiga, prostração, mal-estar com ou sem palidez, pré-síncope ou síncope) ou AVC', { fonte: 'barueri' }),
+        C('m_p_limitrofe', 'Pressão arterial limítrofe', { fonte: 'barueri' }),
+        C('m_p_variacoes', 'Variações abruptas da pressão arterial (uso de medicamentos, idosos, diabéticos, menopausadas, grávidas)', { fonte: 'barueri' }),
+        C('m_p_avental', 'Suspeita de hipertensão do avental branco', { fonte: 'barueri' }),
+        C('m_p_labil', 'Suspeita de hipertensão lábil ou episódica', { fonte: 'barueri' }),
+        C('m_p_hipotensao', 'Hipotensão arterial e síncope hipotensiva', { fonte: 'barueri' }),
+        C('m_p_disautonomia', 'Suspeita de disfunção autonômica', { fonte: 'barueri' }),
+      ] },
+      { id: 'dx', rotulo: 'Diretrizes (reforço): diagnóstico (Quadro 3.5 da diretriz)', criterios: [
         C('m_avental', 'Suspeita de efeito do avental branco', { fonte: 'has', frase: 'Suspeita de hipertensão do avental branco' }),
         C('m_mascarada', 'Suspeita de hipertensão mascarada', { fonte: 'has', frase: 'Suspeita de hipertensão mascarada (efeito de mascaramento)' }),
         C('m_pre', 'PA de consultório na faixa de pré-hipertensão (130 a 139 e/ou 85 a 89 mmHg)', { fonte: 'has' }),
@@ -453,7 +613,7 @@
         C('m_baixo_rcv', 'PA ≥ 140/90 mmHg no consultório, sem lesão de órgão-alvo e com baixo risco cardiovascular', { fonte: 'has' }),
         C('m_isolada', 'Hipertensão sistólica isolada ou diastólica isolada no consultório', { fonte: 'has' }),
       ] },
-      { id: 'trat', rotulo: 'Tratamento', criterios: [
+      { id: 'trat', rotulo: 'Diretrizes (reforço): tratamento', criterios: [
         C('m_resistente', 'Hipertensão resistente: confirmação diagnóstica (MAPA preferencial)', { fonte: 'has', detalhe: 'Recomendação forte, certeza moderada' }),
         C('m_nao_controlada', 'Identificar hipertensão não controlada ou redução excessiva da PA', { fonte: 'has' }),
         C('m_ajuste', 'Ajustar ou assegurar o controle do tratamento anti-hipertensivo', { fonte: 'has' }),
@@ -462,7 +622,7 @@
         C('m_sono', 'Avaliar a PA durante o sono e nas 24 horas', { fonte: 'has' }),
         C('m_hipotensao', 'Suspeita de hipotensão (ortostática, pós-prandial), disautonomia ou sintomas de hipotensão', { fonte: 'has' }),
       ] },
-      { id: 'pop', rotulo: 'Populações específicas', criterios: [
+      { id: 'pop', rotulo: 'Diretrizes (reforço): populações específicas', criterios: [
         C('m_diabetes', 'Diabetes: avaliação da PA fora do consultório', { fonte: 'has', detalhe: 'Recomendação forte, certeza moderada' }),
         C('m_idoso', 'Idoso: no diagnóstico e anualmente, ou ao mudar a estratégia', { fonte: 'has', detalhe: 'Recomendação fraca, certeza baixa' }),
         C('m_dialise', 'Paciente em diálise', { fonte: 'has', detalhe: 'Recomendação fraca, certeza baixa' }),
@@ -470,13 +630,24 @@
         C('m_gestante', 'Gestante com PA elevada ou suspeita de pré-eclâmpsia', { fonte: 'has' }),
       ] },
     ],
-    contra: [],
+    contra: [
+      C('m_c_fa', 'Fibrilação atrial com frequência cardíaca elevada', { fonte: 'barueri', detalhe: 'Não recomendado pelo protocolo de Barueri' }),
+      C('m_c_mov', 'Distúrbio de movimento que interfere na medida (por exemplo, doença de Parkinson não controlada)', { fonte: 'barueri', detalhe: 'Não recomendado pelo protocolo de Barueri' }),
+      C('m_c_manguito', 'Braço que não se adapta à largura do manguito', { fonte: 'barueri', detalhe: 'Não recomendado pelo protocolo de Barueri' }),
+    ],
+    solicitantes: ['CARDIO', 'VASCULAR', 'NEFRO', 'MAP', 'NEURO'],
     campos: [
       { id: 'pa', rotulo: 'PA de consultório (valores e datas das medidas)', rotuloNoTexto: 'PA de consultório', tipo: 'area', obrigatorio: true, exigidoMsg: 'Informe os valores e as datas da PA de consultório.' },
+      { id: 'ecg', rotulo: 'ECG com laudo (data e resultado)', rotuloNoTexto: 'ECG com laudo', obrigatorio: true, exigidoMsg: 'O protocolo de Barueri pede o ECG com laudo: informe data e resultado.' },
+      { id: 'te', rotulo: 'Teste ergométrico, se houver (data e resultado)', rotuloNoTexto: 'Teste ergométrico' },
       { id: 'anti', rotulo: 'Anti-hipertensivos em uso (nomes e doses)', rotuloNoTexto: 'Anti-hipertensivos em uso' },
       { id: 'loa', rotulo: 'Lesão de órgão-alvo ou doença cardiovascular conhecida', rotuloNoTexto: 'Lesão de órgão-alvo/doença cardiovascular' },
     ],
     regras: [
+      { id: 'm-nao-recomendado', nivel: 'alto', se: { criterioAlgum: ['m_c_fa', 'm_c_mov', 'm_c_manguito'] },
+        aviso: 'O protocolo de Barueri não recomenda o MAPA nesta situação (fibrilação atrial com frequência elevada, distúrbio de movimento que interfere na medida ou braço que não se adapta ao manguito). Considere a MRPA, que a Diretriz Brasileira de Hipertensão 2025 lista como alternativa.' },
+      { id: 'm-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_m'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
       { id: 'm-mrpa', nivel: 'info', se: { semGrupo: ['so_mapa'], criterioAlgum: 'NAO_RES' },
         aviso: 'Para esta indicação, o Quadro 3.5 aceita MAPA ou MRPA. A MAPA é exclusiva quando se precisa avaliar sono, hipotensão ou disautonomia. Se a MAPA for negada, justifique a necessidade ou considere a MRPA (a diretriz condiciona a medida fora do consultório ao que for viável logística e economicamente).' },
     ],
@@ -527,6 +698,7 @@
     cids: [['R51', 'Cefaleia'], ['S06.9', 'Traumatismo intracraniano, não especificado'], ['R56.8', 'Outras convulsões e as não especificadas'], ['F03', 'Demência não especificada'],
       ['R41.8', 'Outros sintomas e sinais relativos à função cognitiva e à consciência'], ['R29.8', 'Outros sintomas e sinais especificados relativos aos sistemas nervoso e osteomuscular'], ['I64', 'Acidente vascular cerebral, não especificado como hemorrágico ou isquêmico']],
     fontes: Object.assign({
+      barueri: fonteProt('Tomografia de sela túrcica', 'No protocolo de Barueri a tomografia de crânio é regulada como "tomografia de sela túrcica". Indicações, pré-requisitos (história clínica, exame físico, radiografia simples com laudo e, em contexto infeccioso, exame do líquor) e profissionais solicitantes. Os itens "distúrbio do comportamento" e "estudo da hipófise" vêm com asterisco no protocolo, sem a nota de rodapé no texto lido.'),
       cg150: F('NICE CG150. Headaches in over 12s: diagnosis and management (2012)', NICE('cg150'), 'NICE CG150 (cefaleia)', 'Texto lido. 1.1.1 e 1.1.2: cefaleia com sinais de alarme exige avaliar a necessidade de investigação ou encaminhamento (não manda pedir tomografia). 1.3.3: não encaminhar para neuroimagem só para tranquilizar quem tem cefaleia primária.'),
       ng232: F('NICE NG232. Head injury: assessment and early management (2023)', NICE('ng232'), 'NICE NG232 (traumatismo craniano)', 'Texto lido. 1.5.8 a 1.5.13: critérios de tomografia em adultos e crianças. 1.3.19: não encaminhar traumatismo craniano para neuroimagem por acesso direto da comunidade. 1.2.4: sinais que levam o paciente ao pronto-socorro.'),
       ng12: F('NICE NG12. Suspected cancer: recognition and referral', NICE('ng12'), 'NICE NG12 (suspeita de câncer)', 'Texto lido. 1.9.1: considerar ressonância de crânio (ou tomografia, se a ressonância for contraindicada) em adulto com perda progressiva e subaguda de função neurológica central.'),
@@ -536,8 +708,24 @@
       acep: F('ACEP Clinical Policy: Mild Traumatic Brain Injury. Ann Emerg Med 2023;81:e63 (PMID 37085214)', PMC('PMC10617828'), 'ACEP 2023 (traumatismo craniano leve)', 'Texto lido. Usar a Canadian CT Head Rule como apoio à decisão em adultos com traumatismo craniano leve; as regras de decisão não excluem a tomografia em quem usa anticoagulante ou antiagregante (exceto AAS isolado).'),
       acrcrise: F('ACR Appropriateness Criteria: Seizures and Epilepsy. J Am Coll Radiol 2020;17:S293 (PMID 32370973)', PUBMED('32370973'), 'ACR 2020 (crises e epilepsia)', 'Só o resumo foi lido: a ressonância de crânio costuma ser apropriada em cada cenário; na emergência, a tomografia sem contraste também costuma ser apropriada.', 'secundaria'),
     }, FONTES_CONTRASTE),
+    notaProtocolo: 'No protocolo de Barueri, a tomografia de crânio é regulada como "tomografia de sela túrcica".',
     grupos: [
-      { id: 'cefaleia', rotulo: 'Cefaleia com sinal de alarme (NICE CG150)', dica: 'A diretriz manda avaliar a necessidade de investigação ou de encaminhamento; não diz que toda cefaleia com alarme precisa de tomografia.', criterios: [
+      { id: 'p_tcc', rotulo: 'Protocolo de Barueri: indicações', criterios: [
+        C('tcc_p_trauma', 'Traumatismo', { fonte: 'barueri' }),
+        C('tcc_p_hemorragia', 'Hemorragia (até 48 horas para diagnóstico; depois de 48 horas, para acompanhamento)', { fonte: 'barueri' }),
+        C('tcc_p_tumor', 'Tumores (diagnóstico e estadiamento)', { fonte: 'barueri' }),
+        C('tcc_p_metastase', 'Metástases (detecção e acompanhamento)', { fonte: 'barueri' }),
+        C('tcc_p_expansivo', 'Processos expansivos', { fonte: 'barueri' }),
+        C('tcc_p_avc', 'AVC', { fonte: 'barueri' }),
+        C('tcc_p_degenerativa', 'Doenças degenerativas do encéfalo', { fonte: 'barueri' }),
+        C('tcc_p_aneurisma', 'Aneurismas', { fonte: 'barueri' }),
+        C('tcc_p_convulsao', 'Convulsões recentes a esclarecer', { fonte: 'barueri' }),
+        C('tcc_p_cefaleia', 'Cefaleia grave a esclarecer', { fonte: 'barueri' }),
+        C('tcc_p_hidrocefalia', 'Hidrocefalia', { fonte: 'barueri' }),
+        C('tcc_p_comportamento', 'Distúrbio do comportamento (*)', { fonte: 'barueri', detalhe: 'Item com asterisco no protocolo, sem a nota no texto lido' }),
+        C('tcc_p_hipofise', 'Estudo da hipófise (*)', { fonte: 'barueri', detalhe: 'Item com asterisco no protocolo, sem a nota no texto lido' }),
+      ] },
+      { id: 'cefaleia', rotulo: 'Diretrizes (reforço): cefaleia com sinal de alarme (NICE CG150)', dica: 'A diretriz manda avaliar a necessidade de investigação ou de encaminhamento; não diz que toda cefaleia com alarme precisa de tomografia.', criterios: [
         C('tc_cef_febre', 'Cefaleia piorando, com febre', { fonte: 'cg150' }),
         C('tc_cef_subita', 'Cefaleia de início súbito, com intensidade máxima em até 5 minutos', { fonte: 'cg150', detalhe: 'Em geral é urgência: encaminhe ao pronto-socorro' }),
         C('tc_cef_deficit', 'Déficit neurológico novo', { fonte: 'cg150' }),
@@ -550,13 +738,13 @@
         C('tc_cef_neoplasia', 'Cefaleia nova com neoplasia que dá metástase para o cérebro, ou menor de 20 anos com história de neoplasia', { fonte: 'cg150' }),
         C('tc_cef_vomito', 'Cefaleia nova com vômitos sem outra causa', { fonte: 'cg150' }),
       ] },
-      { id: 'neuro', rotulo: 'Outras indicações neurológicas', criterios: [
+      { id: 'neuro', rotulo: 'Diretrizes (reforço): outras indicações neurológicas', criterios: [
         C('tc_tumor', 'Perda progressiva e subaguda de função neurológica central (suspeita de tumor)', { fonte: 'ng12', detalhe: 'A diretriz prefere ressonância; tomografia se a ressonância for contraindicada' }),
         C('tc_cogn', 'Declínio cognitivo: imagem estrutural para excluir causa reversível', { fonte: 'ng97', detalhe: 'A tomografia é aceita na atenção primária (Academia Brasileira de Neurologia 2022)' }),
         C('tc_crise', 'Primeira crise convulsiva', { fonte: 'acrcrise', detalhe: 'Fora da emergência, o ACR prefere ressonância' }),
         C('tc_avc', 'Suspeita de AVC agudo (urgência)', { fonte: 'ng128', detalhe: 'Tomografia sem contraste imediata; é pedido de pronto-socorro' }),
       ] },
-      { id: 'tce', rotulo: 'Traumatismo craniano (urgência)', dica: 'A NICE NG232 não recomenda encaminhar traumatismo craniano para neuroimagem por acesso direto da comunidade.', criterios: [
+      { id: 'tce', rotulo: 'Diretrizes (reforço): traumatismo craniano (urgência)', dica: 'A NICE NG232 não recomenda encaminhar traumatismo craniano para neuroimagem por acesso direto da comunidade.', criterios: [
         C('tc_tce_alto', 'Adulto com fator de alto risco: Glasgow ≤ 12, Glasgow < 15 após 2 horas, suspeita de fratura aberta ou com afundamento, sinal de fratura de base, convulsão pós-traumática, déficit focal ou mais de 1 vômito', { fonte: 'ng232', detalhe: 'Tomografia em até 1 hora (NICE NG232, 1.5.8)',
           frase: 'Traumatismo craniano em adulto com fator de alto risco (NICE NG232, 1.5.8): tomografia em até 1 hora' }),
         C('tc_tce_perda', 'Adulto com perda de consciência ou amnésia e idade ≥ 65 anos, distúrbio de coagulação, mecanismo perigoso ou amnésia retrógrada > 30 minutos', { fonte: 'ng232', detalhe: 'Tomografia em até 8 horas (NICE NG232, 1.5.9)' }),
@@ -566,6 +754,7 @@
       grupoContraste('tcc'),
     ],
     contra: [],
+    solicitantes: ['NEURO', 'ORTO', 'INFECTO', 'ENDOCRINO', 'GERIATRA', 'MAP_GIN'],
     campos: [
       Object.assign(campoCreatinina('tcc')),
       { id: 'neuro', rotulo: 'Exame neurológico (consciência, força, sensibilidade, pares cranianos)', rotuloNoTexto: 'Exame neurológico', tipo: 'area',
@@ -575,9 +764,12 @@
       { id: 'cognicao', rotulo: 'Avaliação cognitiva (teste usado, resultado e tempo de evolução)', rotuloNoTexto: 'Avaliação cognitiva', tipo: 'area',
         exigidoQuando: { criterio: ['tc_cogn'] }, exigidoMsg: 'Informe a avaliação cognitiva: teste usado, resultado e tempo de evolução.' },
       { id: 'anticoag', rotulo: 'Anticoagulante ou antiagregante em uso (nome e dose)', rotuloNoTexto: 'Anticoagulante/antiagregante', exigidoQuando: { criterioAlgum: ['tc_tce_anticoag'] }, exigidoMsg: 'Informe o anticoagulante ou antiagregante em uso.' },
-      { id: 'previo', rotulo: 'Exame de imagem anterior (data e resultado)', rotuloNoTexto: 'Imagem anterior' },
+      { id: 'rx', rotulo: 'Radiografia simples com laudo (data e resultado)', rotuloNoTexto: 'Radiografia simples', obrigatorio: true, exigidoMsg: 'O protocolo de Barueri pede a radiografia simples com laudo: informe data e resultado.' },
+      { id: 'liquor', rotulo: 'Exame do líquor (em contexto de doença infecciosa)', rotuloNoTexto: 'Exame do líquor' },
     ],
     regras: [
+      { id: 'tcc-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_tcc'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
       { id: 'tcc-tce-urgencia', nivel: 'atencao', se: { criterioAlgum: ['tc_tce_alto', 'tc_tce_perda', 'tc_tce_anticoag', 'tc_tce_crianca'] },
         aviso: 'Traumatismo craniano agudo é caso de pronto-socorro: a NICE NG232 (1.3.19) não recomenda encaminhar para neuroimagem por acesso direto da comunidade e lista os sinais que levam o paciente à emergência (1.2.4).' },
       { id: 'tcc-urgencia', nivel: 'atencao', se: { criterioAlgum: ['tc_cef_subita', 'tc_avc'] },
@@ -608,6 +800,7 @@
     cids: [['Z12.2', 'Exame especial de rastreamento de neoplasia do aparelho respiratório'], ['R91', 'Achados anormais em exames para diagnóstico por imagem do pulmão'], ['R04.2', 'Hemoptise'],
       ['R05', 'Tosse'], ['R06.0', 'Dispneia'], ['I26.9', 'Embolia pulmonar sem menção de cor pulmonale agudo'], ['J84.1', 'Outras doenças pulmonares intersticiais com fibrose'], ['J84.9', 'Doença pulmonar intersticial, não especificada']],
     fontes: Object.assign({
+      barueri: fonteProt('Tomografia de tórax', 'Indicações, pré-requisito (radiografia de tórax PA e perfil com laudo) e profissionais solicitantes.'),
       lcs: F('Pereira LFF et al. Rastreamento do câncer de pulmão com tomografia de baixa dose: consenso SBCT/SBPT/CBR. J Bras Pneumol 2024;50(1):e20230233 (PMID 38536982)', PMC('PMC11095927'), 'Consenso brasileiro de rastreamento do câncer de pulmão 2024',
         'Texto completo lido. Fumante ou ex-fumante com 50 anos ou mais, mais de 20 maços-ano, que parou há até 15 anos; interromper aos 80 anos ou após 15 anos sem fumar; excluir sintomas muito sugestivos de câncer de pulmão, história de câncer de pulmão e quem não tem condição de tratamento curativo; exame anual se sem achados; decisão compartilhada. O texto em inglês tem uma inconsistência na lista de inclusão: usei a formulação da tabela.'),
       uspstf: F('USPSTF. Screening for Lung Cancer. JAMA 2021;325:962 (PMID 33687470)', PUBMED('33687470'), 'USPSTF 2021 (câncer de pulmão)', 'Só o resumo foi lido: tomografia de baixa dose anual de 50 a 80 anos, com 20 maços-ano, fumantes ou que pararam há até 15 anos (recomendação B).', 'secundaria'),
@@ -618,7 +811,24 @@
       fleischner: F('MacMahon H et al. Guidelines for Management of Incidental Pulmonary Nodules Detected on CT Images: From the Fleischner Society 2017. Radiology 2017;284:228 (PMID 28240562)', PUBMED('28240562'), 'Fleischner 2017 (nódulos)', 'Só o resumo foi lido: o tamanho mínimo para seguimento de rotina aumentou e os intervalos agora são faixas. A tabela de condutas por tamanho e risco não foi lida no original (só em transcrição secundária), então este site não calcula o intervalo.', 'secundaria'),
     }, FONTES_CONTRASTE),
     grupos: [
-      { id: 'rastreio', rotulo: 'Rastreamento do câncer de pulmão (tomografia de baixa dose)', criterios: [
+      { id: 'p_tct', rotulo: 'Protocolo de Barueri: indicações', criterios: [
+        C('tct_p_trauma', 'Traumatismo', { fonte: 'barueri' }),
+        C('tct_p_sangramento', 'Sangramento de vias aéreas', { fonte: 'barueri' }),
+        C('tct_p_tumor', 'Tumores (diagnóstico e estadiamento)', { fonte: 'barueri' }),
+        C('tct_p_metastase', 'Metástases (detecção e acompanhamento)', { fonte: 'barueri' }),
+        C('tct_p_nodulo', 'Nódulos não neoplásicos (avaliação e acompanhamento)', { fonte: 'barueri' }),
+        C('tct_p_intersticial', 'Pneumopatias intersticiais', { fonte: 'barueri' }),
+        C('tct_p_mediastino', 'Mediastino, hilos e pleura (avaliação)', { fonte: 'barueri' }),
+        C('tct_p_bronquiectasia', 'Bronquiectasias (acompanhamento)', { fonte: 'barueri' }),
+        C('tct_p_vcs', 'Síndrome de compressão da veia cava superior', { fonte: 'barueri' }),
+        C('tct_p_aorta', 'Doenças da aorta (aneurisma ou dissecção)', { fonte: 'barueri' }),
+        C('tct_p_tep', 'Tromboembolismo pulmonar', { fonte: 'barueri' }),
+        C('tct_p_sistemica', 'Comprometimento de órgãos por micoses sistêmicas, colagenoses ou sarcoidose', { fonte: 'barueri' }),
+        C('tct_p_costelas', 'Fraturas de costelas com lesão pulmonar ou pleural', { fonte: 'barueri' }),
+        C('tct_p_congenita', 'Definição estrutural de cardiopatias congênitas', { fonte: 'barueri' }),
+        C('tct_p_miastenia', 'Miastenia gravis', { fonte: 'barueri' }),
+      ] },
+      { id: 'rastreio', rotulo: 'Diretrizes (reforço): rastreamento do câncer de pulmão (tomografia de baixa dose)', criterios: [
         C('tc_t_rastreio', 'Fumante ou ex-fumante com 50 anos ou mais e mais de 20 maços-ano, que parou há até 15 anos', { fonte: 'lcs', intervaloMin: 1, intervaloFonte: 'consenso brasileiro 2024 e USPSTF 2021',
           frase: 'Rastreamento do câncer de pulmão com tomografia de baixa dose: fumante ou ex-fumante com 50 anos ou mais, com mais de 20 maços-ano, que parou há até 15 anos' }),
       ] },
@@ -627,7 +837,7 @@
         C('tc_t_ex_ca', 'História de câncer de pulmão', { fonte: 'lcs' }),
         C('tc_t_ex_cond', 'Condição clínica que impede tratamento com intenção curativa', { fonte: 'lcs' }),
       ] },
-      { id: 'sintomas', rotulo: 'Sintomas e achados', criterios: [
+      { id: 'sintomas', rotulo: 'Diretrizes (reforço): sintomas e achados', criterios: [
         C('tc_t_hemoptise', 'Hemoptise (radiografia de tórax e tomografia com contraste)', { fonte: 'acrhemo', detalhe: 'Com 40 anos ou mais e hemoptise inexplicada, a NICE NG12 manda encaminhar pela via de suspeita de câncer' }),
         C('tc_t_dpi', 'Suspeita de fibrose pulmonar: mais de 45 anos, dispneia aos esforços e tosse persistentes, crepitações inspiratórias bilaterais ou baqueteamento', { fonte: 'cg163', detalhe: 'Tomografia de alta resolução' }),
         C('tc_t_rx_cancer', 'Radiografia de tórax com achado que sugere câncer de pulmão', { fonte: 'ng12', v: false, detalhe: 'A NICE NG12 manda encaminhar pela via de suspeita; o papel da tomografia nessa via não foi lido' }),
@@ -635,26 +845,26 @@
         C('tc_t_tosse', 'Tosse crônica com radiografia normal ou inconclusiva', { v: false }),
         C('tc_t_estad', 'Estadiamento ou seguimento de neoplasia conhecida', { v: false }),
       ] },
-      { id: 'ep', rotulo: 'Embolia pulmonar (urgência)', criterios: [
+      { id: 'ep', rotulo: 'Diretrizes (reforço): embolia pulmonar (urgência)', criterios: [
         C('tc_t_ep', 'Suspeita de embolia pulmonar com Wells > 4 (provável), ou D-dímero positivo com Wells ≤ 4', { fonte: 'ng158', detalhe: 'Angiotomografia; é pedido de pronto-socorro' }),
       ] },
-      { id: 'nodulo', rotulo: 'Nódulo pulmonar incidental', criterios: [
+      { id: 'nodulo', rotulo: 'Diretrizes (reforço): nódulo pulmonar incidental', criterios: [
         C('tc_t_nodulo', 'Seguimento de nódulo pulmonar encontrado em outro exame (Fleischner)', { fonte: 'fleischner', v: false, detalhe: 'A tabela de intervalos por tamanho e risco não foi lida no original' }),
       ] },
       grupoContraste('tct'),
     ],
     contra: [],
+    solicitantes: ['PNEUMO', 'CARDIO', 'DERMA', 'ORTO', 'REUMA', 'MAP', 'NEURO'],
     campos: [
       campoCreatinina('tct'),
       { id: 'tabagismo', rotulo: 'Tabagismo: maços-ano, idade de início e tempo desde que parou', rotuloNoTexto: 'Tabagismo', exigidoQuando: { criterio: ['tc_t_rastreio'] },
         exigidoMsg: 'Informe o tabagismo: maços-ano e tempo desde que parou (o rastreamento exige mais de 20 maços-ano e parada há até 15 anos).' },
       { id: 'anosDesde', rotulo: 'Anos desde a última tomografia de baixa dose (se já fez)', rotuloNoTexto: 'Última tomografia de baixa dose há (anos)', tipo: 'numero' },
-      { id: 'rx', rotulo: 'Radiografia de tórax (data e resultado)', rotuloNoTexto: 'Radiografia de tórax',
-        exigidoQuando: { criterioAlgum: ['tc_t_rx_cancer', 'tc_t_hemoptise', 'tc_t_dpi', 'tc_t_ep', 'tc_t_rx_alt', 'tc_t_tosse'] }, exigidoMsg: 'Informe a radiografia de tórax (data e resultado): as diretrizes lidas (NICE NG12, NG158 e CG163, ACR) a colocam antes da tomografia.' },
+      { id: 'rx', rotulo: 'Radiografia de tórax PA e perfil, com laudo (data e resultado)', rotuloNoTexto: 'Radiografia de tórax',
+        exigidoQuando: { criterioAlgum: 'TCT_RX' }, exigidoMsg: 'O protocolo de Barueri pede a radiografia de tórax PA e perfil com laudo: informe data e resultado (as diretrizes NICE NG12, NG158 e CG163 e o ACR também a colocam antes da tomografia).' },
       { id: 'wells', rotulo: 'Escore de Wells (pontos) e D-dímero', rotuloNoTexto: 'Probabilidade clínica de embolia', exigidoQuando: { criterio: ['tc_t_ep'] }, exigidoMsg: 'Informe o escore de Wells e o D-dímero.' },
       { id: 'sintomas', rotulo: 'Sintomas (tosse, dispneia, dor torácica, perda de peso, hemoptise) e tempo de evolução', rotuloNoTexto: 'Sintomas', tipo: 'area', exigidoQuando: { criterioAlgum: ['tc_t_hemoptise', 'tc_t_dpi', 'tc_t_tosse'] }, exigidoMsg: 'Descreva os sintomas e o tempo de evolução.' },
       { id: 'nodulo', rotulo: 'Nódulo: tamanho, tipo (sólido, vidro fosco, parcialmente sólido), data e exame que o achou', rotuloNoTexto: 'Nódulo', tipo: 'area', exigidoQuando: { criterio: ['tc_t_nodulo'] }, exigidoMsg: 'Descreva o nódulo: tamanho, tipo, data e exame que o achou.' },
-      { id: 'previo', rotulo: 'Tomografia ou outro exame anterior (data e resultado)', rotuloNoTexto: 'Exame anterior' },
     ],
     regras: [
       { id: 'tct-rast-idade-menor', nivel: 'atencao', se: { criterio: ['tc_t_rastreio'], idadeMenor: 50 }, aviso: 'O rastreamento é indicado a partir dos 50 anos (consenso brasileiro 2024; USPSTF 2021).' },
@@ -662,7 +872,9 @@
       { id: 'tct-rast-excl', nivel: 'alto', se: { criterio: ['tc_t_rastreio'], criterioAlgum: ['tc_t_ex_sint', 'tc_t_ex_ca', 'tc_t_ex_cond'] },
         aviso: 'Com sintomas muito sugestivos de câncer de pulmão, história de câncer de pulmão ou condição que impede tratamento curativo, não se trata de rastreamento (consenso brasileiro 2024). Com sintomas, investigue pelo caminho diagnóstico (comece pela radiografia de tórax, NICE NG12).' },
       { id: 'tct-rast-sus', nivel: 'info', se: { criterio: ['tc_t_rastreio'] },
-        aviso: 'O consenso brasileiro de 2024 trata o rastreamento como discussão ainda incipiente no país, e não foi encontrado protocolo de regulação do SUS para ele. O rastreamento exige decisão compartilhada e não substitui a cessação do tabagismo.' },
+        aviso: 'O rastreamento do câncer de pulmão com tomografia de baixa dose não consta no protocolo de Barueri, e o consenso brasileiro de 2024 o trata como discussão ainda incipiente no país. Exige decisão compartilhada e não substitui a cessação do tabagismo.' },
+      { id: 'tct-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_tct'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
       { id: 'tct-ep-urgencia', nivel: 'atencao', se: { criterio: ['tc_t_ep'] },
         aviso: 'Suspeita de embolia pulmonar é urgência: não entra em fila de regulação eletiva. A NICE NG158 pede radiografia de tórax, escore de Wells e, com Wells ≤ 4, D-dímero antes da imagem.' },
       { id: 'tct-ep-vq', nivel: 'info', se: { criterio: ['tc_t_ep'], criterioAlgum: ['tct_c_renal', 'tct_c_reac'] },
@@ -685,11 +897,13 @@
   };
 
   const tcAbdome = {
-    id: 'tc_abdome', sistema: 'Tomografia', nome: 'Tomografia computadorizada de abdome', nomeCurto: 'TC de abdome',
+    id: 'tc_abdome', sistema: 'Tomografia', nome: 'Tomografia computadorizada de abdome superior', nomeCurto: 'TC de abdome (superior)',
+    notaProtocolo: 'O protocolo de Barueri regula a tomografia do abdome superior; a pelve é outro exame (tomografia da pelve).',
     cids: [['R10.4', 'Outras dores abdominais e as não especificadas'], ['R10.3', 'Dor localizada em outras partes inferiores do abdome'], ['K57.3', 'Doença diverticular do intestino grosso sem perfuração ou abscesso'],
       ['K35.8', 'Apendicite aguda, outra e não especificada'], ['K85.9', 'Pancreatite aguda, não especificada'], ['N23', 'Cólica renal, não especificada'], ['N10', 'Nefrite túbulo-intersticial aguda (pielonefrite aguda)'],
       ['R19.0', 'Tumoração ou massa intra-abdominal e pélvica'], ['R17', 'Icterícia, não especificada'], ['R63.4', 'Perda de peso anormal'], ['I71.4', 'Aneurisma da aorta abdominal, sem menção de ruptura'], ['K43.9', 'Hérnia ventral sem obstrução ou gangrena']],
     fontes: Object.assign({
+      barueri: fonteProt('Tomografia do abdome superior', 'Indicações, pré-requisitos (história clínica, exame físico, radiografia simples de abdome em pé ou deitado e ultrassom, se houver) e profissionais solicitantes.'),
       wsesapp: F('Di Saverio S et al. Diagnosis and treatment of acute appendicitis: 2020 update of the WSES Jerusalem guidelines. World J Emerg Surg 2020;15:27', PMC('PMC7386163'), 'WSES 2020 (apendicite)',
         'Texto completo lido. Ultrassom como primeiro exame se houver indicação de imagem (1.10); imagem sistemática no risco intermediário (1.8); imagem transversal antes da cirurgia na dor em fossa ilíaca direita que não resolve (1.12); a tomografia pode ser dispensada em homens e mulheres jovens de alto risco clínico (1.9).'),
       wsesdiv: F('Sartelli M et al. 2020 update of the WSES guidelines for the management of acute colonic diverticulitis in the emergency setting. World J Emerg Surg 2020;15:32', PMC('PMC7206757'), 'WSES 2020 (diverticulite)',
@@ -706,7 +920,19 @@
       acrhernia: F('ACR Appropriateness Criteria: Hernia, 2022 update. J Am Coll Radiol (PMID 36436960)', PUBMED('36436960'), 'ACR 2022 (hérnia)', 'Só o resumo foi lido: tomografia e ultrassom costumam ser os exames de primeira linha; a radiografia em geral não é indicada para o diagnóstico inicial.', 'secundaria'),
     }, FONTES_CONTRASTE),
     grupos: [
-      { id: 'dor', rotulo: 'Dor abdominal', criterios: [
+      { id: 'p_tca', rotulo: 'Protocolo de Barueri: indicações', criterios: [
+        C('tca_p_abscesso', 'Abscessos', { fonte: 'barueri' }),
+        C('tca_p_trauma', 'Traumatismos', { fonte: 'barueri' }),
+        C('tca_p_tumor', 'Tumores (diagnóstico e estadiamento)', { fonte: 'barueri' }),
+        C('tca_p_expansivo', 'Processos expansivos', { fonte: 'barueri' }),
+        C('tca_p_ruptura', 'Suspeita de ruptura de órgãos', { fonte: 'barueri' }),
+        C('tca_p_metastase', 'Metástases', { fonte: 'barueri' }),
+        C('tca_p_aneurisma', 'Aneurismas', { fonte: 'barueri' }),
+        C('tca_p_pancreatite', 'Pancreatites', { fonte: 'barueri' }),
+        C('tca_p_hemorragia', 'Hemorragias (pós-cirurgia, pós-cateterismo ou pós-tratamento anticoagulante)', { fonte: 'barueri' }),
+        C('tca_p_sistemica', 'Comprometimento de órgãos por micoses sistêmicas, colagenoses ou sarcoidose', { fonte: 'barueri' }),
+      ] },
+      { id: 'dor', rotulo: 'Diretrizes (reforço): dor abdominal', criterios: [
         C('tc_a_div', 'Dor em fossa ilíaca esquerda com suspeita de diverticulite aguda', { fonte: 'wsesdiv' }),
         C('tc_a_apend', 'Dor em fossa ilíaca direita com suspeita de apendicite, com ultrassom inconclusivo ou risco intermediário', { fonte: 'wsesapp', detalhe: 'Conduta de pronto-socorro ou cirurgia' }),
         C('tc_a_nao_loc', 'Dor abdominal aguda não localizada', { fonte: 'acrdor', detalhe: 'Cenário de urgência' }),
@@ -715,29 +941,32 @@
         C('tc_a_pielo', 'Pielonefrite de alto risco ou sem resposta ao tratamento', { fonte: 'acrpielo' }),
         C('tc_a_hernia', 'Hérnia abdominal para avaliação (tomografia ou ultrassom)', { fonte: 'acrhernia' }),
       ] },
-      { id: 'neoplasia', rotulo: 'Suspeita de neoplasia', criterios: [
+      { id: 'neoplasia', rotulo: 'Diretrizes (reforço): suspeita de neoplasia', criterios: [
         C('tc_a_pancreas', 'Suspeita de câncer de pâncreas: 60 anos ou mais e perda de peso, com diarreia, dor lombar, dor abdominal, náusea ou vômito', { fonte: 'ng12', detalhe: 'NICE NG12 1.2.5 (lista parcialmente lida)' }),
         C('tc_a_massa', 'Massa abdominal palpável', { fonte: 'acrmassa' }),
         C('tc_a_ictericia', 'Icterícia', { fonte: 'ng12', v: false, detalhe: 'A NICE NG12 manda encaminhar (40 anos ou mais); o papel da tomografia nessa via não foi lido' }),
         C('tc_a_incidental', 'Lesão hepática, renal ou adrenal encontrada em outro exame, para caracterizar', { v: false }),
-        C('tc_a_estad', 'Estadiamento ou seguimento de neoplasia conhecida', { v: false }),
       ] },
-      { id: 'aorta', rotulo: 'Aorta', criterios: [
+      { id: 'aorta', rotulo: 'Diretrizes (reforço): aorta', criterios: [
         C('tc_a_aaa', 'Aneurisma de aorta abdominal em avaliação para reparo eletivo (angiotomografia)', { fonte: 'ng156', detalhe: 'Na suspeita à palpação, o primeiro exame é o ultrassom' }),
       ] },
       grupoContraste('tca'),
     ],
     contra: [],
+    solicitantes: ['GASTRO', 'ENDOCRINO', 'PROCTO', 'NEFRO', 'URO', 'DERMA', 'HEMATO', 'REUMA', 'MAP'],
     campos: [
       campoCreatinina('tca'),
-      { id: 'us', rotulo: 'Ultrassonografia realizada (data e resultado)', rotuloNoTexto: 'Ultrassonografia', dica: 'Várias diretrizes colocam o ultrassom antes da tomografia (apendicite, diverticulite, massa de fígado ou vesícula, aneurisma, gestante, criança).' },
+      { id: 'rx_abdome', rotulo: 'Radiografia simples de abdome, em pé ou deitado (data e resultado)', rotuloNoTexto: 'Radiografia simples de abdome', obrigatorio: true,
+        exigidoMsg: 'O protocolo de Barueri pede a radiografia simples de abdome (em pé ou deitado): informe data e resultado.' },
+      { id: 'us', rotulo: 'Ultrassonografia realizada, se houver (data e resultado)', rotuloNoTexto: 'Ultrassonografia', dica: 'Várias diretrizes colocam o ultrassom antes da tomografia (apendicite, diverticulite, massa de fígado ou vesícula, aneurisma, gestante, criança).' },
       { id: 'peso', rotulo: 'Perda de peso (quanto e em quanto tempo) e sintomas associados', rotuloNoTexto: 'Perda de peso e sintomas', exigidoQuando: { criterio: ['tc_a_pancreas'] }, exigidoMsg: 'Informe a perda de peso (quanto e em quanto tempo) e o sintoma associado.' },
       { id: 'evolucao', rotulo: 'Dias de evolução e resposta à hidratação', rotuloNoTexto: 'Evolução', exigidoQuando: { criterio: ['tc_a_pancreatite'] }, exigidoMsg: 'Informe os dias de evolução e a resposta à hidratação (a tomografia é reservada para quem não melhora em 48 a 72 horas).' },
       { id: 'alto_risco', rotulo: 'Fator de alto risco (diabetes, litíase, obstrução, gestação, idoso, imunossupressão) ou falha do tratamento', rotuloNoTexto: 'Fator de alto risco', exigidoQuando: { criterio: ['tc_a_pielo'] }, exigidoMsg: 'Informe o fator de alto risco ou a falha do tratamento.' },
       { id: 'exame', rotulo: 'Exame físico e laboratório relevantes (leucócitos, PCR, amilase ou lipase, urina)', rotuloNoTexto: 'Exame físico e laboratório' },
-      { id: 'previo', rotulo: 'Tomografia ou outra imagem anterior (data e resultado)', rotuloNoTexto: 'Imagem anterior' },
     ],
     regras: [
+      { id: 'tca-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_tca'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
       { id: 'tca-urgencia', nivel: 'atencao', se: { criterioAlgum: ['tc_a_div', 'tc_a_apend', 'tc_a_nao_loc', 'tc_a_pancreatite', 'tc_a_colica'] },
         aviso: 'Dor abdominal aguda é cenário de urgência: o pedido costuma ser feito no pronto-socorro, e não por regulação eletiva.' },
       { id: 'tca-apend-us', nivel: 'atencao', se: { criterio: ['tc_a_apend'] },
@@ -780,35 +1009,42 @@
     id: 'tc_pelve', sistema: 'Tomografia', nome: 'Tomografia computadorizada de pelve', nomeCurto: 'TC de pelve',
     cids: [['R10.2', 'Dor pélvica e perineal'], ['N83.2', 'Outros cistos ovarianos e os não especificados'], ['R19.0', 'Tumoração ou massa intra-abdominal e pélvica']],
     fontes: Object.assign({
+      barueri: fonteProt('Tomografia da pelve', 'Indicações, pré-requisitos (história clínica, exame físico e ultrassom de pelve) e profissionais solicitantes.'),
       acrdor: F('ACR Appropriateness Criteria: Acute Pelvic Pain in the Reproductive Age Group, 2023 update. J Am Coll Radiol 2024;21(6S):S3 (PMID 38823952)', PUBMED('38823952'), 'ACR 2024 (dor pélvica aguda)',
         'Só o resumo foi lido: ultrassom transabdominal e transvaginal com Doppler como exame inicial em todas as pacientes; tomografia de abdome e pelve costuma ser apropriada se há suspeita de causa não ginecológica com β-hCG negativo.', 'secundaria'),
       acrpos: F('ACR Appropriateness Criteria: Postmenopausal Subacute or Chronic Pelvic Pain (PMID 41784596)', PUBMED('41784596'), 'ACR (dor pélvica na pós-menopausa)', 'Só o resumo foi lido: ultrassom é o exame inicial; ressonância ou tomografia de pelve em casos selecionados, se o ultrassom for inconclusivo.', 'secundaria'),
       ng12: F('NICE NG12. Suspected cancer: recognition and referral', NICE('ng12'), 'NICE NG12 (suspeita de câncer)', 'Texto lido. 1.5.1 a 1.5.9: na suspeita de câncer de ovário, o exame de imagem da atenção primária é o ultrassom de abdome e pelve (com CA125 a partir dos 40 anos), não a tomografia.'),
     }, FONTES_CONTRASTE),
     grupos: [
-      { id: 'ind', rotulo: 'Indicação', criterios: [
+      { id: 'p_tcp', rotulo: 'Protocolo de Barueri: indicações', criterios: [
+        C('tcp_p_trauma', 'Traumatismos', { fonte: 'barueri' }),
+        C('tcp_p_tumor', 'Tumores (diagnóstico e estadiamento)', { fonte: 'barueri' }),
+        C('tcp_p_expansivo', 'Processos expansivos', { fonte: 'barueri' }),
+        C('tcp_p_metastase', 'Metástases (detecção e acompanhamento)', { fonte: 'barueri' }),
+      ] },
+      { id: 'ind', rotulo: 'Diretrizes (reforço): dor pélvica', criterios: [
         C('tc_p_dor_aguda', 'Dor pélvica aguda em mulher em idade reprodutiva, com ultrassom feito, β-hCG negativo e suspeita de causa não ginecológica', { fonte: 'acrdor' }),
         C('tc_p_posmenop', 'Dor pélvica subaguda ou crônica na pós-menopausa, com ultrassom inconclusivo', { fonte: 'acrpos' }),
-        C('tc_p_massa', 'Massa pélvica ou anexial que o ultrassom não caracterizou', { v: false }),
-        C('tc_p_estad', 'Estadiamento ou seguimento de neoplasia pélvica (reto, bexiga, colo do útero, próstata)', { v: false }),
       ] },
       grupoContraste('tcp'),
     ],
     contra: [],
+    solicitantes: ['GINECO', 'URO', 'FISIATRA', 'HEMATO', 'MAP'],
     campos: [
       campoCreatinina('tcp'),
-      { id: 'us', rotulo: 'Ultrassonografia pélvica (data e resultado)', rotuloNoTexto: 'Ultrassonografia pélvica',
-        exigidoQuando: { criterioAlgum: ['tc_p_dor_aguda', 'tc_p_posmenop', 'tc_p_massa'] }, exigidoMsg: 'Informe o ultrassom pélvico (data e resultado): ele é o exame inicial nas diretrizes lidas (ACR; NICE NG12).' },
+      { id: 'us', rotulo: 'Ultrassonografia de pelve (data e resultado)', rotuloNoTexto: 'Ultrassonografia de pelve', obrigatorio: true,
+        exigidoMsg: 'O protocolo de Barueri pede o ultrassom de pelve: informe data e resultado (o ACR e a NICE NG12 também o colocam como exame inicial).' },
       { id: 'bhcg', rotulo: 'β-hCG (data e resultado)', rotuloNoTexto: 'β-hCG', exigidoQuando: { criterio: ['tc_p_dor_aguda'] }, exigidoMsg: 'Informe o β-hCG: o ACR usa o resultado para escolher a tomografia.' },
       { id: 'ca125', rotulo: 'CA125 (se feito; 40 anos ou mais)', rotuloNoTexto: 'CA125' },
-      { id: 'previo', rotulo: 'Tomografia ou outra imagem anterior (data e resultado)', rotuloNoTexto: 'Imagem anterior' },
     ],
     regras: [
       { id: 'tcp-sexo', nivel: 'info', se: { criterio: ['tc_p_dor_aguda'], sexo: 'M' },
         aviso: 'Este critério é para mulher em idade reprodutiva. Para homem, as fontes lidas não trazem critério de tomografia de pelve.' },
-      { id: 'tcp-abdome-pelve', nivel: 'info', se: { criterioAlgum: ['tc_p_dor_aguda', 'tc_p_posmenop', 'tc_p_massa', 'tc_p_estad'] },
+      { id: 'tcp-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_tcp'] },
+        aviso: 'O protocolo de Barueri não lista dor pélvica como indicação da tomografia de pelve (traumatismo, tumores, processos expansivos e metástases). O critério marcado vem do ACR: justifique por que o ultrassom não basta, ou o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
+      { id: 'tcp-abdome-pelve', nivel: 'info', se: { criterioAlgum: ['tc_p_dor_aguda', 'tc_p_posmenop', 'tcp_p_trauma', 'tcp_p_tumor', 'tcp_p_expansivo', 'tcp_p_metastase'] },
         aviso: 'O ACR trata "tomografia de abdome e pelve" como uma unidade; não foi encontrada fonte que sustente a tomografia de pelve isolada como rotina. Se a dúvida inclui o abdome, considere pedir a tomografia de abdome e pelve.' },
-      { id: 'tcp-ovario', nivel: 'info', se: { criterioAlgum: ['tc_p_massa'] },
+      { id: 'tcp-ovario', nivel: 'info', se: { criterioAlgum: ['tcp_p_expansivo', 'tcp_p_tumor'] },
         aviso: 'Na suspeita de câncer de ovário, a NICE NG12 usa CA125 (a partir dos 40 anos) e ultrassom de abdome e pelve; ascite ou massa pélvica ao exame vão para a via de suspeita de câncer.' },
       ...regrasContraste('tcp'),
     ],
@@ -828,13 +1064,26 @@
     id: 'psg', sistema: 'Sono', nome: 'Polissonografia', nomeCurto: 'Polissonografia',
     cids: [['G47.3', 'Apneia do sono'], ['G47.1', 'Hipersonia'], ['R06.8', 'Outras anormalidades da respiração (inclui ronco)']],
     fontes: {
+      barueri: fonteProt('Polissonografia', 'Indicações (dissonias e parassonias), pré-requisito (história clínica e exame físico completos) e profissionais solicitantes (pneumologista, cardiologista, otorrino, neurologista, cirurgião-dentista e médicos do SAD; o MAP não consta).'),
       aasm: F('Kapur VK et al. Clinical Practice Guideline for Diagnostic Testing for Adult Obstructive Sleep Apnea. J Clin Sleep Med 2017;13(3):479-504', PMC('PMC5337595'), 'AASM 2017 (apneia obstrutiva)',
         'Só o resumo das recomendações (cerca de 1 página) está no PMC. Polissonografia é o teste padrão quando há suspeita de apneia após avaliação clínica completa do sono; polissonografia ou teste domiciliar no adulto não complicado de risco aumentado para apneia moderada a grave; polissonografia em vez de teste domiciliar em doença cardiorrespiratória significativa, fraqueza respiratória neuromuscular, hipoventilação, opioide crônico, AVC prévio ou insônia grave (todas fortes).'),
       sbpt: F('Duarte RLM et al. Consenso da SBPT sobre Distúrbios Respiratórios do Sono. J Bras Pneumol 2022;48(4):e20220106', PMC('PMC9262434'), 'SBPT 2022 (distúrbios respiratórios do sono)',
         'Texto completo lido. Alta probabilidade pré-teste: sonolência diurna excessiva e 2 de 3 (ronco alto e frequente; apneias observadas ou engasgos; hipertensão). Teste tipo 3 não é indicado sem alta probabilidade pré-teste. Baixo risco: laboratório; alto risco: casa ou laboratório. STOP-Bang ≥ 3: alto risco.'),
     },
     grupos: [
-      { id: 'ind', rotulo: 'Indicação', criterios: [
+      { id: 'p_ps', rotulo: 'Protocolo de Barueri: indicações (dissonias e parassonias)', criterios: [
+        C('ps_p_insonia', 'Insônia', { fonte: 'barueri' }),
+        C('ps_p_narcolepsia', 'Narcolepsia', { fonte: 'barueri' }),
+        C('ps_p_hipersonia', 'Hipersonia idiopática ou hipersonias recorrentes', { fonte: 'barueri' }),
+        C('ps_p_respiratorio', 'Distúrbios respiratórios do sono (apneias, hipopneias, SAOS, síndrome da hiperresistência das vias aéreas superiores)', { fonte: 'barueri' }),
+        C('ps_p_dpoc', 'DPOC estágios III e IV', { fonte: 'barueri' }),
+        C('ps_p_movimentos', 'Síndrome dos movimentos periódicos dos membros (mioclonias noturnas)', { fonte: 'barueri' }),
+        C('ps_p_pernas', 'Síndrome das pernas inquietas', { fonte: 'barueri' }),
+        C('ps_p_despertar', 'Parassonias: distúrbios do despertar (sonambulismo, terror noturno, despertar confusional)', { fonte: 'barueri', detalhe: 'Indicações principais: risco de lesões ou violência, diferencial com crise epiléptica, falta de resposta ao tratamento, associação com distúrbio neurológico ou psiquiátrico' }),
+        C('ps_p_rem', 'Parassonias do sono REM (desordem comportamental do sono REM, paralisia do sono, pesadelos)', { fonte: 'barueri' }),
+        C('ps_p_transicao', 'Parassonias da transição sono-vigília (movimento rítmico, sonilóquio, bruxismo, enurese noturna)', { fonte: 'barueri' }),
+      ] },
+      { id: 'ind', rotulo: 'Diretrizes (reforço): indicação', criterios: [
         C('ps_suspeita', 'Suspeita de apneia obstrutiva do sono, após avaliação clínica completa do sono', { fonte: 'aasm' }),
         C('ps_risco', 'Alto risco: sonolência diurna excessiva e 2 de 3 (ronco alto e frequente; apneias observadas ou engasgos; hipertensão)', { fonte: 'sbpt' }),
       ] },
@@ -855,12 +1104,15 @@
       ] },
     ],
     contra: [],
+    solicitantes: ['PNEUMO', 'CARDIO', 'ORL', 'NEURO', 'DENTISTA', 'SAD'],
     campos: [
       { id: 'avaliacao', rotulo: 'Avaliação clínica do sono (sintomas, tempo, Epworth, exame físico)', rotuloNoTexto: 'Avaliação clínica do sono', tipo: 'area', obrigatorio: true,
         exigidoMsg: 'Resuma a avaliação clínica do sono: o teste deve ser feito junto com uma avaliação completa (AASM 2017).' },
       { id: 'comorb', rotulo: 'Comorbidades relevantes (hipertensão, IMC, cardiopatia, pneumopatia)', rotuloNoTexto: 'Comorbidades' },
     ],
     regras: [
+      { id: 'ps-sem-protocolo', nivel: 'atencao', se: { algumMarcado: true, semGrupo: ['p_ps'] },
+        aviso: 'Nenhuma indicação do protocolo de Barueri foi marcada. A regulação confere o pedido com o protocolo municipal: se o critério vem só de diretriz, o pedido pode ser devolvido ou cancelado por falta de pertinência.' },
       { id: 'ps-sem-lab', nivel: 'atencao', se: { criterioAlgum: ['ps_suspeita', 'ps_risco'], semGrupo: ['lab'] },
         aviso: 'Sem um motivo para polissonografia em laboratório, a AASM 2017 aceita, no adulto não complicado de risco aumentado para apneia moderada a grave, o teste domiciliar. O regulador pode propor o teste domiciliar; se há motivo (doença cardiorrespiratória, neuromuscular, opioide, AVC, insônia grave), marque-o.' },
       { id: 'ps-stopbang-sozinho', nivel: 'atencao', se: { criterio: ['ps_stopbang'], semGrupo: ['ind', 'lab'] },
@@ -883,10 +1135,11 @@
     VIG: ids(colonoscopia, 'vig', 'vig_serr'),
     SEG: ids(ecocardiograma, 'seguimento'),
     SEG_VALV: ids(ecocardiograma, 'seguimento').concat(['eco_valvopatia', 'eco_protese']),
-    DAC: ids(ergometrico, 'dac', 'assint'),
+    DAC: ids(ergometrico, 'dac', 'assint', 'p_te'),
     ASSINT: ids(ergometrico, 'assint'),
     DIAG: ergoDiag,
-    NAO_RES: mapa.grupos.flatMap((g) => g.criterios.map((c) => c.id)).filter((id) => id !== 'm_resistente'),
+    NAO_RES: ids(mapa, 'dx', 'trat', 'pop').filter((id) => id !== 'm_resistente'),
+    TCT_RX: tcTorax.grupos.filter((g) => ['p_tct', 'sintomas', 'ep', 'nodulo'].includes(g.id)).flatMap((g) => g.criterios.map((c) => c.id)),
   };
   const resolve = (x) => {
     if (x && typeof x === 'object' && !Array.isArray(x)) { for (const k of Object.keys(x)) x[k] = resolve(x[k]); return x; }
@@ -897,5 +1150,52 @@
     (ex.regras || []).forEach((r) => resolve(r.se));
   }
 
-  return { versao: '0.1.0', atualizadoEm: '2026-11-26', exames };
+  /* ---------- Regulação de Barueri (SP) ---------- */
+  const chavesRotulos = {
+    MAP: 'Médico da Atenção Primária (MAP: clínico, ginecologista ou pediatra)', MAP_GIN: 'MAP (ginecologista)', CARDIO: 'Cardiologista', GASTRO: 'Gastroenterologista', PROCTO: 'Proctologista (coloproctologista)',
+    GERIATRA: 'Geriatra', NEURO: 'Neurologista', PNEUMO: 'Pneumologista', ORL: 'Otorrinolaringologista', REUMA: 'Reumatologista', HEMATO: 'Hematologista', VASCULAR: 'Cirurgião vascular',
+    NEFRO: 'Nefrologista', ENDOCRINO: 'Endocrinologista', INFECTO: 'Infectologista', ORTO: 'Ortopedista', URO: 'Urologista', DERMA: 'Dermatologista', FISIATRA: 'Fisiatra',
+    GINECO: 'Ginecologista (atenção especializada)', DENTISTA: 'Cirurgião-dentista', SAD: 'Médicos do SAD (Serviço de Atendimento Domiciliar)', OUTRO: 'Outro profissional',
+  };
+  const solicitantes = [
+    { v: 'map', rotulo: 'Médico da Atenção Primária (clínico ou pediatra)', chaves: ['MAP'] },
+    { v: 'map_gin', rotulo: 'Médica da Atenção Primária (ginecologista)', chaves: ['MAP', 'MAP_GIN'] },
+    ...['CARDIO', 'GASTRO', 'PROCTO', 'GERIATRA', 'NEURO', 'PNEUMO', 'ORL', 'REUMA', 'HEMATO', 'VASCULAR', 'NEFRO', 'ENDOCRINO', 'INFECTO', 'ORTO', 'URO', 'DERMA', 'FISIATRA', 'GINECO', 'DENTISTA', 'SAD']
+      .map((k) => ({ v: k.toLowerCase(), rotulo: chavesRotulos[k], chaves: [k] })),
+    { v: 'outro', rotulo: 'Outro profissional', chaves: ['OUTRO'] },
+  ];
+  const prioridades = {
+    P1: 'P1 (vermelho): risco de agravo à saúde em curto prazo',
+    P2: 'P2 (amarelo): risco de agravo à saúde em médio prazo',
+    P3: 'P3 (verde): risco de agravo à saúde em longo prazo',
+    PE: 'PE (prioridade externa): recurso não disponível no município',
+  };
+  const prioridadesDetalhe = {
+    P1: 'Risco de perda funcional importante ou de agravamento rápido sem intervenção precoce. Agendamento na primeira vaga disponível (rede municipal ou estadual).',
+    P2: 'Prejuízo moderado às atividades de vida diária ou risco de progressão em médio prazo. Agendamento em ordem cronológica, conforme a oferta do recurso.',
+    P3: 'Menor gravidade, mas exige acompanhamento para evitar complicações a longo prazo. Agendamento em ordem cronológica, conforme a disponibilidade de vagas.',
+    PE: 'Só para recursos não disponíveis no município, encaminhados pelo SIRESP/CROSS. Pede relatório médico detalhado.',
+  };
+  const camposGerais = [
+    { id: 'exame_fisico', rotulo: 'Exame físico', rotuloNoTexto: 'Exame físico', tipo: 'area', obrigatorio: true, exigidoMsg: 'Descreva o exame físico: o protocolo de Barueri o pede em todos os exames.' },
+    { id: 'historico', rotulo: 'Histórico terapêutico e exames prévios (com datas)', rotuloNoTexto: 'Histórico terapêutico e exames prévios', tipo: 'area', obrigatorio: true,
+      exigidoMsg: 'Informe o histórico terapêutico e os exames prévios: as Diretrizes da Regulação de Barueri exigem e devolvem o encaminhamento sem eles.' },
+    { id: 'dados_prioridade', rotulo: 'Dados objetivos que fundamentam a prioridade', rotuloNoTexto: 'Dados objetivos que fundamentam a prioridade', tipo: 'area', obrigatorio: true,
+      exigidoMsg: 'Informe os dados objetivos que fundamentam a prioridade: as Diretrizes da Regulação de Barueri os exigem.' },
+  ];
+  const fontesRegulacao = {
+    diretrizes: LOC('Secretaria Municipal de Saúde de Barueri. Diretrizes da Regulação Ambulatorial do Município de Barueri, setembro de 2025', 'Diretrizes da Regulação de Barueri 2025',
+      'Lida no PDF fornecido pelo usuário. Todo encaminhamento deve ter CID compatível, justificativa clínica clara e condizente com o CID e o recurso, histórico terapêutico e exames prévios, e dados objetivos que fundamentem a prioridade. Encaminhamento incompleto ou incoerente é devolvido; CID e justificativa não pertinentes ao recurso levam ao cancelamento. Prioridades P1 (vermelho), P2 (amarelo), P3 (verde) e PE. Urgências e emergências vão aos prontos-socorros; as agendas abrem com no mínimo 60 dias de antecedência.'),
+    protocolos: LOC(PROT_NOME, 'Protocolo de Barueri 2024',
+      'Lido no PDF fornecido pelo usuário (135 páginas). Cada exame traz indicações, pré-requisitos e profissionais solicitantes. A escala de prioridade desse documento (P0, P1, P2) é a anterior; o site usa a das Diretrizes de 2025 (P1, P2, P3). Exames fora do protocolo podem ser pedidos conforme as atribuições de cada profissional.'),
+    ficha: FONTE_FICHA,
+  };
+
+  return { versao: '0.2.0', atualizadoEm: '2026-11-26', municipio: 'Barueri (SP)', chavesRotulos, solicitantes, prioridades, prioridadesDetalhe,
+    prioridadesDica: 'Urgências e emergências vão aos prontos-socorros; as agendas abrem com no mínimo 60 dias de antecedência.',
+    avisosPrioridade: {
+      P1: 'A P1 pede dados objetivos que a sustentem: o médico regulador pode reclassificar a prioridade se o detalhamento clínico e os exames não a justificarem (Diretrizes de Barueri, 2025). Urgência e emergência vão ao pronto-socorro.',
+      PE: 'A prioridade externa é só para recurso não disponível no município (via SIRESP/CROSS) e pede relatório médico detalhado.',
+    },
+    camposGerais, fontesRegulacao, exames };
 });
