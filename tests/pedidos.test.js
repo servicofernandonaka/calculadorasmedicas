@@ -12,8 +12,8 @@ const base = { idade: 58, sexo: 'M', prioridade: 'eletivo' };
 const pedido = (exame, extra) => E.montar(D, Object.assign({ exame, cid: ex(exame).cids[0][0] }, base, extra));
 
 /* ---------- integridade do catálogo ---------- */
-test('9 exames, cada um com sistema, nome, CIDs, fontes e conferência', () => {
-  assert.equal(D.exames.length, 9);
+test('exames do catálogo, cada um com sistema, nome, CIDs, fontes e conferência', () => {
+  assert.equal(D.exames.length, 7);
   for (const e of D.exames) {
     assert.ok(e.sistema && e.nome && e.nomeCurto, e.id);
     assert.ok(e.cids.length >= 1 && e.cids.every((c) => /^[A-Z]\d{2}(\.\d)?$/.test(c[0]) && c[1]), e.id + ': CID');
@@ -226,24 +226,6 @@ test('MAPA: exige PA de consultório; indicação comum a MRPA avisa; indicaçã
   assert.ok(!sono.avisos.some((a) => a.id === 'm-mrpa'));
   const res = pedido('mapa', { cid: 'I10', criterios: ['m_resistente'], campos: { pa: '160/100 com 3 fármacos' } });
   assert.ok(!res.avisos.some((a) => a.id === 'm-mrpa'));
-});
-
-test('ressonância lombar: dor inespecífica após 6 semanas avisa; déficit neurológico exige o exame neurológico', () => {
-  const insp = pedido('rm_lombar', { cid: 'M54.5', criterios: ['rl_6sem'], campos: { tratamento: 'AINE e fisioterapia por 6 semanas' } });
-  assert.ok(insp.avisos.some((a) => a.id === 'rl-inespecifica'));
-  const def = pedido('rm_lombar', { cid: 'M54.1', criterios: ['rl_deficit'] });
-  assert.ok(def.faltas.some((f) => /neurológico/.test(f)));
-  const ok = pedido('rm_lombar', { cid: 'M54.1', criterios: ['rl_deficit'], campos: { neuro: 'Força 3/5 em dorsiflexão do pé direito' } });
-  assert.equal(ok.pronto, true);
-  assert.ok(!ok.avisos.some((a) => a.id === 'rl-inespecifica'));
-});
-
-test('ressonância de joelho: radiografia prévia é obrigatória', () => {
-  const sem = pedido('rm_joelho', { cid: 'M25.5', criterios: ['rj_atipico'] });
-  assert.ok(sem.faltas.some((f) => /radiografia/i.test(f)));
-  const ok = pedido('rm_joelho', { cid: 'M25.5', criterios: ['rj_atipico'], campos: { radiografia: 'Ortostatismo, 02/11/2026: sem alterações' } });
-  assert.equal(ok.pronto, true);
-  assert.match(ok.texto, /Radiografia do joelho: Ortostatismo, 02\/11\/2026: sem alterações\./);
 });
 
 test('polissonografia: exige avaliação do sono; sem motivo de laboratório avisa; STOP-Bang sozinho não basta', () => {

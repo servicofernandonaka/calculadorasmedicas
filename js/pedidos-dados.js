@@ -490,107 +490,6 @@
     ] },
   };
 
-  /* ================= Musculoesquelético ================= */
-  const rmLombar = {
-    id: 'rm_lombar', sistema: 'Musculoesquelético', nome: 'Ressonância magnética da coluna lombar', nomeCurto: 'Ressonância da coluna lombar',
-    cids: [['M54.5', 'Dor lombar baixa'], ['M54.4', 'Lumbago com ciática'], ['M54.3', 'Ciática'], ['M54.1', 'Radiculopatia'], ['M51.1', 'Transtornos de discos lombares e de outros discos com radiculopatia'],
-      ['M48.0', 'Estenose espinhal'], ['G83.4', 'Síndrome da cauda equina']],
-    fontes: {
-      chou07: F('Chou R et al. Diagnostic imaging for low back pain: advice for high-value health care from the ACP. Ann Intern Med 2011;154:181 e Chou R et al. Ann Intern Med 2007;147:478 (PMID 17909209, 21282698)', PUBMED('17909209'), 'ACP (Chou 2007 e 2011)',
-        'Só os resumos foram lidos. Não pedir imagem de rotina na dor lombar inespecífica (forte); imagem se déficit neurológico grave ou progressivo ou doença grave suspeita (forte); em radiculopatia ou estenose persistente, RM só se candidato a cirurgia ou infiltração epidural (forte).'),
-      acr: F('ACR Appropriateness Criteria: Low Back Pain, 2021 update. J Am Coll Radiol 2021;18(11S):S361 (PMID 34794594)', PUBMED('34794594'), 'ACR 2021 (lombalgia)',
-        'Só o resumo foi lido: imagem é considerada após até 6 semanas de tratamento clínico e fisioterapia sem melhora, ou com sinais de alarme (cauda equina, neoplasia, fratura, infecção). A dor lombar aguda não complicada não precisa de imagem.'),
-      nice: F('NICE NG59. Low back pain and sciatica in over 16s: assessment and management', 'https://www.nice.org.uk/guidance/ng59', 'NICE NG59',
-        'Texto lido. 1.1.4: não oferecer imagem de rotina em serviço não especializado. 1.1.6: considerar imagem em serviço especializado apenas se o resultado puder mudar a conduta.'),
-    },
-    grupos: [
-      { id: 'alarme', rotulo: 'Déficit neurológico ou suspeita de doença grave', criterios: [
-        C('rl_deficit', 'Déficit neurológico grave ou progressivo', { fonte: 'chou07' }),
-        C('rl_cauda', 'Suspeita de síndrome da cauda equina', { fonte: 'acr' }),
-        C('rl_neoplasia', 'Suspeita de neoplasia', { fonte: 'acr' }),
-        C('rl_infeccao', 'Suspeita de infecção', { fonte: 'acr' }),
-        C('rl_fratura', 'Suspeita de fratura', { fonte: 'acr' }),
-      ] },
-      { id: 'radic', rotulo: 'Radiculopatia ou estenose', criterios: [
-        C('rl_radic_cirurgia', 'Dor lombar persistente com sinais de radiculopatia ou estenose, em candidato a cirurgia ou infiltração epidural', { fonte: 'chou07' }),
-        C('rl_especializado', 'Avaliação em serviço especializado, com RM que provavelmente mudará a conduta', { fonte: 'nice' }),
-      ] },
-      { id: 'tempo', rotulo: 'Falha do tratamento clínico', criterios: [
-        C('rl_6sem', 'Sem melhora após até 6 semanas de tratamento clínico e fisioterapia', { fonte: 'acr', detalhe: 'O ACR admite imagem nesse cenário; a ACP e o NICE não recomendam imagem de rotina na dor lombar inespecífica' }),
-      ] },
-    ],
-    contra: [C('rl_implante', 'Marca-passo, desfibrilador ou outro implante', { frase: 'Portador de dispositivo implantado (conferir compatibilidade com ressonância)' })],
-    campos: [
-      { id: 'neuro', rotulo: 'Exame neurológico (força, reflexos, sensibilidade)', rotuloNoTexto: 'Exame neurológico', tipo: 'area',
-        exigidoQuando: { criterioAlgum: ['rl_deficit', 'rl_cauda', 'rl_radic_cirurgia'] }, exigidoMsg: 'Descreva o exame neurológico (força, reflexos, sensibilidade).' },
-      { id: 'tratamento', rotulo: 'Tratamento clínico e fisioterapia realizados (o que e por quanto tempo)', rotuloNoTexto: 'Tratamento já realizado', tipo: 'area',
-        exigidoQuando: { criterioAlgum: ['rl_radic_cirurgia', 'rl_6sem', 'rl_especializado'] }, exigidoMsg: 'Informe o tratamento clínico e a fisioterapia já realizados e por quanto tempo.' },
-      { id: 'previo', rotulo: 'Exames de imagem anteriores (data e resultado)', rotuloNoTexto: 'Exames de imagem anteriores' },
-    ],
-    regras: [
-      { id: 'rl-inespecifica', nivel: 'atencao', se: { criterio: ['rl_6sem'], semGrupo: ['alarme', 'radic'] },
-        aviso: 'Dor lombar sem déficit, sinal de alarme nem candidatura a cirurgia ou infiltração: a ACP (Chou) e o NICE NG59 não recomendam imagem de rotina; só o ACR 2021 admite após 6 semanas sem melhora. Detalhe o tratamento feito e a repercussão funcional.' },
-      { id: 'rl-implante', nivel: 'info', se: { criterio: ['rl_implante'] },
-        aviso: 'Confira se o dispositivo é compatível com ressonância (consenso HRS 2017 para dispositivos cardíacos; Manual de Segurança em RM do ACR). Os critérios de segurança não foram lidos neste site.' },
-    ],
-    naoIndicado: [
-      'Dor lombar inespecífica sem sinais de alarme: não pedir imagem de rotina (ACP, recomendação forte).',
-      'Dor lombar aguda e radiculopatia não complicadas são benignas e autolimitadas, e não justificam imagem (ACR 2021).',
-      'Em serviço não especializado, o NICE NG59 não recomenda imagem de rotina; em serviço especializado, só se o resultado puder mudar a conduta.',
-    ],
-    conferencia: { nivel: 'parcial', data: '2026-11-26', pendencias: [
-      'ACP e ACR foram lidos só nos resumos; os níveis de adequação por cenário do ACR não foram lidos.',
-      'Não foi encontrada fonte brasileira nem critérios do Rol da ANS ou de protocolos de regulação do SUS. Exigência de radiografia prévia: sem fonte.',
-      'Contraindicações da RM (marca-passo, implantes, claustrofobia): critérios não lidos.',
-    ] },
-  };
-
-  const rmJoelho = {
-    id: 'rm_joelho', sistema: 'Musculoesquelético', nome: 'Ressonância magnética do joelho', nomeCurto: 'Ressonância do joelho',
-    cids: [['M25.5', 'Dor articular'], ['M23.2', 'Transtorno do menisco devido a ruptura ou lesão antiga'], ['M23.3', 'Outros transtornos do menisco'], ['M23.5', 'Instabilidade crônica do joelho'],
-      ['S83.2', 'Ruptura do menisco, atual'], ['S83.5', 'Entorse e distensão que envolvem o ligamento cruzado do joelho'], ['M17.9', 'Gonartrose, não especificada'], ['M87.0', 'Necrose asséptica idiopática do osso']],
-    fontes: {
-      acr: F('ACR Appropriateness Criteria: Chronic Knee Pain, 2026 update. J Am Coll Radiol 2026;23(8):1799 (PMID 42340275)', PUBMED('42340275'), 'ACR 2026 (dor crônica no joelho)',
-        'Só o resumo foi lido: a radiografia é o exame inicial na dor crônica do joelho; outras causas além da artrose incluem lesão osteocondral, fratura de insuficiência subcondral, mau alinhamento patelofemoral e alterações crônicas de tendão, menisco ou ligamento.'),
-      nice: F('NICE NG226. Osteoarthritis in over 16s: diagnosis and management', 'https://www.nice.org.uk/guidance/ng226', 'NICE NG226',
-        'Texto lido. 1.1.1: diagnóstico clínico, sem imagem, em quem tem 45 anos ou mais, dor ao esforço e rigidez matinal de até 30 minutos. 1.1.2: não usar imagem de rotina, a menos que haja características atípicas ou sugestivas de outro diagnóstico. 1.5.4: sem imagem de rotina no seguimento.'),
-      duong: F('Duong V et al. Diagnosis and Management of Knee Osteoarthritis. JAMA 2023;330:1568 (PMID 37874571)', PUBMED('37874571'), 'JAMA 2023 (gonartrose)',
-        'Só o resumo foi lido: na lesão meniscal degenerativa, o exercício é o tratamento de primeira linha e a cirurgia não é indicada, mesmo com sintomas mecânicos.', 'secundaria'),
-    },
-    grupos: [
-      { id: 'ind', rotulo: 'Indicação', dica: 'A radiografia é o primeiro exame (ACR 2026). Os critérios abaixo são os usuais; poucos foram conferidos no texto.', criterios: [
-        C('rj_atipico', 'Dor no joelho com características atípicas ou que sugerem outro diagnóstico além da artrose', { fonte: 'nice' }),
-        C('rj_rx_nao_explica', 'Radiografia em ortostatismo realizada e que não explica o quadro', { fonte: 'acr', v: false, detalhe: 'O resumo do ACR 2026 não detalha quando a RM é indicada depois da radiografia' }),
-        C('rj_mecanicos', 'Sintomas mecânicos (bloqueio, travamento) com suspeita de lesão meniscal', { v: false }),
-        C('rj_ligamento', 'Suspeita de lesão ligamentar após trauma', { v: false }),
-        C('rj_osteo', 'Suspeita de osteonecrose, fratura de insuficiência ou lesão osteocondral', { v: false }),
-        C('rj_tumor', 'Suspeita de tumor ou infecção', { v: false }),
-      ] },
-    ],
-    contra: [C('rj_implante', 'Marca-passo, desfibrilador ou outro implante', { frase: 'Portador de dispositivo implantado (conferir compatibilidade com ressonância)' })],
-    campos: [
-      { id: 'radiografia', rotulo: 'Radiografia do joelho (data e resultado)', rotuloNoTexto: 'Radiografia do joelho', obrigatorio: true, exigidoMsg: 'Informe a radiografia do joelho (data e resultado): ela é o exame inicial.' },
-      { id: 'tratamento', rotulo: 'Tratamento conservador realizado (o que e por quanto tempo)', rotuloNoTexto: 'Tratamento conservador', dica: 'A duração mínima não tem fonte lida; alguns reguladores pedem.' },
-    ],
-    regras: [
-      { id: 'rj-artrose', nivel: 'info', se: { criterio: ['rj_mecanicos'], idadeMaior: 44 },
-        aviso: 'A partir dos 45 anos, o diagnóstico de artrose é clínico (NICE NG226). Na lesão meniscal degenerativa, o exercício é a primeira linha, mesmo com sintomas mecânicos (JAMA 2023, resumo). Descreva por que a RM mudaria a conduta.' },
-      { id: 'rj-implante', nivel: 'info', se: { criterio: ['rj_implante'] },
-        aviso: 'Confira se o dispositivo é compatível com ressonância (consenso HRS 2017; Manual de Segurança em RM do ACR). Os critérios de segurança não foram lidos neste site.' },
-    ],
-    naoIndicado: [
-      'Artrose típica diagnosticada clinicamente (45 anos ou mais, dor ao esforço, rigidez matinal de até 30 minutos): sem imagem (NICE NG226, 1.1.1).',
-      'Não usar imagem de rotina para diagnosticar artrose, a menos que haja características atípicas, nem no seguimento (NICE NG226, 1.1.2 e 1.5.4).',
-      'Radiografia é o exame inicial na dor crônica do joelho (ACR 2026).',
-      'Lesão meniscal degenerativa: exercício como primeira linha, e cirurgia não indicada mesmo com sintomas mecânicos (JAMA 2023, resumo).',
-    ],
-    conferencia: { nivel: 'parcial', data: '2026-11-26', pendencias: [
-      'É o exame com menos critérios conferidos: o ACR 2026 e o JAMA 2023 foram lidos só nos resumos, e o ACR de trauma agudo do joelho não foi localizado.',
-      'Lesão meniscal com sintomas mecânicos, lesão ligamentar, osteonecrose, tumor e infecção: sem fonte lida (marcados na tela). Tempo mínimo de tratamento conservador: sem fonte.',
-      'Não foi encontrada fonte brasileira, nem critérios do Rol da ANS ou de protocolos de regulação do SUS.',
-    ] },
-  };
-
   /* ================= Sono ================= */
   const psg = {
     id: 'psg', sistema: 'Sono', nome: 'Polissonografia', nomeCurto: 'Polissonografia',
@@ -644,7 +543,7 @@
     ] },
   };
 
-  const exames = [eda, colonoscopia, ecocardiograma, ergometrico, holter, mapa, rmLombar, rmJoelho, psg];
+  const exames = [eda, colonoscopia, ecocardiograma, ergometrico, holter, mapa, psg];
 
   /* Listas de ids usadas por regras e campos ("criterioAlgum: 'VIG'" etc.) */
   const SET = {
