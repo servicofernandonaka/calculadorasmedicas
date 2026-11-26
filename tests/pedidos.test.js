@@ -401,7 +401,7 @@ test('protocolo de Barueri 2024: número de indicações de cada exame, conforme
 
 test('protocolo de Barueri 2024: profissionais solicitantes de cada exame, conforme o PDF', () => {
   const esperado = {
-    eda: ['GASTRO', 'ORL', 'REUMA', 'SAD', 'VASCULAR'],
+    eda: ['GASTRO', 'MAP', 'ORL', 'REUMA', 'SAD', 'VASCULAR'], // o protocolo de 2024 não lista o MAP; a regulação informou que o MAP pode pedir EDA
     colonoscopia: ['GASTRO', 'GERIATRA', 'MAP', 'PROCTO'],
     eco: ['CARDIO', 'HEMATO', 'MAP', 'NEURO', 'PNEUMO', 'REUMA', 'VASCULAR'],
     ergometrico: ['CARDIO', 'MAP'],
@@ -426,17 +426,20 @@ test('cada exame cita o protocolo de Barueri como fonte local, sem link', () => 
   assert.ok(ex('eda').fontes.ficha && ex('colonoscopia').fontes.ficha);
 });
 
-test('o MAP não consta como solicitante de EDA, Holter e polissonografia; consta em colonoscopia, eco, MAPA e tomografias', () => {
+test('o MAP não consta como solicitante de Holter e polissonografia; consta em EDA (por informação da regulação), colonoscopia, eco, MAPA e tomografias', () => {
   const aviso = (exame, quem) => pedido(exame, { solicitante: quem, criterios: [crit(ex(exame)).find((c) => /^p_/.test(c.grupo)).id] }).avisos.find((a) => a.id === 'solicitante');
-  for (const id of ['eda', 'holter', 'psg']) {
+  for (const id of ['holter', 'psg']) {
     const a = aviso(id, 'map');
     assert.ok(a, id);
     assert.match(a.texto, /Barueri/);
     assert.match(a.texto, /não consta/);
+    assert.match(a.texto, /\(2024\)/);
+    assert.match(a.texto, /pode ter sido atualizado/);
   }
-  assert.match(aviso('eda', 'map').texto, /Gastroenterologista/);
-  for (const id of ['colonoscopia', 'eco', 'mapa', 'ergometrico', 'tc_torax', 'tc_abdome', 'tc_pelve']) assert.ok(!aviso(id, 'map'), id);
+  assert.match(aviso('holter', 'map').texto, /Cardiologista/);
+  for (const id of ['eda', 'colonoscopia', 'eco', 'mapa', 'ergometrico', 'tc_torax', 'tc_abdome', 'tc_pelve']) assert.ok(!aviso(id, 'map'), id);
   assert.ok(!aviso('eda', 'gastro'));
+  assert.ok(ex('eda').solicitantesNota && /MAP pode solicitar/.test(ex('eda').solicitantesNota));
   assert.ok(!aviso('holter', 'cardio'));
   assert.ok(!aviso('eda', 'outro'), 'outro profissional não recebe aviso');
 });

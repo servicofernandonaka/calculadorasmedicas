@@ -102,7 +102,7 @@
     if (sol && arr(ex.solicitantes).length && !sol.chaves.some((k) => ex.solicitantes.includes(k)) && !sol.chaves.includes('OUTRO')) {
       const rot = (k) => (cat.chavesRotulos || {})[k] || k;
       res.avisos.push({ id: 'solicitante', nivel: 'atencao',
-        texto: `O protocolo de ${cat.municipio || 'regulação'} lista como solicitantes de ${ex.nomeCurto || ex.nome}: ${ex.solicitantes.map(rot).join('; ')}. O profissional informado não consta. Confirme com a microrregulação ou encaminhe o paciente à consulta com o especialista.` });
+        texto: `O protocolo de ${cat.municipio || 'regulação'}${cat.protocoloAno ? ' (' + cat.protocoloAno + ')' : ''} lista como solicitantes de ${ex.nomeCurto || ex.nome}: ${ex.solicitantes.map(rot).join('; ')}. O profissional informado não consta, mas o protocolo pode ter sido atualizado depois. Confirme com a microrregulação ou encaminhe o paciente à consulta com o especialista.` });
     }
     const avPrior = (cat.avisosPrioridade || {})[e.prioridade];
     if (avPrior) res.avisos.push({ id: 'prioridade', nivel: 'info', texto: avPrior });
