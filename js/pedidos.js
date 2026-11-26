@@ -13,6 +13,7 @@
   let st = novo();
   let editado = false;   // o profissional mexeu no texto: não sobrescrever
   let ultimo = '';       // último texto gerado pelo formulário
+  let ultimoHtml = '';   // evita refazer a tela (e perder o foco ou o clique) quando nada mudou
 
   const SISTEMAS = [];
   D.exames.forEach((x) => { if (!SISTEMAS.includes(x.sistema)) SISTEMAS.push(x.sistema); });
@@ -35,12 +36,12 @@
     if (!ex) return '';
     const cids = `<label class="pd-field"><span>CID-10 da indicação</span><select id="pd-cid"><option value="">Selecione…</option>${ex.cids.map((c) => `<option value="${esc(c[0])}">${esc(c[0])} - ${esc(c[1])}</option>`).join('')}</select></label>`;
     const grupos = ex.grupos.map((g, gi) => `<fieldset class="pd-grp"><legend>${esc(g.rotulo)}</legend>${g.dica ? `<p class="pd-dica">${esc(g.dica)}</p>` : ''}` +
-      g.criterios.map((c) => `<label class="pd-check"><input type="checkbox" data-crit="${esc(c.id)}"><span>${esc(c.rotulo)}${c.detalhe ? `<small>${esc(c.detalhe)}</small>` : ''}</span></label>`).join('') + '</fieldset>').join('');
+      g.criterios.map((c) => `<label class="pd-check"><input type="checkbox" data-crit="${esc(c.id)}"><span>${esc(c.rotulo)}${c.detalhe ? `<small>${esc(c.detalhe)}</small>` : ''}${c.v === false ? '<small class="pd-pend">Critério usual, ainda sem conferência no texto da diretriz</small>' : ''}</span></label>`).join('') + '</fieldset>').join('');
     const contra = (ex.contra && ex.contra.length) ? `<fieldset class="pd-grp pd-contra"><legend>Contraindicações e cuidados (marque se presentes)</legend>` +
       ex.contra.map((c) => `<label class="pd-check"><input type="checkbox" data-crit="${esc(c.id)}"><span>${esc(c.rotulo)}${c.detalhe ? `<small>${esc(c.detalhe)}</small>` : ''}</span></label>`).join('') +
       (ex.contraConfirmacao ? `<label class="pd-check pd-confirma"><input type="checkbox" id="pd-contra-ok"><span>Revisei as contraindicações e nenhuma está presente<small>Entra no texto do pedido</small></span></label>` : '') + '</fieldset>' : '';
     const campos = (ex.campos || []).map((c) => `<label class="pd-field"><span>${esc(c.rotulo)}</span>` +
-      (c.tipo === 'area' ? `<textarea data-campo="${esc(c.id)}" rows="2"></textarea>` : `<input type="text" data-campo="${esc(c.id)}" autocomplete="off">`) +
+      (c.tipo === 'area' ? `<textarea data-campo="${esc(c.id)}" rows="2"></textarea>` : `<input type="text"${c.tipo === 'numero' ? ' inputmode="decimal"' : ''} data-campo="${esc(c.id)}" autocomplete="off">`) +
       (c.dica ? `<small class="pd-dica">${esc(c.dica)}</small>` : '') + '</label>').join('');
     const naoInd = (ex.naoIndicado && ex.naoIndicado.length) ? `<details class="pd-nao"><summary>Quando o pedido costuma ser negado ou não é indicado</summary><ul>${ex.naoIndicado.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></details>` : '';
     return `${cids}${grupos}${contra}${campos}
@@ -72,6 +73,7 @@
     const ex = res.exame;
     if (!ex) {
       alvo.innerHTML = `<div class="pd-card pd-empty"><p><b>Escolha o exame para começar.</b> Marque os critérios que o paciente cumpre e o texto da justificativa aparece aqui, pronto para colar no prontuário.</p></div>`;
+      ultimoHtml = '';
       $('#pd-status').textContent = '';
       return;
     }
@@ -89,7 +91,8 @@
     } else {
       miolo = `<div class="pd-card pd-faltas"><p class="pd-lab">Para gerar o texto, falta:</p><ul>${res.faltas.map((f) => `<li>${esc(f)}</li>`).join('')}</ul></div>`;
     }
-    alvo.innerHTML = avisos + miolo + fontesHtml(ex, res);
+    const html = avisos + miolo + fontesHtml(ex, res);
+    if (html !== ultimoHtml) { alvo.innerHTML = html; ultimoHtml = html; }
     $('#pd-status').textContent = res.pronto ? 'Texto do pedido pronto.' : res.bloqueado ? 'Pedido não recomendado: veja o aviso.' : `Faltam ${res.faltas.length} item(ns) para gerar o texto.`;
   }
 
@@ -109,6 +112,8 @@
 
     const sync = (e) => {
       const t = e.target;
+      // Campos de texto já foram tratados a cada tecla ('input'); no 'change' (ao sair do campo) não há o que refazer
+      if (e.type === 'change' && t.matches('input[type=text], input[type=number], textarea')) return;
       if (t.id === 'pd-exame') {
         st = Object.assign(novo(), { idade: st.idade, sexo: st.sexo, prioridade: st.prioridade, exame: t.value });
         editado = false;
@@ -135,10 +140,10 @@
         st = novo(); editado = false; f.innerHTML = formBase(); render(); $('#pd-exame').focus();
       }
     });
-    res.addEventListener('input', (e) => { if (e.target.id === 'pd-texto') { editado = true; const r = $('#pd-refazer'), n = $('#pd-edit-nota'); if (r) r.hidden = false; if (n) n.hidden = false; } });
+    res.addEventListener('input', (e) => { if (e.target.id === 'pd-texto') { editado = true; ultimoHtml = ''; const r = $('#pd-refazer'), n = $('#pd-edit-nota'); if (r) r.hidden = false; if (n) n.hidden = false; } });
     res.addEventListener('click', (e) => {
       if (e.target.closest('#pd-copiar')) copiar();
-      else if (e.target.closest('#pd-refazer')) { editado = false; render(); }
+      else if (e.target.closest('#pd-refazer')) { editado = false; ultimoHtml = ''; render(); }
     });
     render();
   }

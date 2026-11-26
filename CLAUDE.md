@@ -15,6 +15,7 @@ Site estático em HTML, CSS e JavaScript puro. Sem build, sem framework, sem npm
 - `js/leituracritica*.js` e `js/lc-*.js`: Leitura crítica (motores em `lc-*.js`, interface em `leituracritica*.js`)
 - `js/education.js`: guias do Paciente
 - `js/ai.js`, `js/lc-ia.js`: Assistente IA e pré-preenchimento por IA
+- `js/pedidos-engine.js`, `js/pedidos-dados.js`, `js/pedidos.js`: aba Pedidos de exames (motor do texto, catálogo com critério e fonte, interface). Critério novo: `v: true` só se lido no texto da fonte; senão `v: false` (aparece marcado na tela). Teste em `tests/pedidos.test.js`
 - `js/icons.js`, `js/art.js`: ícones e ilustrações SVG
 - `css/styles.css` (~66 KB): estilos; reutilizar classes e variáveis existentes
 - `tests/`: testes dos motores `lc-*` (node:test, sem dependências)

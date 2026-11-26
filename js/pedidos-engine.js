@@ -32,7 +32,9 @@
 
   function todosCriterios(ex) {
     const out = [];
-    for (const g of arr(ex.grupos)) for (const c of arr(g.criterios)) out.push(Object.assign({ grupo: g.id, grupoRotulo: g.rotulo }, c));
+    for (const g of arr(ex.grupos)) for (const c of arr(g.criterios)) out.push(Object.assign({ grupo: g.id, grupoRotulo: g.rotulo, soContexto: !!g.soContexto }, c));
+    // Contraindicações e cuidados entram como contexto (aparecem nas regras e no texto)
+    for (const c of arr(ex.contra)) out.push(Object.assign({ grupo: 'contra', grupoRotulo: 'Contraindicações e cuidados', soContexto: true }, c));
     return out;
   }
 
@@ -61,8 +63,10 @@
     const marcados = new Set(arr(e.criterios).filter((id) => criterios.some((c) => c.id === id)));
     const gruposMarcados = new Set();
     for (const c of criterios) if (marcados.has(c.id)) gruposMarcados.add(c.grupo);
-    const escolhidos = criterios.filter((c) => marcados.has(c.id));
-    res.criteriosMarcados = escolhidos.map((c) => c.id);
+    const todosEscolhidos = criterios.filter((c) => marcados.has(c.id));
+    const escolhidos = todosEscolhidos.filter((c) => !c.soContexto);   // critérios de indicação
+    const contexto = todosEscolhidos.filter((c) => c.soContexto);      // só contexto (ex.: frequência dos sintomas)
+    res.criteriosMarcados = todosEscolhidos.map((c) => c.id);
     const contaGrupo = (g) => criterios.filter((c) => c.grupo === g && marcados.has(c.id)).length;
     const ctx = { idade, sexo, marcados, gruposMarcados, contaGrupo };
 
@@ -87,10 +91,10 @@
     /* Intervalo mínimo entre exames (vigilância) */
     const anosDesde = limpa((e.campos || {}).anosDesde).replace(',', '.');
     if (anosDesde !== '' && Number.isFinite(Number(anosDesde))) {
-      for (const c of escolhidos) {
+      for (const c of todosEscolhidos) {
         if (c.intervaloMin != null && Number(anosDesde) < c.intervaloMin) {
           res.avisos.push({ id: 'intervalo-' + c.id, nivel: 'atencao',
-            texto: `Intervalo recomendado para este achado: ${String(c.intervaloMin).replace('.', ',')} ano(s) (${c.intervaloFonte || 'ver fonte'}). O exame anterior foi há ${String(anosDesde).replace('.', ',')} ano(s): o pedido antes do prazo costuma ser devolvido, a menos que haja sintoma ou outra indicação.` });
+            texto: `Intervalo recomendado para este achado: ${String(c.intervaloMin).replace('.', ',')} ano(s) (${c.intervaloFonte || 'ver fonte'}). O exame anterior foi há ${String(anosDesde).replace('.', ',')} ano(s): o pedido antes do prazo pode ser devolvido, a menos que haja sintoma ou outra indicação.` });
         }
       }
     }
@@ -109,6 +113,7 @@
     if (quadro) L.push('', 'Quadro clínico: ' + fimDeFrase(quadro));
     L.push('', 'Critérios de indicação presentes:');
     for (const c of escolhidos) L.push('- ' + fimDeFrase(c.frase || c.rotulo));
+    if (contexto.length) { L.push('', 'Contexto e cuidados:'); for (const c of contexto) L.push('- ' + fimDeFrase(c.frase || c.rotulo)); }
     for (const c of campos) {
       const v = limpa((e.campos || {})[c.id]);
       if (v) L.push('', `${c.rotuloNoTexto || c.rotulo}: ${fimDeFrase(v)}`);
@@ -119,7 +124,7 @@
     if (obs) L.push('', 'Observações: ' + fimDeFrase(obs));
     if (ex.fechamento) L.push('', fimDeFrase(ex.fechamento));
     const refs = [];
-    for (const c of escolhidos) {
+    for (const c of todosEscolhidos) {
       const f = ex.fontes && ex.fontes[c.fonte];
       if (f && f.curta && !refs.includes(f.curta)) refs.push(f.curta);
     }

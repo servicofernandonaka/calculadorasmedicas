@@ -1145,6 +1145,7 @@ th { background: var(--surface-2); }
 #view-pedidos .pd-check:has(input:checked) { border-color:var(--primary); background:var(--primary-soft); }
 #view-pedidos .pd-contra .pd-check:has(input:checked) { border-color:var(--pd-alto); background:var(--pd-alto-soft); }
 #view-pedidos .pd-check small { display:block; color:var(--muted); font-size:.8125rem; }
+#view-pedidos .pd-check .pd-pend { color:var(--pd-at-ink); font-weight:600; }
 #view-pedidos .pd-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
 #view-pedidos .pd-nao { margin-top:14px; }
 #view-pedidos summary { cursor:pointer; font-size:.92rem; font-weight:600; min-height:44px; display:flex; align-items:center; }
