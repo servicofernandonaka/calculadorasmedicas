@@ -4,8 +4,10 @@
 
    Regras declarativas (campo "regras" de cada exame):
      { id, nivel: 'alto'|'atencao'|'info', aviso, se: { criterio?: [ids, todos], criterioAlgum?: [ids], semGrupo?: [ids de grupos sem nenhum marcado],
+                                                       grupoMenosQue?: { grupo, n } (marcados no grupo < n),
                                                        idadeMenor?, idadeMaior?, sexo?: 'F'|'M' } }
-   "nivel: alto" bloqueia a geração do texto (ex.: contraindicação absoluta). */
+   "nivel: alto" bloqueia a geração do texto (ex.: contraindicação absoluta).
+   Critério com "intervaloMin" (anos) e o campo numérico "anosDesde" preenchido: avisa se o exame anterior é mais recente que o intervalo. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.PedidosEngine = factory();
@@ -40,6 +42,7 @@
     if (se.criterio && !arr(se.criterio).every((id) => ctx.marcados.has(id))) return false;
     if (se.criterioAlgum && !arr(se.criterioAlgum).some((id) => ctx.marcados.has(id))) return false;
     if (se.semGrupo && !arr(se.semGrupo).every((g) => !ctx.gruposMarcados.has(g))) return false;
+    if (se.grupoMenosQue && !(ctx.contaGrupo(se.grupoMenosQue.grupo) < se.grupoMenosQue.n)) return false;
     if (se.idadeMenor != null && !(ctx.idade < se.idadeMenor)) return false;
     if (se.idadeMaior != null && !(ctx.idade > se.idadeMaior)) return false;
     if (se.sexo && ctx.sexo !== se.sexo) return false;
@@ -60,7 +63,8 @@
     for (const c of criterios) if (marcados.has(c.id)) gruposMarcados.add(c.grupo);
     const escolhidos = criterios.filter((c) => marcados.has(c.id));
     res.criteriosMarcados = escolhidos.map((c) => c.id);
-    const ctx = { idade, sexo, marcados, gruposMarcados };
+    const contaGrupo = (g) => criterios.filter((c) => c.grupo === g && marcados.has(c.id)).length;
+    const ctx = { idade, sexo, marcados, gruposMarcados, contaGrupo };
 
     /* Pendências: sem isso o pedido costuma voltar */
     if (!idadeOk(idade)) res.faltas.push('Informe a idade (0 a 120 anos).');
@@ -79,6 +83,16 @@
       // Regras só fazem sentido com idade válida quando dependem dela
       if ((r.se && (r.se.idadeMenor != null || r.se.idadeMaior != null)) && !idadeOk(idade)) continue;
       res.avisos.push({ id: r.id, nivel: r.nivel || 'atencao', texto: r.aviso });
+    }
+    /* Intervalo mínimo entre exames (vigilância) */
+    const anosDesde = limpa((e.campos || {}).anosDesde).replace(',', '.');
+    if (anosDesde !== '' && Number.isFinite(Number(anosDesde))) {
+      for (const c of escolhidos) {
+        if (c.intervaloMin != null && Number(anosDesde) < c.intervaloMin) {
+          res.avisos.push({ id: 'intervalo-' + c.id, nivel: 'atencao',
+            texto: `Intervalo recomendado para este achado: ${String(c.intervaloMin).replace('.', ',')} ano(s) (${c.intervaloFonte || 'ver fonte'}). O exame anterior foi há ${String(anosDesde).replace('.', ',')} ano(s): o pedido antes do prazo costuma ser devolvido, a menos que haja sintoma ou outra indicação.` });
+        }
+      }
     }
     res.bloqueado = res.avisos.some((a) => a.nivel === 'alto');
     res.avisos.sort((a, b) => ['alto', 'atencao', 'info'].indexOf(a.nivel) - ['alto', 'atencao', 'info'].indexOf(b.nivel));
