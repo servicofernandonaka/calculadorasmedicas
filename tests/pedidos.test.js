@@ -12,8 +12,10 @@ const base = { idade: 58, sexo: 'M', prioridade: 'eletivo' };
 const pedido = (exame, extra) => E.montar(D, Object.assign({ exame, cid: ex(exame).cids[0][0] }, base, extra));
 
 /* ---------- integridade do catálogo ---------- */
-test('9 exames, cada um com sistema, nome, CIDs, fontes e conferência', () => {
-  assert.equal(D.exames.length, 9);
+test('exames do catálogo, cada um com sistema, nome, CIDs, fontes e conferência', () => {
+  assert.equal(D.exames.length, 11);
+  assert.ok(!D.exames.some((e) => /^rm_/.test(e.id)), 'ressonâncias são restritas a especialistas e não entram');
+  assert.deepEqual(D.exames.filter((e) => e.sistema === 'Tomografia').map((e) => e.id), ['tc_cranio', 'tc_torax', 'tc_abdome', 'tc_pelve']);
   for (const e of D.exames) {
     assert.ok(e.sistema && e.nome && e.nomeCurto, e.id);
     assert.ok(e.cids.length >= 1 && e.cids.every((c) => /^[A-Z]\d{2}(\.\d)?$/.test(c[0]) && c[1]), e.id + ': CID');
@@ -228,24 +230,6 @@ test('MAPA: exige PA de consultório; indicação comum a MRPA avisa; indicaçã
   assert.ok(!res.avisos.some((a) => a.id === 'm-mrpa'));
 });
 
-test('ressonância lombar: dor inespecífica após 6 semanas avisa; déficit neurológico exige o exame neurológico', () => {
-  const insp = pedido('rm_lombar', { cid: 'M54.5', criterios: ['rl_6sem'], campos: { tratamento: 'AINE e fisioterapia por 6 semanas' } });
-  assert.ok(insp.avisos.some((a) => a.id === 'rl-inespecifica'));
-  const def = pedido('rm_lombar', { cid: 'M54.1', criterios: ['rl_deficit'] });
-  assert.ok(def.faltas.some((f) => /neurológico/.test(f)));
-  const ok = pedido('rm_lombar', { cid: 'M54.1', criterios: ['rl_deficit'], campos: { neuro: 'Força 3/5 em dorsiflexão do pé direito' } });
-  assert.equal(ok.pronto, true);
-  assert.ok(!ok.avisos.some((a) => a.id === 'rl-inespecifica'));
-});
-
-test('ressonância de joelho: radiografia prévia é obrigatória', () => {
-  const sem = pedido('rm_joelho', { cid: 'M25.5', criterios: ['rj_atipico'] });
-  assert.ok(sem.faltas.some((f) => /radiografia/i.test(f)));
-  const ok = pedido('rm_joelho', { cid: 'M25.5', criterios: ['rj_atipico'], campos: { radiografia: 'Ortostatismo, 02/11/2026: sem alterações' } });
-  assert.equal(ok.pronto, true);
-  assert.match(ok.texto, /Radiografia do joelho: Ortostatismo, 02\/11\/2026: sem alterações\./);
-});
-
 test('polissonografia: exige avaliação do sono; sem motivo de laboratório avisa; STOP-Bang sozinho não basta', () => {
   assert.ok(pedido('psg', { cid: 'G47.3', criterios: ['ps_suspeita'] }).faltas.some((f) => /avaliação/i.test(f)));
   const semLab = pedido('psg', { cid: 'G47.3', criterios: ['ps_suspeita'], campos: { avaliacao: 'Ronco, sonolência, Epworth 14' } });
@@ -268,4 +252,129 @@ test('anticoagulante entra no texto e mostra o aviso da ACG-CAG 2022', () => {
   const r = pedido('eda', { cid: 'R13', criterios: ['eda_disfagia', 'eda_anticoag'] });
   assert.match(r.texto, /Contexto e cuidados:\n- Em uso de anticoagulante ou antiagregante\./);
   assert.ok(r.avisos.some((a) => a.id === 'eda-anticoag' && /ACG-CAG 2022/.test(a.texto)));
+});
+
+/* ---------- tomografias ---------- */
+const avisoId = (r, id) => r.avisos.find((a) => a.id === id);
+
+test('contraste: exige creatinina/eGFR; sem contraste os avisos de contraste não aparecem', () => {
+  const sem = pedido('tc_abdome', { cid: 'R10.4', criterios: ['tc_a_massa', 'tca_c_cont'] });
+  assert.ok(sem.faltas.some((f) => /creatinina|eGFR/i.test(f)));
+  assert.match(sem.faltas.join(' '), /7 dias/);
+  const com = pedido('tc_abdome', { cid: 'R19.0', criterios: ['tc_a_massa', 'tca_c_cont'], campos: { creatinina: '0,9 mg/dL em 02/11/2026' } });
+  assert.equal(com.pronto, true);
+  assert.match(com.texto, /Função renal: 0,9 mg\/dL em 02\/11\/2026\./);
+  assert.match(com.texto, /Exame solicitado com contraste iodado\./);
+  // renal sem contraste: nada a avisar
+  assert.ok(!avisoId(pedido('tc_abdome', { cid: 'R19.0', criterios: ['tc_a_massa', 'tca_c_renal'] }), 'tca-renal'));
+});
+
+test('contraste: doença renal, metformina, reação prévia e gestação geram os avisos das fontes', () => {
+  const r = pedido('tc_abdome', { cid: 'R19.0', criterios: ['tc_a_massa', 'tca_c_cont', 'tca_c_renal', 'tca_c_met', 'tca_c_reac', 'tca_c_gest'], campos: { creatinina: '2,4 em 10/11' } });
+  assert.match(avisoId(r, 'tca-renal').texto, /ACR-NKF 2020/);
+  assert.match(avisoId(r, 'tca-metformina').texto, /ESUR 2018/);
+  assert.match(avisoId(r, 'tca-reacao').texto, /ESUR 2025/);
+  assert.match(avisoId(r, 'tca-gestacao').texto, /ACOG 2017/);
+  assert.equal(avisoId(r, 'tca-reacao').nivel, 'atencao');
+  assert.equal(r.pronto, true, 'avisos de contraste não bloqueiam');
+});
+
+test('crânio: traumatismo craniano agudo avisa que é pronto-socorro e exige o relato do trauma', () => {
+  const sem = pedido('tc_cranio', { cid: 'S06.9', criterios: ['tc_tce_alto'] });
+  assert.ok(sem.faltas.some((f) => /traumatismo/i.test(f)));
+  const ok = pedido('tc_cranio', { cid: 'S06.9', criterios: ['tc_tce_alto'], campos: { trauma: 'Queda de 2 m há 40 min, Glasgow 14, 2 vômitos' } });
+  assert.equal(ok.pronto, true);
+  assert.match(avisoId(ok, 'tcc-tce-urgencia').texto, /1\.3\.19/);
+  assert.match(ok.texto, /Referência: NICE NG232 \(traumatismo craniano\)\./);
+});
+
+test('crânio: cefaleia com alarme informa que a NICE manda avaliar, não pedir; cefaleia súbita é urgência', () => {
+  const r = pedido('tc_cranio', { cid: 'R51', criterios: ['tc_cef_deficit'], campos: { neuro: 'Hemiparesia direita há 2 semanas' } });
+  assert.equal(r.pronto, true);
+  assert.match(avisoId(r, 'tcc-cefaleia-nice').texto, /CG150/);
+  assert.ok(avisoId(pedido('tc_cranio', { cid: 'R51', criterios: ['tc_cef_subita'] }), 'tcc-urgencia'));
+});
+
+test('crânio: suspeita de tumor lembra que a NICE prefere ressonância; demência exige avaliação cognitiva', () => {
+  const t = pedido('tc_cranio', { cid: 'R29.8', criterios: ['tc_tumor'], campos: { neuro: 'Disartria e hemiparesia progressivas há 6 semanas' } });
+  assert.ok(avisoId(t, 'tcc-tumor-rm'));
+  const d = pedido('tc_cranio', { cid: 'F03', criterios: ['tc_cogn'] });
+  assert.ok(d.faltas.some((f) => /cognitiva/i.test(f)));
+});
+
+test('tórax: rastreamento de câncer de pulmão (50 anos ou mais, > 20 maços-ano, parou há até 15 anos; até 80 anos)', () => {
+  const c = crit(ex('tc_torax')).find((x) => x.id === 'tc_t_rastreio');
+  for (const t of [/50 anos/, /20 maços-ano/, /15 anos/]) assert.match(c.rotulo, t);
+  assert.equal(c.intervaloMin, 1, 'rastreamento anual');
+  const tab = { tabagismo: '30 maços-ano, parou há 5 anos' };
+  assert.ok(pedido('tc_torax', { idade: 49, cid: 'Z12.2', criterios: ['tc_t_rastreio'], campos: tab }).avisos.some((a) => a.id === 'tct-rast-idade-menor'));
+  assert.ok(pedido('tc_torax', { idade: 81, cid: 'Z12.2', criterios: ['tc_t_rastreio'], campos: tab }).avisos.some((a) => a.id === 'tct-rast-idade-maior'));
+  const ok = pedido('tc_torax', { idade: 62, cid: 'Z12.2', criterios: ['tc_t_rastreio'], campos: tab });
+  assert.equal(ok.pronto, true);
+  assert.ok(!ok.avisos.some((a) => /idade/.test(a.id)));
+  assert.match(ok.texto, /Tabagismo: 30 maços-ano, parou há 5 anos\./);
+  assert.equal(pedido('tc_torax', { idade: 62, cid: 'Z12.2', criterios: ['tc_t_rastreio'] }).pronto, false, 'exige o tabagismo');
+});
+
+test('tórax: sintoma muito sugestivo ou câncer de pulmão prévio impede o rastreamento (bloqueia)', () => {
+  for (const ex_ of ['tc_t_ex_sint', 'tc_t_ex_ca', 'tc_t_ex_cond']) {
+    const r = pedido('tc_torax', { idade: 62, cid: 'Z12.2', criterios: ['tc_t_rastreio', ex_], campos: { tabagismo: '30 maços-ano' } });
+    assert.equal(r.bloqueado, true, ex_);
+    assert.equal(r.texto, '');
+  }
+});
+
+test('tórax: intervalo anual do rastreamento avisa se a última tomografia de baixa dose foi há menos de 1 ano', () => {
+  const r = (anos) => pedido('tc_torax', { idade: 62, cid: 'Z12.2', criterios: ['tc_t_rastreio'], campos: { tabagismo: '30 maços-ano', anosDesde: anos } });
+  assert.ok(r('0,5').avisos.some((a) => /^intervalo-/.test(a.id)));
+  assert.ok(!r('1').avisos.some((a) => /^intervalo-/.test(a.id)));
+});
+
+test('tórax: embolia pulmonar exige Wells e radiografia, é urgência, e sugere V/Q se renal ou reação ao contraste', () => {
+  const sem = pedido('tc_torax', { cid: 'I26.9', criterios: ['tc_t_ep'] });
+  assert.ok(sem.faltas.some((f) => /Wells/.test(f)) && sem.faltas.some((f) => /radiografia/i.test(f)));
+  const r = pedido('tc_torax', { cid: 'I26.9', criterios: ['tc_t_ep', 'tct_c_cont', 'tct_c_renal'], campos: { wells: '6 pontos', rx: 'Sem alterações', creatinina: '2,1' } });
+  assert.equal(r.pronto, true);
+  assert.ok(avisoId(r, 'tct-ep-urgencia'));
+  assert.match(avisoId(r, 'tct-ep-vq').texto, /V\/Q/);
+});
+
+test('tórax: nódulo incidental não calcula intervalo (tabela de Fleischner não foi lida) e é marcado como não conferido', () => {
+  const c = crit(ex('tc_torax')).find((x) => x.id === 'tc_t_nodulo');
+  assert.equal(c.v, false);
+  assert.equal(c.intervaloMin, undefined);
+});
+
+test('abdome: cólica renal pede tomografia sem contraste; gestante e criança, ultrassom', () => {
+  const base_ = { cid: 'N23', criterios: ['tc_a_colica'] };
+  assert.ok(!avisoId(pedido('tc_abdome', base_), 'tca-colica-sem'));
+  assert.ok(avisoId(pedido('tc_abdome', { cid: 'N23', criterios: ['tc_a_colica', 'tca_c_cont'], campos: { creatinina: '1,0' } }), 'tca-colica-sem'));
+  assert.ok(avisoId(pedido('tc_abdome', { cid: 'N23', criterios: ['tc_a_colica', 'tca_c_gest'] }), 'tca-colica-gest'));
+  assert.ok(avisoId(pedido('tc_abdome', Object.assign({ idade: 12 }, base_)), 'tca-colica-crianca'));
+  assert.ok(!avisoId(pedido('tc_abdome', base_), 'tca-colica-crianca'), 'adulto de 58 anos não recebe o aviso da criança');
+});
+
+test('abdome: apendicite lembra o ultrassom; pancreatite exige a evolução; câncer de pâncreas exige o peso', () => {
+  assert.match(avisoId(pedido('tc_abdome', { cid: 'K35.8', criterios: ['tc_a_apend'] }), 'tca-apend-us').texto, /WSES 2020/);
+  assert.ok(pedido('tc_abdome', { cid: 'K85.9', criterios: ['tc_a_pancreatite'] }).faltas.some((f) => /48 a 72/.test(f)));
+  assert.ok(pedido('tc_abdome', { idade: 66, cid: 'R63.4', criterios: ['tc_a_pancreas'] }).faltas.some((f) => /perda de peso/i.test(f)));
+  assert.ok(avisoId(pedido('tc_abdome', { cid: 'K57.3', criterios: ['tc_a_div'] }), 'tca-urgencia'));
+});
+
+test('pelve: dor aguda em mulher exige ultrassom e β-hCG; homem recebe aviso; sempre sugere abdome e pelve juntos', () => {
+  const sem = pedido('tc_pelve', { sexo: 'F', idade: 30, cid: 'R10.2', criterios: ['tc_p_dor_aguda'] });
+  assert.ok(sem.faltas.some((f) => /ultrassom/i.test(f)) && sem.faltas.some((f) => /β-hCG/.test(f)));
+  const ok = pedido('tc_pelve', { sexo: 'F', idade: 30, cid: 'R10.2', criterios: ['tc_p_dor_aguda'], campos: { us: 'Sem alterações em 01/11', bhcg: 'Negativo em 01/11' } });
+  assert.equal(ok.pronto, true);
+  assert.ok(avisoId(ok, 'tcp-abdome-pelve'));
+  assert.ok(avisoId(pedido('tc_pelve', { sexo: 'M', cid: 'R10.2', criterios: ['tc_p_dor_aguda'] }), 'tcp-sexo'));
+});
+
+test('toda tomografia tem o grupo de contraste e a exigência de creatinina', () => {
+  for (const id of ['tc_cranio', 'tc_torax', 'tc_abdome', 'tc_pelve']) {
+    const e = ex(id);
+    assert.ok(e.grupos.some((g) => g.id === 'contraste' && g.soContexto), id);
+    assert.ok(e.campos.some((c) => c.id === 'creatinina' && c.exigidoQuando), id);
+    for (const f of ['acrnkf', 'esur', 'esur_hs', 'acog']) assert.ok(e.fontes[f], `${id}: fonte ${f}`);
+  }
 });
