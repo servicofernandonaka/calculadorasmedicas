@@ -9,6 +9,7 @@
   const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
 
   const TABS = {
+    inicio: { title: 'Início', sub: '' },
     clinica: { title: 'Clínica médica', sub: 'Risco cardiovascular, metabólico, renal, ósseo, tromboembolismo, infecção e hepatologia.' },
     cirurgia: { title: 'Especialidades cirúrgicas', sub: 'Avaliação pré-operatória, tromboprofilaxia, abdome agudo e trauma.' },
     gineco: { title: 'Ginecologia e obstetrícia', sub: 'Pré-natal, parto, saúde da mulher e osteoporose pós-menopausa.' },
@@ -85,7 +86,7 @@
     state.tab = tab;
     // A cor e a ilustração do cabeçalho acompanham a especialidade
     document.documentElement.dataset.tab = tab;
-    $(tab === 'educacao' ? '#edu-art' : tab === 'rastreio' ? '#ras-art' : tab === 'mental' ? '#men-art' : tab === 'leitura' ? '#lei-art' : tab === 'labcore' ? '#lab-art' : '#calc-art').innerHTML = window.ART(tab);
+    $(tab === 'educacao' ? '#edu-art' : tab === 'rastreio' ? '#ras-art' : tab === 'mental' ? '#men-art' : tab === 'leitura' ? '#lei-art' : tab === 'labcore' ? '#lab-art' : '#calc-art').innerHTML = window.ART(tab === 'inicio' ? 'clinica' : tab);
     $$('.tab[data-tab]').forEach((b) => {
       if (b.dataset.tab === tab) {
         b.setAttribute('aria-current', 'page');
@@ -93,15 +94,16 @@
         b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       } else b.removeAttribute('aria-current');
     });
-    const isEdu = tab === 'educacao', isRas = tab === 'rastreio', isMen = tab === 'mental', isLei = tab === 'leitura', isLab = tab === 'labcore';
-    $('#view-calcs').hidden = isEdu || isRas || isMen || isLei || isLab;
+    const isEdu = tab === 'educacao', isRas = tab === 'rastreio', isMen = tab === 'mental', isLei = tab === 'leitura', isLab = tab === 'labcore', isIni = tab === 'inicio';
+    $('#view-inicio').hidden = !isIni;
+    $('#view-calcs').hidden = isEdu || isRas || isMen || isLei || isLab || isIni;
     $('#view-edu').hidden = !isEdu;
     $('#view-rastreio').hidden = !isRas;
     $('#view-mental').hidden = !isMen;
     $('#view-leitura').hidden = !isLei;
     $('#view-labcore').hidden = !isLab;
     if (isEdu) renderEdu();
-    else if (isRas || isMen || isLei || isLab) { /* MedScreening e Saúde mental já estão montados */ }
+    else if (isRas || isMen || isLei || isLab || isIni) { /* MedScreening e Saúde mental já estão montados */ }
     else { state.category = null; renderCalcs(); }
   }
 
@@ -548,7 +550,7 @@
 
     $('#search').addEventListener('input', (e) => {
       state.query = e.target.value;
-      if ((state.tab === 'educacao' || state.tab === 'rastreio' || state.tab === 'mental' || state.tab === 'leitura' || state.tab === 'labcore') && state.query) setTab('clinica');
+      if ((state.tab === 'educacao' || state.tab === 'rastreio' || state.tab === 'mental' || state.tab === 'leitura' || state.tab === 'labcore' || state.tab === 'inicio') && state.query) setTab('clinica');
       renderCalcs();
     });
 
@@ -637,5 +639,6 @@
   bind();
   applyEduSize();
   syncFavUi();
-  if (location.hash) route(); else setTab('clinica');
+  if (location.hash) route(); else setTab('inicio');
+  document.dispatchEvent(new CustomEvent('calcmed:ready'));
 })();
