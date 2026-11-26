@@ -45,6 +45,7 @@
     liver: '<path d="M3 9c0-2.5 2-4 5-4h9.5C20 5 21 7 21 9c0 3-3 4-6 6s-4 4-6 4c-3 0-6-4.5-6-10z"/>',
     clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/>',
     baby: '<circle cx="12" cy="8" r="4"/><path d="M10.5 8h.01M13.5 8h.01"/><path d="M6 21c0-3.5 2.7-6 6-6s6 2.5 6 6"/>',
+    file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
     brain: '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/>',
   };
 

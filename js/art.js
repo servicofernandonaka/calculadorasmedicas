@@ -101,6 +101,14 @@
       `<g stroke="#fff" stroke-width="4" stroke-linecap="round"><path d="M152 112l8-12 8 8 8-12"/></g>` +
       spark(40, 42, 9, C.mint) + plus(196, 36, 8, '#fff') + dot(44, 130, 5, C.yellow),
 
+    pedidos: halo +
+      `<rect x="70" y="26" width="100" height="124" rx="12" fill="#fff"/>` +
+      `<rect x="96" y="16" width="48" height="20" rx="8" fill="${C.sky}"/>` +
+      `<g stroke="#C9D6DC" stroke-width="5" stroke-linecap="round"><path d="M88 62h50M88 82h64M88 102h40"/></g>` +
+      `<g stroke="#3FBF8F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M88 124l8 8 14-16"/></g>` +
+      `<g transform="rotate(32 178 116)"><rect x="170" y="70" width="14" height="66" rx="5" fill="${C.yellow}"/><path d="M170 136l7 16 7-16z" fill="${C.coral}"/></g>` +
+      spark(48, 44, 9, C.mint) + plus(204, 40, 8, '#fff') + dot(50, 132, 5, C.yellow),
+
     educacao: halo +
       `<path d="M120 50C100 38 70 38 46 46v80c24-8 54-8 74 4z" fill="#fff"/>` +
       `<path d="M120 50c20-12 50-12 74-4v80c-24-8-54-8-74 4z" fill="#E6FFF6"/>` +
