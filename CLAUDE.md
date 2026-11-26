@@ -16,7 +16,6 @@ Site estático em HTML, CSS e JavaScript puro. Sem build, sem framework, sem npm
 - `js/education.js`: guias do Paciente
 - `js/ai.js`, `js/lc-ia.js`: Assistente IA e pré-preenchimento por IA
 - `js/icons.js`, `js/art.js`: ícones e ilustrações SVG
-- `js/magic.js`: aba Início (show com céu, fogos e castelo, portais das áreas) e efeitos visuais; só enfeite, respeita "reduzir movimento" e o botão de efeitos (`#magic-toggle`). Nunca aplicar efeitos em resultados clínicos
 - `css/styles.css` (~66 KB): estilos; reutilizar classes e variáveis existentes
 - `tests/`: testes dos motores `lc-*` (node:test, sem dependências)
 
